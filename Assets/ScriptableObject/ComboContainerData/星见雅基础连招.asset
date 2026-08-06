@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a4971229ba52a274488aaa57ea9cead1, type: 3}
+  m_Name: "\u661F\u89C1\u96C5\u57FA\u7840\u8FDE\u62DB"
+  m_EditorClassIdentifier: 
+  comboDatas:
+  - {fileID: 11400000, guid: 3608c4587e7146d4b8b9f78174009635, type: 2}
+  - {fileID: 11400000, guid: e79851970ca93f64f9a3ebb0c13b8c3e, type: 2}
+  - {fileID: 11400000, guid: 8579d1164b67cd7439dd77f4146fcd5c, type: 2}
+  - {fileID: 11400000, guid: 327735ee4e0e41042833fb639b2b68f9, type: 2}
+  - {fileID: 11400000, guid: 085b138412fcbab4cbc766472f398fb3, type: 2}
+  DodgeATKData: {fileID: 11400000, guid: d10d21c0b763de54ca81d0141fe331f2, type: 2}
+  BackDodgeATKData: {fileID: 0}
