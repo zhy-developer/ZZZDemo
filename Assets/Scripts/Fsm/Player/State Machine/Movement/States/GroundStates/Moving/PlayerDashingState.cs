@@ -36,6 +36,7 @@ public class PlayerDashingState : PlayerMovementState
             movementStateMachine.ChangeState(movementStateMachine.idlingState);
             return;
         }
+        DeLogger.LogTrace("Dash转到Sprint");
         movementStateMachine.ChangeState(movementStateMachine.sprintingState);
     }
     #endregion
