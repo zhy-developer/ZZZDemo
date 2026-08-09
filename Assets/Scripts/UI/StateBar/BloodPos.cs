@@ -6,6 +6,7 @@ using UnityEngine;
 public class BloodPos : MonoBehaviour
 {
     private Camera cam;  
+    public StateBarUI stateBarUI;
     private void Awake()
     {
         cam = Camera.main;
@@ -18,6 +19,6 @@ public class BloodPos : MonoBehaviour
 
     private void syncBloodUI()
     {
-        UIManager.Instance.stateBarUI.ShowAt(this.transform.position);
+        stateBarUI.ShowAt(this.transform.position);
     }
 }

@@ -7,4 +7,6 @@ public enum CharacterNameList
     Null,
     Xingjianya,
     AnBi,
+    Enemy,
+    Boss,
 }

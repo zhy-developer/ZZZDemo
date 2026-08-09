@@ -33,8 +33,11 @@ public class UIManager : MonoSingleton<UIManager>
     protected override void Awake()
     {
         base.Awake();
-        stateBarUI =transform.Find("UIRoot/State Bar").GetComponent<StateBarUI>();
-        switchTimeUI =transform.Find("UIRoot/Switch Time").GetComponent <SwitchTimeUI>();
+        if(stateBarUI==null||switchTimeUI==null)
+        {
+            stateBarUI =transform.Find("UIRoot/State Bar").GetComponent<StateBarUI>();
+            switchTimeUI =transform.Find("UIRoot/Switch Time").GetComponent <SwitchTimeUI>();
+        }
     }
   
 
