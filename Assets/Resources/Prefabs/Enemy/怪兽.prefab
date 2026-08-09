@@ -481,6 +481,14 @@ PrefabInstance:
       propertyPath: GreenBloodFill
       value: 
       objectReference: {fileID: 4445433845058494906}
+    - target: {fileID: 5910035464049060002, guid: 7cf1650121fb1b240b57eab4549120ca, type: 3}
+      propertyPath: m_SortingOrder
+      value: 50
+      objectReference: {fileID: 0}
+    - target: {fileID: 7895318252743787084, guid: 7cf1650121fb1b240b57eab4549120ca, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 420
+      objectReference: {fileID: 0}
     - target: {fileID: 8589550942834363298, guid: 7cf1650121fb1b240b57eab4549120ca, type: 3}
       propertyPath: m_Pivot.x
       value: 0.5

@@ -13,7 +13,7 @@ public class StateBarUI : MonoBehaviour,IUI
    [SerializeField] private Image GreenBloodBar;
    [SerializeField] private WavySlantFillImage RedBloodFill;
    [SerializeField] private WavySlantFillImage GreenBloodFill;
-   [SerializeField] private float redBloodDelaySpeed = 0.05f;
+   [SerializeField] private float redBloodDelaySpeed = 0.2f;
    [SerializeField] private FollowMode followMode = FollowMode.WorldSpace;
    [SerializeField] private Vector3 worldOffset = Vector3.zero;
    [SerializeField] private Vector3 worldScale = new Vector3(0.01f, 0.01f, 0.01f);

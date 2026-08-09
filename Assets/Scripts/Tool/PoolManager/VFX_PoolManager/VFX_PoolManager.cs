@@ -95,6 +95,10 @@ public class VFX_PoolManager : MonoSingleton<VFX_PoolManager>
         {
             GameObject go = effectPool[characterName][effectName].Dequeue();
             go.transform.position = worldPos;
+            if (quaternion.x == 0f && quaternion.y == 0f && quaternion.z == 0f && quaternion.w == 0f)
+            {
+                quaternion = Quaternion.identity;
+            }
             go.transform.rotation = quaternion;
             go.SetActive(true);
             effectPool[characterName][effectName].Enqueue(go);

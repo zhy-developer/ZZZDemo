@@ -22,6 +22,7 @@ namespace ZZZ
         //玩家连招状态机
         public PlayerComboStateMachine comboStateMachine { get;private set; }
         public new Transform camera { get; private set; }
+        private GameBlackboard gameBlackboard;
 
         /// <summary>
         /// 是否能继承切人前的疾跑状态
@@ -128,17 +129,40 @@ namespace ZZZ
         public void OnEnable()
         {
             //注册movement状态机中的状态变更事件
-            movementStateMachine.currentState.OnValueChanged += MovementStateChanged;
-            comboStateMachine.currentState.OnValueChanged += ComboStateChanged;
-            GameBlackboard.Instance.enemy.OnValueChanged += EnemyChanged;
+            if (movementStateMachine != null)
+            {
+                movementStateMachine.currentState.OnValueChanged += MovementStateChanged;
+            }
+
+            if (comboStateMachine != null)
+            {
+                comboStateMachine.currentState.OnValueChanged += ComboStateChanged;
+            }
+
+            gameBlackboard = GameBlackboard.Instance;
+            if (gameBlackboard != null)
+            {
+                gameBlackboard.enemy.OnValueChanged += EnemyChanged;
+            }
         }
        
 
         public void OnDisable()
         {
-            movementStateMachine.currentState.OnValueChanged -= MovementStateChanged;
-            comboStateMachine.currentState.OnValueChanged -= ComboStateChanged;
-            GameBlackboard.Instance.enemy.OnValueChanged -= EnemyChanged;
+            if (movementStateMachine != null)
+            {
+                movementStateMachine.currentState.OnValueChanged -= MovementStateChanged;
+            }
+
+            if (comboStateMachine != null)
+            {
+                comboStateMachine.currentState.OnValueChanged -= ComboStateChanged;
+            }
+
+            if (gameBlackboard != null)
+            {
+                gameBlackboard.enemy.OnValueChanged -= EnemyChanged;
+            }
         }
     
 

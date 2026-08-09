@@ -51,10 +51,8 @@ public class CameraHitFeel : MonoSingleton<CameraHitFeel>
 
         if (PauseFrameCoroutine != null)
         { 
-        Debug.Log($"[AttackDebug] Stop previous pause frame coroutine before starting a new one. timeScale={Time.timeScale}");
         StopCoroutine(PauseFrameCoroutine);
         }
-        Debug.Log($"[AttackDebug] Request pause frame. pauseTime={time}, timeScale={Time.timeScale}, characterAnimatorSpeed={currentCharacterAnimator.speed}, enemyAnimatorSpeed={currentEnemyAnimator.speed}");
         PauseFrameCoroutine = StartCoroutine(PauseFrameOnAnimation(time));
     }
     /// <summary>
@@ -77,12 +75,10 @@ public class CameraHitFeel : MonoSingleton<CameraHitFeel>
     }
     public void StartSlowTime(float timeScale)
     { 
-       Debug.Log($"[AttackDebug] StartSlowTime. from={Time.timeScale}, to={timeScale}, unscaledTime={Time.unscaledTime}");
        Time.timeScale=timeScale;
     }
     public void EndSlowTime()
     {
-        Debug.Log($"[AttackDebug] EndSlowTime. from={Time.timeScale}, to=1, unscaledTime={Time.unscaledTime}");
         Time.timeScale = 1;
     }
     IEnumerator SlowMotionOnAnimation(float time,float speedMult)
@@ -111,8 +107,6 @@ public class CameraHitFeel : MonoSingleton<CameraHitFeel>
     }
     IEnumerator PauseFrameOnAnimation(float time)
     {
-        float startUnscaledTime = Time.unscaledTime;
-        Debug.LogWarning($"[AttackDebug] Pause frame start. pauseTime={time}, timeScale={Time.timeScale}, characterAnimatorSpeedBefore={currentCharacterAnimator.speed}, enemyAnimatorSpeedBefore={currentEnemyAnimator.speed}, unscaledTime={startUnscaledTime}");
         currentCharacterAnimator.speed = 0f;
         currentEnemyAnimator.speed = 0f;
         VFXManager.Instance.PauseVFX();
@@ -120,7 +114,6 @@ public class CameraHitFeel : MonoSingleton<CameraHitFeel>
         VFXManager.Instance.ResetVXF();
         currentCharacterAnimator.speed = 1f;
         currentEnemyAnimator.speed = 1f;
-        Debug.LogWarning($"[AttackDebug] Pause frame end. pauseTime={time}, realElapsed={Time.unscaledTime - startUnscaledTime}, timeScale={Time.timeScale}, characterAnimatorSpeedAfter={currentCharacterAnimator.speed}, enemyAnimatorSpeedAfter={currentEnemyAnimator.speed}");
     }
     
 

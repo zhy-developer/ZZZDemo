@@ -13,6 +13,6 @@ MonoBehaviour:
   m_Name: "\u654C\u4EBAPH\u6570\u636E"
   m_EditorClassIdentifier: 
   <healthData>k__BackingField:
-    <maxHP>k__BackingField: 4500
+    <maxHP>k__BackingField: 200
     <maxStrength>k__BackingField: 20
     <maxDefenseValue>k__BackingField: 250

@@ -91,7 +91,6 @@ namespace ZZZ
         private void OnAttackInput(InputAction.CallbackContext context)
         {
             if (player.characterName != SwitchCharacter.Instance.newCharacterName.Value) { return; }
-            Debug.Log($"[AttackDebug] Attack input. character={player.characterName}, movementState={player.currentMovementState}, comboState={player.currentComboState}, {BuildAnimatorLayerDebug(0)}, animatorSpeed={animator.speed}, timeScale={Time.timeScale}, unscaledTime={Time.unscaledTime}");
           
             if (characterCombo.CanBaseComboInput())
             {
@@ -132,25 +131,6 @@ namespace ZZZ
             //切换到技能状态
             comboStateMachine.ChangeState(comboStateMachine.SkillState);
         }
-
-        private string BuildAnimatorLayerDebug(int layerIndex)
-        {
-            AnimatorStateInfo currentState = animator.GetCurrentAnimatorStateInfo(layerIndex);
-            bool isInTransition = animator.IsInTransition(layerIndex);
-
-            string log = $"currentHash={currentState.shortNameHash}, normalizedTime={currentState.normalizedTime}, length={currentState.length}, speed={currentState.speed}, speedMultiplier={currentState.speedMultiplier}, isIdleTag={currentState.IsTag("Idle")}, isMovementTag={currentState.IsTag("Movement")}, isATKTag={currentState.IsTag("ATK")}, isIdleName={currentState.IsName("Idle")}, isStandName={currentState.IsName("Stand")}, isLocomotionName={currentState.IsName("Locomotion")}, isAnbiNormal1Name={currentState.IsName("Anbi_Normal_1")}, isInTransition={isInTransition}";
-
-            if (!isInTransition)
-            {
-                return log;
-            }
-
-            AnimatorTransitionInfo transition = animator.GetAnimatorTransitionInfo(layerIndex);
-            AnimatorStateInfo nextState = animator.GetNextAnimatorStateInfo(layerIndex);
-            return $"{log}, transitionHash={transition.fullPathHash}, transitionNameHash={transition.nameHash}, transitionUserNameHash={transition.userNameHash}, transitionNormalizedTime={transition.normalizedTime}, transitionDuration={transition.duration}, nextHash={nextState.shortNameHash}, nextNormalizedTime={nextState.normalizedTime}, nextIsIdleTag={nextState.IsTag("Idle")}, nextIsMovementTag={nextState.IsTag("Movement")}, nextIsATKTag={nextState.IsTag("ATK")}, nextIsIdleName={nextState.IsName("Idle")}, nextIsStandName={nextState.IsName("Stand")}, nextIsLocomotionName={nextState.IsName("Locomotion")}, nextIsAnbiNormal1Name={nextState.IsName("Anbi_Normal_1")}";
-        }
-           
-
 
     }
 }
