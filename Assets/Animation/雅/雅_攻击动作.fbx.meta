@@ -367,6 +367,13 @@ ModelImporter:
         floatParameter: 0
         intParameter: 0
         messageOptions: 0
+      - time: 0.06271077
+        functionName: PlayVFX
+        data: Unagi_01
+        objectReferenceParameter: {instanceID: 0}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
       transformMask: []
       maskType: 3
       maskSource: {instanceID: 0}
@@ -627,6 +634,13 @@ ModelImporter:
         floatParameter: 0
         intParameter: 0
         messageOptions: 0
+      - time: 0.045934394
+        functionName: PlayVFX
+        data: Unagi_03
+        objectReferenceParameter: {instanceID: 0}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
       transformMask: []
       maskType: 3
       maskSource: {instanceID: 0}
@@ -745,6 +759,13 @@ ModelImporter:
       - time: 0.112335585
         functionName: DisableLinkCombo
         data: 
+        objectReferenceParameter: {instanceID: 0}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
+      - time: 0.055301435
+        functionName: PlayVFX
+        data: Unagi_04
         objectReferenceParameter: {instanceID: 0}
         floatParameter: 0
         intParameter: 0
@@ -881,6 +902,41 @@ ModelImporter:
       - time: 0.22956648
         functionName: DisableLinkCombo
         data: 
+        objectReferenceParameter: {instanceID: 0}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
+      - time: 0.025620803
+        functionName: PlayVFX
+        data: Unagi_05_01
+        objectReferenceParameter: {instanceID: 0}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
+      - time: 0.051966377
+        functionName: PlayVFX
+        data: Unagi_05_02
+        objectReferenceParameter: {instanceID: 0}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
+      - time: 0.068162374
+        functionName: PlayVFX
+        data: Unagi_05_03
+        objectReferenceParameter: {instanceID: 0}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
+      - time: 0.07970374
+        functionName: PlayVFX
+        data: Unagi_05_04
+        objectReferenceParameter: {instanceID: 0}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
+      - time: 0.09591418
+        functionName: PlayVFX
+        data: Unagi_05_05
         objectReferenceParameter: {instanceID: 0}
         floatParameter: 0
         intParameter: 0
@@ -1351,6 +1407,13 @@ ModelImporter:
       - time: 0.10331799
         functionName: DisableLinkCombo
         data: 
+        objectReferenceParameter: {instanceID: 0}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
+      - time: 0.03791582
+        functionName: PlayVFX
+        data: Unagi_02
         objectReferenceParameter: {instanceID: 0}
         floatParameter: 0
         intParameter: 0

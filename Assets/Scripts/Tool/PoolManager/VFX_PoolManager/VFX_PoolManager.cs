@@ -10,7 +10,7 @@ public class VFX_PoolManager : MonoSingleton<VFX_PoolManager>
         public VFXItemData effectItemData;
     }
 
-    [SerializeField]private List<effectData> effectDates=new List<effectData>();
+    [SerializeField]private List<effectData> effectDatas=new List<effectData>();
     private Dictionary<CharacterNameList, Dictionary<string, Queue<GameObject>>>effectPool =new Dictionary<CharacterNameList, Dictionary<string, Queue<GameObject>>>();
 
 
@@ -21,28 +21,28 @@ public class VFX_PoolManager : MonoSingleton<VFX_PoolManager>
     }
     private void InitEffectPools()
     {
-        if (effectDates.Count == 0) { return; }
+        if (effectDatas.Count == 0) { return; }
 
-        for (int i = 0; i < effectDates.Count; i++)//循环特效数据类型
+        for (int i = 0; i < effectDatas.Count; i++)//循环特效数据类型
         {
             //先创建一个该类型的字典
-            if (!effectPool.ContainsKey(effectDates[i].style))
+            if (!effectPool.ContainsKey(effectDatas[i].style))
             {
-                effectPool.Add(effectDates[i].style, new Dictionary<string, Queue<GameObject>>());
+                effectPool.Add(effectDatas[i].style, new Dictionary<string, Queue<GameObject>>());
             }
 
-            for (int j = 0; j < effectDates[i].effectItemData.effectItems.Count; j++)//循环每个特效类型中的多个项目
+            for (int j = 0; j < effectDatas[i].effectItemData.effectItems.Count; j++)//循环每个特效类型中的多个项目
             {
-                effectDates[i].effectItemData.effectItems[j].effectRotation = Quaternion.Euler(effectDates[i].effectItemData.effectItems[j].effectEulerAngle);
+                effectDatas[i].effectItemData.effectItems[j].effectRotation = Quaternion.Euler(effectDatas[i].effectItemData.effectItems[j].effectEulerAngle);
 
-                for (int k = 0; k < effectDates[i].effectItemData.effectItems[j].count; k++)
+                for (int k = 0; k < effectDatas[i].effectItemData.effectItems[j].count; k++)
                 {
                     //创建实例
-                    GameObject go = Instantiate(effectDates[i].effectItemData.effectItems[j].VFXPrefab);
-                    if (effectDates[i].effectItemData.effectItems[j].applyParentPos)
+                    GameObject go = Instantiate(effectDatas[i].effectItemData.effectItems[j].VFXPrefab);
+                    if (effectDatas[i].effectItemData.effectItems[j].applyParentPos)
                     {
                         //设置父级点
-                        go.transform.parent = effectDates[i].effectItemData.effectItems[j].parentPos;
+                        go.transform.parent = effectDatas[i].effectItemData.effectItems[j].parentPos;
                     }
                     else
                     {
@@ -51,15 +51,15 @@ public class VFX_PoolManager : MonoSingleton<VFX_PoolManager>
                     //位置
                     go.transform.localPosition = Vector3.zero;
                     //旋转
-                    go.transform.localRotation = effectDates[i].effectItemData.effectItems[j].effectRotation;
+                    go.transform.localRotation = effectDatas[i].effectItemData.effectItems[j].effectRotation;
                     //隐藏
                     go.SetActive(false);
                     //放入字典
-                    if (!effectPool[effectDates[i].style].ContainsKey(effectDates[i].effectItemData.effectItems[j].VFXName))
+                    if (!effectPool[effectDatas[i].style].ContainsKey(effectDatas[i].effectItemData.effectItems[j].VFXName))
                     {
-                        effectPool[effectDates[i].style].Add(effectDates[i].effectItemData.effectItems[j].VFXName, new Queue<GameObject>());
+                        effectPool[effectDatas[i].style].Add(effectDatas[i].effectItemData.effectItems[j].VFXName, new Queue<GameObject>());
                     }
-                    effectPool[effectDates[i].style][effectDates[i].effectItemData.effectItems[j].VFXName].Enqueue(go);
+                    effectPool[effectDatas[i].style][effectDatas[i].effectItemData.effectItems[j].VFXName].Enqueue(go);
                 }
             }
         }
@@ -74,7 +74,7 @@ public class VFX_PoolManager : MonoSingleton<VFX_PoolManager>
         if (effectPool.ContainsKey(characterName) && effectPool[characterName].ContainsKey(effectName) && effectPool[characterName][effectName].Count > 0)
         {
             GameObject go = effectPool[characterName][effectName].Dequeue();
-            go.SetActive(true);
+            PlayEffect(go);
             effectPool[characterName][effectName].Enqueue(go);
         }
         else
@@ -100,7 +100,7 @@ public class VFX_PoolManager : MonoSingleton<VFX_PoolManager>
                 quaternion = Quaternion.identity;
             }
             go.transform.rotation = quaternion;
-            go.SetActive(true);
+            PlayEffect(go);
             effectPool[characterName][effectName].Enqueue(go);
         }
         else
@@ -108,6 +108,18 @@ public class VFX_PoolManager : MonoSingleton<VFX_PoolManager>
             Debug.LogWarning(characterName + "类型" + effectName + "名字的" + "对象池不存在");
         }
 
+    }
+
+    private void PlayEffect(GameObject effect)
+    {
+        if (effect.TryGetComponent<EffectItem>(out var effectItem))
+        {
+            effectItem.PlayFromPool();
+            return;
+        }
+
+        effect.SetActive(false);
+        effect.SetActive(true);
     }
 
 }

@@ -9,6 +9,7 @@ public class EffectItem : PoolItemBase
     [SerializeField, Header("特效播放的速度")] private float playSpeed;
 
     private ParticleSystem[] ParticleSystem;
+    private GameTimer recycleTimer;
 
     private void Awake()
     {
@@ -22,16 +23,31 @@ public class EffectItem : PoolItemBase
     }
     protected override void Spawn()
     {
+        PlayFromPool();
+    }
+
+    public void PlayFromPool()
+    {
+        if (!gameObject.activeSelf)
+        {
+            gameObject.SetActive(true);
+            return;
+        }
+
         StartPlay();
     }
+
     private void StartPlay()
     {
+        TimerManager.Instance.UnregisterTimer(recycleTimer);
+
         for (int i = 0;i < ParticleSystem.Length;i++) 
         {
-            ParticleSystem[i].Play();
+            ParticleSystem[i].Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            ParticleSystem[i].Play(true);
         }
       
-        TimerManager.Instance.GetOneTimer(playTime, StartReCycle);
+        recycleTimer = TimerManager.Instance.GetTimer(playTime, StartReCycle);
     }
     private void StartReCycle()
     { 

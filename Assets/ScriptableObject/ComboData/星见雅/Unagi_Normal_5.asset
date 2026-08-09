@@ -29,7 +29,7 @@ MonoBehaviour:
   _weaponSound: []
   _characterVoice: []
   _universalSound: 0
-  _ATKCount: 2
+  _ATKCount: 5
   _pauseFrameTime: 0
   _shakeForceList:
   - 0
