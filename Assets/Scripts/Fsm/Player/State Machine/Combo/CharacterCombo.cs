@@ -205,13 +205,32 @@ namespace ZZZ
         #region 敌人检测
         public void UpdateDetectionDir()
         {
-         
             Vector3 camForwardDir = Vector3.zero;
             camForwardDir.Set(reusableData.cameraTransform.forward.x, 0, reusableData.cameraTransform.forward.z);
             camForwardDir.Normalize();
-         
-           reusableData.detectionDir = camForwardDir * CharacterInputSystem.Instance.PlayerMove.y + reusableData.cameraTransform.right * CharacterInputSystem.Instance.PlayerMove.x;
-           reusableData.detectionDir.Normalize();
+
+            Vector3 camRightDir = Vector3.zero;
+            camRightDir.Set(reusableData.cameraTransform.right.x, 0, reusableData.cameraTransform.right.z);
+            camRightDir.Normalize();
+
+            reusableData.detectionDir = camForwardDir * CharacterInputSystem.Instance.PlayerMove.y + camRightDir * CharacterInputSystem.Instance.PlayerMove.x;
+
+            if (reusableData.detectionDir.sqrMagnitude <= 0.0001f)
+            {
+                Transform currentEnemy = GameBlackboard.Instance.GetEnemy();
+                if (currentEnemy != null)
+                {
+                    Vector3 targetDir = currentEnemy.position - playerTransform.position;
+                    targetDir.y = 0;
+                    reusableData.detectionDir = targetDir;
+                }
+                else
+                {
+                    reusableData.detectionDir = playerTransform.forward;
+                }
+            }
+
+            reusableData.detectionDir.Normalize();
         }
         public void UpdateEnemy()
         {

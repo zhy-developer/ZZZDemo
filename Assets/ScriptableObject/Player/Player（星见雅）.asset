@@ -71,4 +71,4 @@ MonoBehaviour:
       <detectionLength>k__BackingField: 3
       <WhatIsEnemy>k__BackingField:
         serializedVersion: 2
-        m_Bits: 0
+        m_Bits: 256
