@@ -11,7 +11,7 @@ public class ChaseWithMovement : TargetGameObjectAction
     [Tooltip("The target GameObject to chase.")]
     [SerializeField] private SharedVariable<GameObject> m_Target;
     [Tooltip("The distance where the enemy should stop chasing.")]
-    [SerializeField] private SharedVariable<float> m_StoppingDistance = 1.5f;
+    [SerializeField] private SharedVariable<float> m_StoppingDistance = 1f;
     [Tooltip("Should the Run animator parameter be enabled while chasing?")]
     [SerializeField] private SharedVariable<bool> m_Run = true;
 
@@ -36,6 +36,7 @@ public class ChaseWithMovement : TargetGameObjectAction
 
     public override void OnEnd()
     {
+        DeLogger.LogTrace("ChaseWithMovement.OnEnd");
         movementController?.StopMovement(false);
     }
 

@@ -22,6 +22,7 @@ public class EnemyAIMovementController : MonoBehaviour
     [SerializeField] private string hasMoveInputParameter = "HasMoveInput";
     [SerializeField] private string runParameter = "Run";
     [SerializeField] private string turnDeltaAngleParameter = "TurnDeltaAngle";
+    [SerializeField] private string hasInputForStopParameter = "HasInputForStop";
     [SerializeField] private float movementDampTime = 0.15f;
 
     [Header("Movement")]
@@ -38,6 +39,7 @@ public class EnemyAIMovementController : MonoBehaviour
     private int hasMoveInputHash;
     private int runHash;
     private int turnDeltaAngleHash;
+    private int hasInputForStopHash;
     private string currentAttackState;
     private int currentAttackLayer;
 
@@ -59,7 +61,8 @@ public class EnemyAIMovementController : MonoBehaviour
         hasMoveInputHash = Animator.StringToHash(hasMoveInputParameter);
         runHash = Animator.StringToHash(runParameter);
         turnDeltaAngleHash = Animator.StringToHash(turnDeltaAngleParameter);
-
+        hasInputForStopHash = Animator.StringToHash(hasInputForStopParameter);
+        
         if (agent != null) {
             agent.updatePosition = false;
             agent.updateRotation = false;
@@ -135,7 +138,7 @@ public class EnemyAIMovementController : MonoBehaviour
             }
             agent.nextPosition = transform.position;
         }
-
+        animator.SetBool(hasInputForStopHash, true);
         SetMovementParameters(false, false, 0f);
     }
 
