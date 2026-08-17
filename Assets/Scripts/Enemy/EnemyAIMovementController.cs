@@ -42,6 +42,7 @@ public class EnemyAIMovementController : MonoBehaviour
     private int hasInputForStopHash;
     private string currentAttackState;
     private int currentAttackLayer;
+    private bool currentAttackWasEntered;
 
     public bool IsOnNavMesh => agent != null && agent.isOnNavMesh;
     public bool HasPath => agent != null && agent.hasPath;
@@ -173,6 +174,7 @@ public class EnemyAIMovementController : MonoBehaviour
 
         currentAttackState = attack.stateName;
         currentAttackLayer = attack.layer;
+        currentAttackWasEntered = false;
         animator.CrossFadeInFixedTime(attack.stateName, attack.crossFadeDuration, attack.layer);
         return true;
     }
@@ -184,11 +186,24 @@ public class EnemyAIMovementController : MonoBehaviour
         }
 
         var stateInfo = animator.GetCurrentAnimatorStateInfo(currentAttackLayer);
-        if (!stateInfo.IsName(currentAttackState)) {
+        if (stateInfo.IsName(currentAttackState)) {
+            currentAttackWasEntered = true;
+            return stateInfo.normalizedTime >= normalizedTime && !animator.IsInTransition(currentAttackLayer);
+        }
+
+        if (animator.IsInTransition(currentAttackLayer)) {
+            var nextStateInfo = animator.GetNextAnimatorStateInfo(currentAttackLayer);
+            if (nextStateInfo.IsName(currentAttackState)) {
+                return false;
+            }
+        }
+
+        if (!currentAttackWasEntered) {
             return false;
         }
 
-        return stateInfo.normalizedTime >= normalizedTime && !animator.IsInTransition(currentAttackLayer);
+        currentAttackState = null;
+        return true;
     }
 
     private void SetMovementParameters(bool hasMoveInput, bool run, float speed)
@@ -197,6 +212,9 @@ public class EnemyAIMovementController : MonoBehaviour
             return;
         }
 
+        if (hasMoveInput) {
+            animator.SetBool(hasInputForStopHash, false);
+        }
         animator.SetBool(hasInputHash, hasMoveInput);
         animator.SetBool(hasMoveInputHash, hasMoveInput);
         animator.SetBool(runHash, run);

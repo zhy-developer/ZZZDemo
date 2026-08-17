@@ -136,18 +136,18 @@ namespace ZZZ
             //QTE倒计时
             TimerManager.Instance.GetRealTimer(3, CancelSwitchSkill);
             //激活UI
-            //UIManager.Instance.switchTimeUI.ActiveImage(SwitchCharacter.Instance.waitingCharacterList[0], SwitchCharacter.Instance.waitingCharacterList[1],3);
-            // CharacterInputSystem.Instance.inputActions.SwitchSkill.L.started += SwitchL;
-            // CharacterInputSystem.Instance.inputActions.SwitchSkill.R.started += SwitchR;
+            UIManager.Instance.switchTimeUI.ActiveImage(SwitchCharacter.Instance.waitingCharacterList[0], SwitchCharacter.Instance.waitingCharacterList[1],3);
+            CharacterInputSystem.Instance.inputActions.SwitchSkill.L.started += SwitchL;
+            CharacterInputSystem.Instance.inputActions.SwitchSkill.R.started += SwitchR;
         }
         protected void CancelSwitchSkill()
         {
             //恢复时间
             CameraHitFeel.Instance.EndSlowTime();
-            //恢复镜头
-            CameraSwitcher.Instance.ActiveSwitchCamera(false);
             //关闭UI
             UIManager.Instance.switchTimeUI.UnActive();
+            //恢复镜头
+            CameraSwitcher.Instance.ActiveSwitchCamera(false);
             //注销输入
             CharacterInputSystem.Instance.inputActions.SwitchSkill.L.started -= SwitchL;
             CharacterInputSystem.Instance.inputActions.SwitchSkill.R.started -= SwitchR;
@@ -177,12 +177,17 @@ namespace ZZZ
             CharacterInputSystem.Instance.inputActions.SwitchSkill.L.started -= SwitchL;
             CharacterInputSystem.Instance.inputActions.SwitchSkill.R.started -= SwitchR;
         }
+
+        /// <summary>
+        /// 支援技
+        /// </summary>
+        /// <param name="characterName"></param>
         public void SwitchSkill(CharacterNameList characterName)
         {
-            //关闭UI
-            UIManager.Instance.switchTimeUI.UnActive();
             //恢复时间
             CameraHitFeel.Instance.EndSlowTime();
+            //关闭UI
+            UIManager.Instance.switchTimeUI.UnActive();
             //结束切人相机
             CameraSwitcher.Instance.ActiveSwitchCamera(false);
             //改技能

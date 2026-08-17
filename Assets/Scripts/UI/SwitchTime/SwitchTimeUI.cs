@@ -7,12 +7,12 @@ using ZZZ;
 
 public class SwitchTimeUI : MonoBehaviour, IUI
 {
-    [SerializeField] private Sprite corinImage;
-    [SerializeField] private Sprite anBiImage;
-    [SerializeField] private Sprite BiLiImage;
+    // [SerializeField] private Sprite corinImage;
+    // [SerializeField] private Sprite anBiImage;
+    // [SerializeField] private Sprite BiLiImage;
 
-    [SerializeField] private Image R_Image;
-    [SerializeField] private Image L_Image;
+    // [SerializeField] private Image R_Image;
+    // [SerializeField] private Image L_Image;
 
     [SerializeField] private TextMeshProUGUI TextMeshPro;
     [field: SerializeField] public float timeLeft { get; set; }
@@ -56,9 +56,9 @@ public class SwitchTimeUI : MonoBehaviour, IUI
         //开始计时
         StartCountDown(time);
 
-        R_Image.sprite = MatchImage(RCharacterName);
+        // R_Image.sprite = MatchImage(RCharacterName);
 
-        L_Image.sprite = MatchImage(LCharacterName);
+        // L_Image.sprite = MatchImage(LCharacterName);
     }
     /// <summary>
     /// 移除显示
@@ -91,22 +91,22 @@ public class SwitchTimeUI : MonoBehaviour, IUI
             gameObject.SetActive(false);
         }
     }
-    /// <summary>
-    /// 切换头像
-    /// </summary>
-    /// <param name="characterName"></param>
-    /// <returns></returns>
-    private Sprite MatchImage(CharacterNameList characterName)
-    {
-        switch (characterName)
-        {
+    // /// <summary>
+    // /// 切换头像
+    // /// </summary>
+    // /// <param name="characterName"></param>
+    // /// <returns></returns>
+    // private Sprite MatchImage(CharacterNameList characterName)
+    // {
+    //     switch (characterName)
+    //     {
                 
-            case CharacterNameList.AnBi:
-                return anBiImage;
+    //         case CharacterNameList.AnBi:
+    //             return anBiImage;
 
-        }
-        return null;
-    }
+    //     }
+    //     return null;
+    // }
     /// <summary>
     /// 初始化倒计时
     /// </summary>
