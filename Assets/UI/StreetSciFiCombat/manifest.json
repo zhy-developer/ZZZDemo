@@ -1,0 +1,98 @@
+{
+  "packName": "Street Sci-Fi Anime Combat UI",
+  "targetEngine": "Unity",
+  "style": "Original high-contrast street sci-fi plus anime action combat UI",
+  "copyrightNote": "Original UI assets. Do not include official logos, characters, or copied game UI.",
+  "generatedPngAtlas": "C:/Users/zhy22/.codex/generated_images/01a03c32-3a04-74f2-a41a-41f42f83f816/call_tx6Jq4HY5SlY5Gm826RtbBz5.png",
+  "svgSources": [
+    "Assets/UI/StreetSciFiCombat/SVG/ui_atlas.svg",
+    "Assets/UI/StreetSciFiCombat/SVG/hud_bars.svg",
+    "Assets/UI/StreetSciFiCombat/SVG/skill_buttons.svg",
+    "Assets/UI/StreetSciFiCombat/SVG/status_icons.svg",
+    "Assets/UI/StreetSciFiCombat/SVG/reticles_feedback.svg",
+    "Assets/UI/StreetSciFiCombat/SVG/minimap_panels.svg"
+  ],
+  "recommendedUnityImport": {
+    "pngTextureType": "Sprite (2D and UI)",
+    "spriteMode": "Multiple for atlases, Single for individual exports",
+    "meshType": "Full Rect for bars and panels",
+    "pixelsPerUnit": 100,
+    "filterMode": "Bilinear for HUD, Point only if you prefer extra-sharp pixel edges",
+    "compression": "None for source UI, High Quality for final builds",
+    "alphaIsTransparency": true
+  },
+  "palette": {
+    "ink": "#061019",
+    "panel": "#08131C",
+    "cyan": "#00EAFF",
+    "yellow": "#FFEA21",
+    "magenta": "#FF207E",
+    "red": "#FF1E35",
+    "hpGreen": "#2CFF86",
+    "white": "#F8FBFF"
+  },
+  "assetGroups": [
+    {
+      "group": "HUD Bars",
+      "file": "hud_bars.svg",
+      "assets": [
+        "player_hp_bar",
+        "enemy_hp_bar",
+        "energy_bar",
+        "shield_bar",
+        "anomaly_bar"
+      ]
+    },
+    {
+      "group": "Skill Buttons",
+      "file": "skill_buttons.svg",
+      "assets": [
+        "normal_attack_button",
+        "special_button",
+        "ultimate_button",
+        "dodge_button",
+        "switch_character_button",
+        "cooldown_overlay",
+        "portrait_frame",
+        "small_hex_button",
+        "pause_button"
+      ]
+    },
+    {
+      "group": "Status Icons",
+      "file": "status_icons.svg",
+      "assets": [
+        "buff_attack_up",
+        "buff_defense_up",
+        "buff_speed_up",
+        "buff_heal",
+        "buff_energy",
+        "debuff_attack_down",
+        "debuff_burn",
+        "debuff_stun",
+        "debuff_anomaly",
+        "debuff_marked"
+      ]
+    },
+    {
+      "group": "Reticles And Feedback",
+      "file": "reticles_feedback.svg",
+      "assets": [
+        "lock_on_reticle",
+        "warning_ring",
+        "combo_counter",
+        "damage_number_plate",
+        "critical_plate",
+        "mission_objective_tag"
+      ]
+    },
+    {
+      "group": "Panels",
+      "file": "minimap_panels.svg",
+      "assets": [
+        "minimap_frame",
+        "pause_panel"
+      ]
+    }
+  ]
+}

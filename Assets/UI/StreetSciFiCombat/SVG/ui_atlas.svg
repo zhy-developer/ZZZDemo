@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2048" height="2048" viewBox="0 0 2048 2048">
+  <defs>
+    <filter id="g" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="4" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <linearGradient id="hp" x1="0" x2="1"><stop stop-color="#2cff86"/><stop offset="1" stop-color="#ffea21"/></linearGradient>
+    <linearGradient id="sp" x1="0" x2="1"><stop stop-color="#ffea21"/><stop offset="1" stop-color="#00eaff"/></linearGradient>
+    <style>
+      .p{fill:#08111a;stroke:#05070c;stroke-width:8;stroke-linejoin:round}
+      .c{fill:none;stroke:#00eaff;stroke-width:5;stroke-linejoin:round;filter:url(#g)}
+      .m{fill:none;stroke:#ff207e;stroke-width:5;stroke-linejoin:round;filter:url(#g)}
+      .y{fill:none;stroke:#ffea21;stroke-width:5;stroke-linejoin:round;filter:url(#g)}
+      .w{fill:#f8fbff}
+      .font{font-family:Impact,Arial Black,sans-serif;font-style:italic;fill:#fff}
+    </style>
+  </defs>
+  <g id="slice_player_hp" transform="translate(64 64)">
+    <path class="p" d="M0 42 L52 0 H660 L722 34 L684 88 H38 Z"/>
+    <path class="c" d="M8 42 L56 8 H650 L708 36 L676 78 H44 Z"/>
+    <path d="M146 30 H610 L640 45 L630 58 H136 Z" fill="#071018"/>
+    <path d="M156 34 H530 L556 45 L546 54 H148 Z" fill="url(#hp)"/>
+    <text class="font" x="62" y="62" font-size="36">HP</text>
+  </g>
+  <g id="slice_enemy_hp" transform="translate(64 200)">
+    <path class="p" d="M0 36 L44 0 H660 L720 34 L688 84 H36 Z"/>
+    <path class="m" d="M8 36 L48 8 H650 L706 35 L680 74 H42 Z"/>
+    <path d="M150 28 H608 L636 43 L626 56 H140 Z" fill="#071018"/>
+    <path d="M158 32 H542 L570 43 L560 52 H150 Z" fill="#ff207e"/>
+    <text class="font" x="62" y="58" font-size="34">ENEMY</text>
+  </g>
+  <g id="slice_energy" transform="translate(64 336)">
+    <path class="p" d="M0 34 L36 0 H560 L612 30 L588 74 H30 Z"/>
+    <path class="c" d="M8 34 L40 8 H552 L600 31 L580 64 H36 Z"/>
+    <path d="M126 28 H520 L548 42 L538 54 H118 Z" fill="#071018"/>
+    <path d="M136 32 H460 L486 42 L476 50 H128 Z" fill="url(#sp)"/>
+    <text class="font" x="58" y="55" font-size="33">SP</text>
+  </g>
+  <g id="slice_skill_buttons" transform="translate(64 500)">
+    <g id="attack"><circle cx="96" cy="96" r="84" class="p"/><circle cx="96" cy="96" r="72" class="c"/><path class="w" d="M56 130 L126 42 L140 58 L78 144 Z"/></g>
+    <g id="special" transform="translate(230 0)"><circle cx="96" cy="96" r="84" class="p"/><circle cx="96" cy="96" r="72" class="y"/><path fill="#ffea21" d="M96 32 L113 78 L162 78 L122 108 L138 154 L96 126 L54 154 L70 108 L30 78 L79 78 Z"/></g>
+    <g id="ultimate" transform="translate(460 -18)"><circle cx="116" cy="116" r="104" class="p"/><circle cx="116" cy="116" r="90" class="y"/><circle cx="116" cy="116" r="78" class="m"/><path fill="#ffea21" d="M116 42 L136 96 L192 96 L148 128 L164 184 L116 150 L68 184 L84 128 L40 96 L96 96 Z"/></g>
+    <g id="dodge" transform="translate(735 0)"><circle cx="96" cy="96" r="84" class="p"/><circle cx="96" cy="96" r="72" class="c"/><path class="w" d="M103 39 A22 22 0 1 1 78 61 A22 22 0 0 1 103 39 ZM82 90 L120 80 L146 106 L134 120 L114 104 L102 150 L82 150 L90 114 L62 130 L52 115 Z"/></g>
+  </g>
+  <g id="slice_status_icons" transform="translate(64 790)">
+    <g><path class="p" d="M26 0 H126 L152 26 V126 L126 152 H26 L0 126 V26 Z"/><path class="c" d="M36 12 H116 L140 36 V116 L116 140 H36 L12 116 V36 Z"/><path class="w" d="M76 112 L104 44 L118 57 L90 126 Z"/><path fill="#32ff84" d="M118 18 H144 V44 L135 35 L116 54 L108 46 L127 27 Z"/></g>
+    <g transform="translate(190 0)"><path class="p" d="M26 0 H126 L152 26 V126 L126 152 H26 L0 126 V26 Z"/><path class="c" d="M36 12 H116 L140 36 V116 L116 140 H36 L12 116 V36 Z"/><path fill="#00eaff" d="M76 24 L118 44 L106 108 L76 134 L46 108 L34 44 Z"/></g>
+    <g transform="translate(380 0)"><path class="p" d="M26 0 H126 L152 26 V126 L126 152 H26 L0 126 V26 Z"/><path class="m" d="M36 12 H116 L140 36 V116 L116 140 H36 L12 116 V36 Z"/><path fill="#ff244d" d="M82 22 C110 54 72 62 106 91 C132 116 106 143 76 136 C48 130 38 106 54 82 C64 66 70 50 64 34 C74 42 80 48 82 22 Z"/></g>
+    <g transform="translate(570 0)"><path class="p" d="M26 0 H126 L152 26 V126 L126 152 H26 L0 126 V26 Z"/><path class="m" d="M36 12 H116 L140 36 V116 L116 140 H36 L12 116 V36 Z"/><path fill="#ff207e" d="M76 24 L132 128 H20 Z"/><rect x="69" y="58" width="14" height="42" fill="#07111a"/><rect x="69" y="108" width="14" height="14" fill="#07111a"/></g>
+  </g>
+  <g id="slice_feedback" transform="translate(64 1055)">
+    <g><path d="M0 80 L70 22 L100 0 H360 L444 70 L326 146 H52 Z" fill="#09050a"/><path d="M18 82 L82 32 L108 12 H348 L426 70 L318 132 H60 Z" fill="none" stroke="#ff1f35" stroke-width="7"/><text class="font" x="56" y="70" font-size="54" fill="#ffea21">CRITICAL</text><text class="font" x="94" y="132" font-size="84" fill="#ffea21">8497</text></g>
+    <g transform="translate(540 -20)"><path d="M0 80 L60 18 H270 L330 70 L284 204 H54 Z" fill="#05070c"/><path d="M8 82 L62 28 H260 L318 72 L276 192 H60 Z" fill="none" stroke="#ff207e" stroke-width="8"/><text class="font" x="45" y="70" font-size="38">COMBO</text><text class="font" x="62" y="166" font-size="108" fill="#ffea21">47</text><text class="font" x="202" y="162" font-size="38">HITS</text></g>
+  </g>
+  <g id="slice_reticles" transform="translate(64 1390)">
+    <g><circle cx="140" cy="140" r="70" class="c"/><circle cx="140" cy="140" r="20" class="c"/><path class="c" d="M140 24 V72 M140 208 V256 M24 140 H72 M208 140 H256"/></g>
+    <g transform="translate(340 0)"><circle cx="140" cy="140" r="92" fill="none" stroke="#ff1e35" stroke-width="9" stroke-linecap="round" filter="url(#g)"/><path fill="#ff1e35" d="M140 58 L213 194 H67 Z"/><rect x="131" y="102" width="18" height="54" fill="#05070c"/><rect x="131" y="166" width="18" height="18" fill="#05070c"/></g>
+  </g>
+  <g id="slice_minimap" transform="translate(1030 64)">
+    <path class="p" d="M0 88 L88 0 H502 L590 76 V420 L510 500 H72 L0 430 Z"/>
+    <path class="c" d="M18 92 L94 18 H494 L572 80 V410 L502 482 H80 L18 422 Z"/>
+    <path d="M72 90 L130 42 H462 L520 96 V382 L470 432 H124 L72 380 Z" fill="#0a2638"/>
+    <path class="y" d="M300 245 L328 316 L286 294 L244 316 Z"/>
+  </g>
+</svg>

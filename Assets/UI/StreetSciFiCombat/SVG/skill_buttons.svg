@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+  <defs>
+    <filter id="soft-glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <linearGradient id="button-blue" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#06111b"/>
+      <stop offset="1" stop-color="#123853"/>
+    </linearGradient>
+    <linearGradient id="button-gold" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#16110a"/>
+      <stop offset="1" stop-color="#5c3b00"/>
+    </linearGradient>
+    <linearGradient id="button-red" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#180910"/>
+      <stop offset="1" stop-color="#5a0b2a"/>
+    </linearGradient>
+    <style>
+      .base{fill:url(#button-blue);stroke:#061019;stroke-width:8;stroke-linejoin:round}
+      .cyan{fill:none;stroke:#00e6ff;stroke-width:5;stroke-linejoin:round;filter:url(#soft-glow)}
+      .gold{fill:none;stroke:#ffdf20;stroke-width:5;stroke-linejoin:round;filter:url(#soft-glow)}
+      .red{fill:none;stroke:#ff2765;stroke-width:5;stroke-linejoin:round;filter:url(#soft-glow)}
+      .icon{fill:#f6fbff}
+      .accent{fill:#00f6ff}
+      .warn{fill:#ff245d}
+    </style>
+  </defs>
+
+  <g id="normal_attack_button" transform="translate(105 100)">
+    <circle cx="95" cy="95" r="86" class="base"/>
+    <circle cx="95" cy="95" r="74" class="cyan"/>
+    <path class="icon" d="M54 130 L124 41 L140 57 L77 142 Z"/>
+    <path class="accent" d="M126 42 L154 30 L144 60 Z"/>
+    <path class="accent" d="M48 138 L76 126 L86 151 Z"/>
+  </g>
+
+  <g id="special_button" transform="translate(345 100)">
+    <circle cx="95" cy="95" r="86" fill="url(#button-gold)" stroke="#061019" stroke-width="8"/>
+    <circle cx="95" cy="95" r="74" class="gold"/>
+    <path class="icon" d="M96 34 L111 79 L158 79 L120 106 L135 151 L96 123 L57 151 L72 106 L34 79 L81 79 Z"/>
+    <circle cx="96" cy="96" r="22" fill="#ff2a72"/>
+  </g>
+
+  <g id="ultimate_button" transform="translate(585 80)">
+    <circle cx="120" cy="120" r="110" fill="url(#button-red)" stroke="#061019" stroke-width="10"/>
+    <circle cx="120" cy="120" r="96" class="gold"/>
+    <circle cx="120" cy="120" r="82" class="red"/>
+    <path class="icon" d="M120 38 L137 92 L194 92 L148 124 L166 178 L120 144 L74 178 L92 124 L46 92 L103 92 Z"/>
+    <path fill="#ffef21" d="M120 67 L130 101 L166 101 L137 121 L148 154 L120 133 L92 154 L103 121 L74 101 L110 101 Z"/>
+  </g>
+
+  <g id="dodge_button" transform="translate(890 100)">
+    <circle cx="95" cy="95" r="86" class="base"/>
+    <circle cx="95" cy="95" r="74" class="cyan"/>
+    <path class="icon" d="M102 39 A22 22 0 1 1 78 61 A22 22 0 0 1 102 39 ZM82 89 L118 80 L145 105 L134 118 L113 103 L102 150 L82 150 L89 113 L62 130 L52 114 Z"/>
+    <path class="accent" d="M138 52 C172 68 174 112 144 135 L136 120 C156 102 154 77 132 65 Z"/>
+  </g>
+
+  <g id="switch_character_button" transform="translate(1130 100)">
+    <path d="M22 76 L76 22 H178 L228 72 L178 178 H76 L22 128 Z" fill="url(#button-blue)" stroke="#061019" stroke-width="8" stroke-linejoin="round"/>
+    <path d="M36 78 L82 34 H172 L214 74 L172 166 H82 L36 124 Z" class="cyan"/>
+    <path class="icon" d="M86 72 H142 L126 54 L138 42 L178 82 L138 122 L126 110 L142 92 H86 ZM164 132 H108 L124 150 L112 162 L72 122 L112 82 L124 94 L108 112 H164 Z"/>
+  </g>
+
+  <g id="cooldown_overlay" transform="translate(105 380)">
+    <circle cx="95" cy="95" r="86" fill="#07111a" opacity="0.72" stroke="#0ee8ff" stroke-width="5"/>
+    <path d="M95 95 L95 15 A80 80 0 0 1 164 135 Z" fill="#000" opacity="0.58"/>
+    <text x="95" y="111" text-anchor="middle" font-family="Arial Black,Arial,sans-serif" font-size="46" fill="#fff">3.2</text>
+  </g>
+
+  <g id="portrait_frame" transform="translate(345 360)">
+    <path d="M0 72 L70 0 H212 L270 58 L214 270 H50 L0 220 Z" fill="#071019" stroke="#051017" stroke-width="10" stroke-linejoin="round"/>
+    <path d="M15 76 L76 15 H205 L254 62 L204 255 H58 L15 214 Z" fill="none" stroke="#00e6ff" stroke-width="6" stroke-linejoin="round" filter="url(#soft-glow)"/>
+    <path d="M188 220 L252 158 L230 254 H166 Z" fill="#ffe429"/>
+    <path d="M45 205 H170 L155 236 H35 Z" fill="#ff2379"/>
+  </g>
+
+  <g id="small_hex_button" transform="translate(720 400)">
+    <path d="M42 0 H118 L160 42 V118 L118 160 H42 L0 118 V42 Z" fill="url(#button-blue)" stroke="#061019" stroke-width="8" stroke-linejoin="round"/>
+    <path d="M50 14 H110 L146 50 V110 L110 146 H50 L14 110 V50 Z" class="cyan"/>
+    <path class="icon" d="M80 39 L93 66 L122 70 L101 91 L106 120 L80 106 L54 120 L59 91 L38 70 L67 66 Z"/>
+  </g>
+
+  <g id="pause_button" transform="translate(960 390)">
+    <path d="M42 0 H118 L160 42 V118 L118 160 H42 L0 118 V42 Z" fill="url(#button-blue)" stroke="#061019" stroke-width="8" stroke-linejoin="round"/>
+    <path d="M50 14 H110 L146 50 V110 L110 146 H50 L14 110 V50 Z" class="cyan"/>
+    <rect x="57" y="48" width="20" height="64" fill="#fff"/>
+    <rect x="86" y="48" width="20" height="64" fill="#fff"/>
+  </g>
+</svg>
