@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System;
 using Tools;
 
-public class GameEventsManager : singleton<GameEventsManager>
+public class GameEventsManager : Singleton<GameEventsManager>
 {
     private interface IEventface
     {

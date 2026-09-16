@@ -28,7 +28,16 @@ public class EnemyAIMovementController : MonoBehaviour
     [Header("Movement")]
     [SerializeField] private float rotationSpeed = 540f;
     [SerializeField] private float destinationRefreshDistance = 0.25f;
-    [SerializeField] private float arriveVelocityThreshold = 0.05f;
+    [Header("Chase Stop Animation")]
+    [SerializeField] private string chaseStopState = "Base Layer.Movement.急停.Run_End";
+    [SerializeField] private string chaseIdleState = "Base Layer.Idle";
+    [SerializeField] private int chaseStopLayer = 0;
+    [SerializeField] private float chaseStopCrossFadeDuration = 0.1f;
+    private bool chaseStopWasEntered;
+    private bool chaseStopPlayedFully;
+
+    public bool LastMoveFailed { get; private set; }
+    public bool CanAnimate => animator != null && animator.isActiveAndEnabled;
 
     [Header("Attacks")]
     [SerializeField]
@@ -83,6 +92,7 @@ public class EnemyAIMovementController : MonoBehaviour
     public bool MoveTo(GameObject target, float stoppingDistance, bool run)
     {
         if (target == null) {
+            LastMoveFailed = true;
             StopMovement();
             return false;
         }
@@ -92,25 +102,42 @@ public class EnemyAIMovementController : MonoBehaviour
 
     public bool MoveTo(Vector3 destination, float stoppingDistance, bool run)
     {
-        if (agent == null || animator == null || !agent.enabled || !agent.isOnNavMesh) {
+        LastMoveFailed = false;
+        if (agent == null || !CanAnimate || !agent.isActiveAndEnabled || !agent.isOnNavMesh) {
+            LastMoveFailed = true;
             StopMovement();
             return false;
         }
 
         agent.stoppingDistance = stoppingDistance;
-        agent.isStopped = false;
+        var offset = destination - transform.position;
+        offset.y = 0f;
+        if (offset.magnitude <= stoppingDistance) {
+            StopMovement(false);
+            return true;
+        }
 
-        if (!agent.hasPath || Vector3.Distance(agent.destination, destination) > destinationRefreshDistance) {
+        agent.isStopped = false;
+        if (!agent.pathPending && (!agent.hasPath || Vector3.Distance(agent.destination, destination) > destinationRefreshDistance)) {
             if (!agent.SetDestination(destination)) {
+                LastMoveFailed = true;
                 StopMovement();
                 return false;
             }
         }
 
-        var arrived = !agent.pathPending &&
-                      agent.remainingDistance <= stoppingDistance &&
-                      agent.desiredVelocity.sqrMagnitude <= arriveVelocityThreshold * arriveVelocityThreshold;
-        if (arrived) {
+        // Never mistake an invalid/pending path's zero remaining distance for arrival.
+        if (!agent.pathPending && (!agent.hasPath || agent.pathStatus == NavMeshPathStatus.PathInvalid)) {
+            LastMoveFailed = true;
+            StopMovement();
+            return false;
+        }
+        if (!agent.pathPending && agent.hasPath && agent.remainingDistance <= stoppingDistance) {
+            if (agent.pathStatus != NavMeshPathStatus.PathComplete) {
+                LastMoveFailed = true;
+                StopMovement();
+                return false;
+            }
             StopMovement(false);
             return true;
         }
@@ -121,15 +148,47 @@ public class EnemyAIMovementController : MonoBehaviour
             steeringDirection = agent.desiredVelocity;
             steeringDirection.y = 0f;
         }
-
         if (steeringDirection.sqrMagnitude > 0.01f) {
             RotateTowards(steeringDirection.normalized);
         }
 
-        SetMovementParameters(true, run, agent.desiredVelocity.magnitude);
+        SetMovementParameters(true, run);
         return false;
     }
 
+    public bool BeginChaseStop()
+    {
+        chaseStopWasEntered = false;
+        chaseStopPlayedFully = false;
+        if (!CanAnimate || string.IsNullOrEmpty(chaseStopState) || string.IsNullOrEmpty(chaseIdleState) ||
+            !animator.HasState(chaseStopLayer, Animator.StringToHash(chaseStopState)) ||
+            !animator.HasState(chaseStopLayer, Animator.StringToHash(chaseIdleState))) {
+            Debug.LogWarning("Chase stop requires valid stop and Idle animation states.", this);
+            return false;
+        }
+
+        StopMovement(false);
+        animator.SetFloat(movementHash, 0f);
+        animator.CrossFadeInFixedTime(chaseStopState, chaseStopCrossFadeDuration, chaseStopLayer, 0f);
+        return true;
+    }
+
+    public bool IsChaseStopFinished()
+    {
+        if (!CanAnimate) {
+            return false;
+        }
+        var state = animator.GetCurrentAnimatorStateInfo(chaseStopLayer);
+        if (state.IsName(chaseStopState)) {
+            chaseStopWasEntered = true;
+            chaseStopPlayedFully |= state.normalizedTime >= 1f;
+            return false;
+        }
+
+        // Idle before the crossfade starts is not proof that Run_End has finished.
+        return chaseStopWasEntered && chaseStopPlayedFully && state.IsName(chaseIdleState) &&
+               !animator.IsInTransition(chaseStopLayer);
+    }
     public void StopMovement(bool clearPath = true)
     {
         if (agent != null && agent.enabled && agent.isOnNavMesh) {
@@ -139,8 +198,10 @@ public class EnemyAIMovementController : MonoBehaviour
             }
             agent.nextPosition = transform.position;
         }
-        animator.SetBool(hasInputForStopHash, true);
-        SetMovementParameters(false, false, 0f);
+        if (animator != null) {
+            animator.SetBool(hasInputForStopHash, true);
+        }
+        SetMovementParameters(false, false);
     }
 
     public bool FaceTarget(GameObject target, float angleTolerance)
@@ -206,7 +267,7 @@ public class EnemyAIMovementController : MonoBehaviour
         return true;
     }
 
-    private void SetMovementParameters(bool hasMoveInput, bool run, float speed)
+    private void SetMovementParameters(bool hasMoveInput, bool run)
     {
         if (animator == null) {
             return;
@@ -218,7 +279,7 @@ public class EnemyAIMovementController : MonoBehaviour
         animator.SetBool(hasInputHash, hasMoveInput);
         animator.SetBool(hasMoveInputHash, hasMoveInput);
         animator.SetBool(runHash, run);
-        animator.SetFloat(movementHash, hasMoveInput ? Mathf.Max(1f, speed) : 0f, movementDampTime, Time.deltaTime);
+        animator.SetFloat(movementHash, hasMoveInput ? (run ? 2f : 1f) : 0f, movementDampTime, Time.deltaTime);
     }
 
     private void RotateTowards(Vector3 direction)

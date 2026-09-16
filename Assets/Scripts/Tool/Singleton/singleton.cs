@@ -4,7 +4,7 @@
 /// 纯 C# 单例基类。
 /// 适用于不依赖 Unity 生命周期的管理器或服务对象。
 /// </summary>
-public abstract class singleton<T> where T : class, new()
+public abstract class Singleton<T> where T : class, new()
 {
     private static T _instance;
     private static readonly object _lock = new object();
@@ -24,7 +24,7 @@ public abstract class singleton<T> where T : class, new()
                     if (_instance == null)
                     {
                         _instance = new T();
-                        (_instance as singleton<T>)?.Initialize();
+                        (_instance as Singleton<T>)?.Initialize();
                     }
                 }
             }
@@ -36,7 +36,7 @@ public abstract class singleton<T> where T : class, new()
     /// <summary>
     /// 防止外部直接构造多个实例。
     /// </summary>
-    protected singleton()
+    protected Singleton()
     {
         if (_instance != null)
         {
@@ -58,7 +58,7 @@ public abstract class singleton<T> where T : class, new()
     {
         if (_instance != null)
         {
-            (_instance as singleton<T>)?.OnRelease();
+            (_instance as Singleton<T>)?.OnRelease();
             _instance = null;
         }
     }

@@ -5,7 +5,7 @@ using static UnityEngine.Rendering.DebugUI;
 
 public class CharacterHealthBase : MonoBehaviour
 {
-    public StateBarUI stateBarUI;
+    //public StateBarUI stateBarUI;
     [SerializeField] private float currentHP;
     [SerializeField] private float currentStrength;
     [SerializeField] private float currentDefenseValue;
@@ -119,7 +119,7 @@ public class CharacterHealthBase : MonoBehaviour
         if (value > 0)
         {
             healthInfo.onDead.Value = false;
-            stateBarUI.UpdateBlood(currentHP / healthInfo.maxHP);
+            //stateBarUI.UpdateBlood(currentHP / healthInfo.maxHP);
             return;
         }
         healthInfo.onDead.Value = true;

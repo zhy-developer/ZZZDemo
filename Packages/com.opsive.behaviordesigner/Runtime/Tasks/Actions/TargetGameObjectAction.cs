@@ -40,7 +40,8 @@ namespace Opsive.BehaviorDesigner.Runtime.Tasks.Actions
         /// </summary>
         protected virtual void InitializeTarget()
         {
-            m_ResolvedGameObject = (m_TargetGameObject == null || m_TargetGameObject.Value == null || m_TargetGameObject.Value.Equals(null)) ? m_GameObject : m_TargetGameObject.Value;
+            // Empty scope may retain a serialized value; it must still resolve to the tree owner.
+            m_ResolvedGameObject = (m_TargetGameObject == null || m_TargetGameObject.Scope == SharedVariable.SharingScope.Empty || m_TargetGameObject.Value == null || m_TargetGameObject.Value.Equals(null)) ? m_GameObject : m_TargetGameObject.Value;
             m_ResolvedTransform = m_ResolvedGameObject != null ? m_ResolvedGameObject.transform : null;
         }
 

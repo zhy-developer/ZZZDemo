@@ -30,7 +30,10 @@ public class CameraHitFeel : MonoSingleton<CameraHitFeel>
     Coroutine PauseFrameCoroutine;
     Coroutine SlowMotionCoroutine;
 
-
+    /// <summary>
+    /// 顿帧方法
+    /// </summary>
+    /// <param name="time"></param>
     public void PF(float time)
     {
         if (time == 0) { Debug.Log("顿帧时间为0退出");return; }

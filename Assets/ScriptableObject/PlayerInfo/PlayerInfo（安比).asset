@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ba9a50ad2bfec3c499883961a98560a2, type: 3}
-  m_Name: "Player\uFF08\u661F\u89C1\u96C5\uFF09"
+  m_Name: "PlayerInfo\uFF08\u5B89\u6BD4)"
   m_EditorClassIdentifier: 
   <movementData>k__BackingField:
     <SidewaysCameraRecenteringData>k__BackingField:
@@ -60,12 +60,12 @@ MonoBehaviour:
     <comboRotaionTime>k__BackingField: 0.05
   <ComboData>k__BackingField:
     <comboData>k__BackingField:
-      <lightCombo>k__BackingField: {fileID: 11400000, guid: 6c9a63af5c7aae746b82775a2f40a128, type: 2}
+      <lightCombo>k__BackingField: {fileID: 0}
       <heavyCombo>k__BackingField: {fileID: 0}
       <executeCombo>k__BackingField: {fileID: 0}
-      <skillCombo>k__BackingField: {fileID: 11400000, guid: f9a8cee6c95a4ea488c42972151b2903, type: 2}
-      <finishSkillCombo>k__BackingField: {fileID: 11400000, guid: 4a54dc7b2da4b1845b8530b8ce5ad285, type: 2}
-      <switchSkill>k__BackingField: {fileID: 11400000, guid: 80d389acc5cdbf140ba4b44aa2dfe80b, type: 2}
+      <skillCombo>k__BackingField: {fileID: 0}
+      <finishSkillCombo>k__BackingField: {fileID: 0}
+      <switchSkill>k__BackingField: {fileID: 0}
     <playerEnemyDetectionData>k__BackingField:
       <detectionRadius>k__BackingField: 3
       <detectionLength>k__BackingField: 3

@@ -38,11 +38,9 @@ namespace ZZZ
             }
            
         }
-         public virtual void Enter()
+        public virtual void Enter()
         {    
             AddInputActionCallBacks();
-            //获取当前对象类型的名称
-            Debug.Log(movementStateMachine.player.characterName+"的状态为" + GetType().Name);
         }
 
        
@@ -99,9 +97,6 @@ namespace ZZZ
             CharacterInputSystem.Instance.inputActions.Player.Movement.performed += OnMovementPerformed;
             CharacterInputSystem.Instance.inputActions.Player.CameraLook.started += OnMouseMovementStarted;
         }
-
-       
-
         protected virtual void RemoveInputActionCallBacks()
         {
             CharacterInputSystem.Instance.inputActions.Player.Walk.started -= OnWalkStart;

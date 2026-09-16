@@ -38,6 +38,8 @@ namespace ZZZ
         {
             currentState.Value?.Update();
         }
+
+
         /// <summary>
         /// 执行动画事件的接口API
         /// </summary>
@@ -45,6 +47,8 @@ namespace ZZZ
         {
             currentState.Value?.OnAnimationTranslateEvent(translateState);
         }
+
+
         public void OnAnimationExitEvent() 
         {
             currentState.Value?.OnAnimationExitEvent();
