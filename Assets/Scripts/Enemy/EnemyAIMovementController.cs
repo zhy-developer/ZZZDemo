@@ -26,6 +26,7 @@ public class EnemyAIMovementController : MonoBehaviour
     [SerializeField] private float movementDampTime = 0.15f;
 
     [Header("Movement")]
+    [SerializeField] private bool agentDrivesPosition = true;
     [SerializeField] private float rotationSpeed = 540f;
     [SerializeField] private float destinationRefreshDistance = 0.25f;
     [Header("Chase Stop Animation")]
@@ -35,14 +36,51 @@ public class EnemyAIMovementController : MonoBehaviour
     [SerializeField] private float chaseStopCrossFadeDuration = 0.1f;
     private bool chaseStopWasEntered;
     private bool chaseStopPlayedFully;
+    private bool chaseStopOriginalApplyRootMotion;
+    private bool chaseStopRootMotionOverridden;
 
     public bool LastMoveFailed { get; private set; }
     public bool CanAnimate => animator != null && animator.isActiveAndEnabled;
+    public int HitReactionVersion { get; private set; }
+    private int lastHitReactionFrame = -1;
+
+    // Include the incoming state: CrossFade does not replace the current state immediately.
+    public bool IsReactingToHit
+    {
+        get {
+            if (lastHitReactionFrame == Time.frameCount) {
+                return true;
+            }
+            if (!CanAnimate) {
+                return false;
+            }
+            var current = animator.GetCurrentAnimatorStateInfo(0);
+            if (current.IsTag("Hit") || current.IsTag("Parry")) {
+                return true;
+            }
+            if (!animator.IsInTransition(0)) {
+                return false;
+            }
+            var next = animator.GetNextAnimatorStateInfo(0);
+            return next.IsTag("Hit") || next.IsTag("Parry");
+        }
+    }
+
+    public bool CanAct => CanAnimate && (health == null || !health.IsDead) && !IsReactingToHit;
+
+    public void NotifyHitReaction()
+    {
+        // Remember the interruption even if the tree ticks after the reaction has ended.
+        HitReactionVersion++;
+        lastHitReactionFrame = Time.frameCount;
+        StopMovement();
+    }
 
     [Header("Attacks")]
     [SerializeField]
     private AttackState[] attackStates = {};
 
+    private CharacterHealthBase health;
     private int movementHash;
     private int hasInputHash;
     private int hasMoveInputHash;
@@ -59,6 +97,7 @@ public class EnemyAIMovementController : MonoBehaviour
 
     private void Awake()
     {
+        health = GetComponent<CharacterHealthBase>();
         if (agent == null) {
             agent = GetComponent<NavMeshAgent>();
         }
@@ -74,9 +113,9 @@ public class EnemyAIMovementController : MonoBehaviour
         hasInputForStopHash = Animator.StringToHash(hasInputForStopParameter);
         
         if (agent != null) {
-            agent.updatePosition = false;
+            agent.updatePosition = agentDrivesPosition;
             agent.updateRotation = false;
-            if (agent.isOnNavMesh) {
+            if (!agentDrivesPosition && agent.isOnNavMesh) {
                 agent.nextPosition = transform.position;
             }
         }
@@ -84,14 +123,15 @@ public class EnemyAIMovementController : MonoBehaviour
 
     private void LateUpdate()
     {
-        if (agent != null && agent.enabled && agent.isOnNavMesh) {
+        if (agent != null && !agent.updatePosition && agent.enabled && agent.isOnNavMesh) {
             agent.nextPosition = transform.position;
         }
     }
 
     public bool MoveTo(GameObject target, float stoppingDistance, bool run)
     {
-        if (target == null) {
+        if (!CanAct || target == null)
+        {
             LastMoveFailed = true;
             StopMovement();
             return false;
@@ -103,8 +143,9 @@ public class EnemyAIMovementController : MonoBehaviour
     public bool MoveTo(Vector3 destination, float stoppingDistance, bool run)
     {
         LastMoveFailed = false;
-        if (agent == null || !CanAnimate || !agent.isActiveAndEnabled || !agent.isOnNavMesh) {
+        if (!CanAct || agent == null || !agent.isActiveAndEnabled || !agent.isOnNavMesh) {
             LastMoveFailed = true;
+            DeLogger.LogErrorTrace("移动条件不满足");
             StopMovement();
             return false;
         }
@@ -120,18 +161,26 @@ public class EnemyAIMovementController : MonoBehaviour
         agent.isStopped = false;
         if (!agent.pathPending && (!agent.hasPath || Vector3.Distance(agent.destination, destination) > destinationRefreshDistance)) {
             if (!agent.SetDestination(destination)) {
+                DeLogger.LogErrorTrace("没有设置Destination");
                 LastMoveFailed = true;
                 StopMovement();
                 return false;
             }
         }
 
-        // Never mistake an invalid/pending path's zero remaining distance for arrival.
-        if (!agent.pathPending && (!agent.hasPath || agent.pathStatus == NavMeshPathStatus.PathInvalid)) {
+        // SetDestination can succeed before Unity has produced a path on this frame.
+        if (!agent.pathPending && agent.pathStatus == NavMeshPathStatus.PathInvalid) {
+            DeLogger.LogErrorTrace("路径无效");
             LastMoveFailed = true;
             StopMovement();
             return false;
         }
+
+        if (!agent.pathPending && !agent.hasPath) {
+            SetMovementParameters(true, run);
+            return false;
+        }
+
         if (!agent.pathPending && agent.hasPath && agent.remainingDistance <= stoppingDistance) {
             if (agent.pathStatus != NavMeshPathStatus.PathComplete) {
                 LastMoveFailed = true;
@@ -158,6 +207,11 @@ public class EnemyAIMovementController : MonoBehaviour
 
     public bool BeginChaseStop()
     {
+        if (!CanAct) {
+            StopMovement();
+            return false;
+        }
+        RestoreChaseStopRootMotion();
         chaseStopWasEntered = false;
         chaseStopPlayedFully = false;
         if (!CanAnimate || string.IsNullOrEmpty(chaseStopState) || string.IsNullOrEmpty(chaseIdleState) ||
@@ -168,6 +222,7 @@ public class EnemyAIMovementController : MonoBehaviour
         }
 
         StopMovement(false);
+        DisableChaseStopRootMotion();
         animator.SetFloat(movementHash, 0f);
         animator.CrossFadeInFixedTime(chaseStopState, chaseStopCrossFadeDuration, chaseStopLayer, 0f);
         return true;
@@ -186,11 +241,37 @@ public class EnemyAIMovementController : MonoBehaviour
         }
 
         // Idle before the crossfade starts is not proof that Run_End has finished.
-        return chaseStopWasEntered && chaseStopPlayedFully && state.IsName(chaseIdleState) &&
-               !animator.IsInTransition(chaseStopLayer);
+        var finished = chaseStopWasEntered && chaseStopPlayedFully && state.IsName(chaseIdleState) &&
+                       !animator.IsInTransition(chaseStopLayer);
+        if (finished) {
+            RestoreChaseStopRootMotion();
+        }
+        return finished;
+    }
+
+    private void DisableChaseStopRootMotion()
+    {
+        if (animator == null || chaseStopRootMotionOverridden) {
+            return;
+        }
+
+        chaseStopOriginalApplyRootMotion = animator.applyRootMotion;
+        animator.applyRootMotion = false;
+        chaseStopRootMotionOverridden = true;
+    }
+
+    private void RestoreChaseStopRootMotion()
+    {
+        if (animator == null || !chaseStopRootMotionOverridden) {
+            return;
+        }
+
+        animator.applyRootMotion = chaseStopOriginalApplyRootMotion;
+        chaseStopRootMotionOverridden = false;
     }
     public void StopMovement(bool clearPath = true)
     {
+        RestoreChaseStopRootMotion();
         if (agent != null && agent.enabled && agent.isOnNavMesh) {
             agent.isStopped = true;
             if (clearPath) {
@@ -206,7 +287,7 @@ public class EnemyAIMovementController : MonoBehaviour
 
     public bool FaceTarget(GameObject target, float angleTolerance)
     {
-        if (target == null) {
+        if (!CanAct || target == null) {
             return false;
         }
 
@@ -222,7 +303,7 @@ public class EnemyAIMovementController : MonoBehaviour
 
     public bool PlayRandomAttack()
     {
-        if (animator == null || attackStates == null || attackStates.Length == 0) {
+        if (!CanAct || attackStates == null || attackStates.Length == 0) {
             return false;
         }
 

@@ -60,17 +60,13 @@ public class CharacterInputSystem : MonoSingleton<CharacterInputSystem>
     {
         get=>inputActions.Player.Continue_Atk.phase==InputActionPhase.Performed;
     }
-    public bool Execute
-    { 
-        get => inputActions.Player.Execute.triggered;
-    }
     public bool SwitchCharacter
     { 
-     get => inputActions.Player.SwitchCharacter.triggered;
+        get => inputActions.Player.SwitchCharacter.triggered;
     }
     public bool Skill
     { 
-    get => inputActions.Player.Skill.triggered;
+        get => inputActions.Player.Skill.triggered;
     }
     public bool FinishSkill
     {

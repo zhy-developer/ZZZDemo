@@ -52,15 +52,6 @@
                     "initialStateCheck": false
                 },
                 {
-                    "name": "Execute",
-                    "type": "Button",
-                    "id": "367855b1-31fc-4bc1-a84f-431feb16c737",
-                    "expectedControlType": "",
-                    "processors": "",
-                    "interactions": "",
-                    "initialStateCheck": false
-                },
-                {
                     "name": "SwitchCharacter",
                     "type": "Button",
                     "id": "4f2b318f-9fbf-4c1d-90df-15ff85a5a27b",
@@ -239,17 +230,6 @@
                     "processors": "",
                     "groups": "",
                     "action": "Jump",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "5d189eee-b47a-4bd4-998c-287ca0434cfc",
-                    "path": "<Keyboard>/e",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "Execute",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },

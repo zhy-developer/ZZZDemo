@@ -9,7 +9,6 @@ namespace ZZZ
         public Transform cameraTransform { get; set; }
 
         public Vector3 detectionDir { get; set; }
-
         public Vector3 detectionOrigin { get; set; }
         public ComboContainerData currentCombo { get; set; }
         public ComboData currentSkill { get; set; }

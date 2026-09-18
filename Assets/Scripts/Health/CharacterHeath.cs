@@ -12,6 +12,8 @@ public class CharacterHeath : CharacterHealthBase
     protected override void CharacterHitAction(float damage, string hitName, string parryName)
     {
         base.CharacterHitAction(damage, hitName, parryName);
+        // Abort the AI action before its animation is replaced by Hit or Parry.
+        GetComponent<EnemyAIMovementController>()?.NotifyHitReaction();
         if (healthInfo.hasStrength.Value)//格挡
         {
             healthInfo.TakeStrength(damage);

@@ -14,6 +14,7 @@ public class FaceTarget : TargetGameObjectAction
     [SerializeField] private SharedVariable<float> m_AngleTolerance = 5f;
 
     private EnemyAIMovementController movementController;
+    private int hitReactionVersion;
 
     protected override void InitializeTarget()
     {
@@ -21,9 +22,19 @@ public class FaceTarget : TargetGameObjectAction
         movementController = m_ResolvedGameObject != null ? m_ResolvedGameObject.GetComponent<EnemyAIMovementController>() : null;
     }
 
+    public override void OnStart()
+    {
+        hitReactionVersion = movementController != null ? movementController.HitReactionVersion : 0;
+    }
+
     public override TaskStatus OnUpdate()
     {
-        if (movementController == null || m_Target.Value == null) {
+        if (movementController == null || m_Target == null || m_Target.Value == null) {
+            return TaskStatus.Failure;
+        }
+
+        if (!movementController.CanAct || hitReactionVersion != movementController.HitReactionVersion) {
+            movementController.StopMovement();
             return TaskStatus.Failure;
         }
 

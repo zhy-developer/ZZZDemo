@@ -22,6 +22,7 @@ public class ChaseWithMovement : TargetGameObjectAction
     private EnemyAIMovementController movementController;
     private bool isRunning;
     private bool waitingForStop;
+    private int hitReactionVersion;
 
     protected override void InitializeTarget()
     {
@@ -33,6 +34,7 @@ public class ChaseWithMovement : TargetGameObjectAction
     {
         isRunning = false;
         waitingForStop = false;
+        hitReactionVersion = movementController != null ? movementController.HitReactionVersion : 0;
     }
 
     public override TaskStatus OnUpdate()
@@ -41,15 +43,22 @@ public class ChaseWithMovement : TargetGameObjectAction
             return TaskStatus.Failure;
         }
 
+        if (!movementController.CanAct || hitReactionVersion != movementController.HitReactionVersion) {
+            movementController.StopMovement();
+            return TaskStatus.Failure;
+        }
+
         // Once stopping begins, finish it even if the target moves or disappears.
         if (waitingForStop) {
             if (!movementController.CanAnimate) {
+                DeLogger.LogTrace("movementcontroller���ɲ��Ŷ���");
                 return TaskStatus.Failure;
             }
             return movementController.IsChaseStopFinished() ? TaskStatus.Success : TaskStatus.Running;
         }
 
         if (m_Target == null || m_Target.Value == null) {
+            DeLogger.LogTrace("targetΪ��");
             return TaskStatus.Failure;
         }
 
@@ -68,6 +77,7 @@ public class ChaseWithMovement : TargetGameObjectAction
 
         var arrived = movementController.MoveTo(m_Target.Value, Mathf.Max(0f, m_StoppingDistance.Value), isRunning);
         if (movementController.LastMoveFailed) {
+            DeLogger.LogTrace("LastMoveFailedΪtrue");
             return TaskStatus.Failure;
         }
         if (!arrived) {

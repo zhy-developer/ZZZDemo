@@ -6,7 +6,6 @@ using Tools;
 
 namespace ZZZ
 {
-
     public class PlayerComboState : IState
     {
         protected Player player{ get; }
@@ -76,7 +75,7 @@ namespace ZZZ
         {
             CharacterInputSystem.Instance.inputActions.Player.L_AtK.started += OnAttackInput;
             CharacterInputSystem.Instance.inputActions.Player.FinishSkill.started += OnFinishSkill;
-            CharacterInputSystem.Instance.inputActions.Player.Execute.started += OnSkill;
+            CharacterInputSystem.Instance.inputActions.Player.Skill.started += OnSkill;
             characterCombo.AddEventAction();
         }
 
@@ -85,7 +84,7 @@ namespace ZZZ
         {
             CharacterInputSystem.Instance.inputActions.Player.L_AtK.started -= OnAttackInput;
             CharacterInputSystem.Instance.inputActions.Player.FinishSkill.started -= OnFinishSkill;
-            CharacterInputSystem.Instance.inputActions.Player.Execute.started -= OnSkill;
+            CharacterInputSystem.Instance.inputActions.Player.Skill.started -= OnSkill;
             characterCombo.RemoveEventActon();
         }
         private void OnAttackInput(InputAction.CallbackContext context)

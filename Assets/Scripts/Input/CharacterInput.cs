@@ -138,15 +138,6 @@ public partial class @CharacterInput: IInputActionCollection2, IDisposable
                     ""initialStateCheck"": false
                 },
                 {
-                    ""name"": ""Execute"",
-                    ""type"": ""Button"",
-                    ""id"": ""367855b1-31fc-4bc1-a84f-431feb16c737"",
-                    ""expectedControlType"": """",
-                    ""processors"": """",
-                    ""interactions"": """",
-                    ""initialStateCheck"": false
-                },
-                {
                     ""name"": ""SwitchCharacter"",
                     ""type"": ""Button"",
                     ""id"": ""4f2b318f-9fbf-4c1d-90df-15ff85a5a27b"",
@@ -330,17 +321,6 @@ public partial class @CharacterInput: IInputActionCollection2, IDisposable
                 },
                 {
                     ""name"": """",
-                    ""id"": ""5d189eee-b47a-4bd4-998c-287ca0434cfc"",
-                    ""path"": ""<Keyboard>/e"",
-                    ""interactions"": """",
-                    ""processors"": """",
-                    ""groups"": """",
-                    ""action"": ""Execute"",
-                    ""isComposite"": false,
-                    ""isPartOfComposite"": false
-                },
-                {
-                    ""name"": """",
                     ""id"": ""0b631c9a-3910-4636-9ced-774bb7c0b4c6"",
                     ""path"": ""<Keyboard>/r"",
                     ""interactions"": """",
@@ -498,7 +478,6 @@ public partial class @CharacterInput: IInputActionCollection2, IDisposable
         m_Player_CameraLook = m_Player.FindAction("CameraLook", throwIfNotFound: true);
         m_Player_Crouch = m_Player.FindAction("Crouch", throwIfNotFound: true);
         m_Player_Jump = m_Player.FindAction("Jump", throwIfNotFound: true);
-        m_Player_Execute = m_Player.FindAction("Execute", throwIfNotFound: true);
         m_Player_SwitchCharacter = m_Player.FindAction("SwitchCharacter", throwIfNotFound: true);
         m_Player_Zoom = m_Player.FindAction("Zoom", throwIfNotFound: true);
         m_Player_L_AtK = m_Player.FindAction("L_AtK", throwIfNotFound: true);
@@ -598,7 +577,6 @@ public partial class @CharacterInput: IInputActionCollection2, IDisposable
     private readonly InputAction m_Player_CameraLook;
     private readonly InputAction m_Player_Crouch;
     private readonly InputAction m_Player_Jump;
-    private readonly InputAction m_Player_Execute;
     private readonly InputAction m_Player_SwitchCharacter;
     private readonly InputAction m_Player_Zoom;
     private readonly InputAction m_Player_L_AtK;
@@ -639,10 +617,6 @@ public partial class @CharacterInput: IInputActionCollection2, IDisposable
         /// Provides access to the underlying input action "Player/Jump".
         /// </summary>
         public InputAction @Jump => m_Wrapper.m_Player_Jump;
-        /// <summary>
-        /// Provides access to the underlying input action "Player/Execute".
-        /// </summary>
-        public InputAction @Execute => m_Wrapper.m_Player_Execute;
         /// <summary>
         /// Provides access to the underlying input action "Player/SwitchCharacter".
         /// </summary>
@@ -720,9 +694,6 @@ public partial class @CharacterInput: IInputActionCollection2, IDisposable
             @Jump.started += instance.OnJump;
             @Jump.performed += instance.OnJump;
             @Jump.canceled += instance.OnJump;
-            @Execute.started += instance.OnExecute;
-            @Execute.performed += instance.OnExecute;
-            @Execute.canceled += instance.OnExecute;
             @SwitchCharacter.started += instance.OnSwitchCharacter;
             @SwitchCharacter.performed += instance.OnSwitchCharacter;
             @SwitchCharacter.canceled += instance.OnSwitchCharacter;
@@ -776,9 +747,6 @@ public partial class @CharacterInput: IInputActionCollection2, IDisposable
             @Jump.started -= instance.OnJump;
             @Jump.performed -= instance.OnJump;
             @Jump.canceled -= instance.OnJump;
-            @Execute.started -= instance.OnExecute;
-            @Execute.performed -= instance.OnExecute;
-            @Execute.canceled -= instance.OnExecute;
             @SwitchCharacter.started -= instance.OnSwitchCharacter;
             @SwitchCharacter.performed -= instance.OnSwitchCharacter;
             @SwitchCharacter.canceled -= instance.OnSwitchCharacter;
@@ -988,13 +956,6 @@ public partial class @CharacterInput: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnJump(InputAction.CallbackContext context);
-        /// <summary>
-        /// Method invoked when associated input action "Execute" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
-        /// </summary>
-        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
-        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
-        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
-        void OnExecute(InputAction.CallbackContext context);
         /// <summary>
         /// Method invoked when associated input action "SwitchCharacter" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
         /// </summary>

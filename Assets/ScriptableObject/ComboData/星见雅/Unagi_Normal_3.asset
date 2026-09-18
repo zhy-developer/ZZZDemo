@@ -20,11 +20,10 @@ MonoBehaviour:
   _attackDistance: 2.5
   _comboOffset: 1.7
   _hitName:
-  - 
-  - 
+  - Hit_shake
   _parryName:
-  - 
-  - 
+  - Hit_1
+  - Hit_2
   appAudioPrefab: 0
   _weaponSound: []
   _characterVoice: []

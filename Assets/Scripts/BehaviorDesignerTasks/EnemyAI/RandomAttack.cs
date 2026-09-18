@@ -15,6 +15,7 @@ public class RandomAttack : TargetGameObjectAction
 
     private EnemyAIMovementController movementController;
     private bool attackStarted;
+    private int hitReactionVersion;
     private float nextAttackTime;
 
     protected override void InitializeTarget()
@@ -26,11 +27,17 @@ public class RandomAttack : TargetGameObjectAction
     public override void OnStart()
     {
         attackStarted = false;
+        hitReactionVersion = movementController != null ? movementController.HitReactionVersion : 0;
     }
 
     public override TaskStatus OnUpdate()
     {
         if (movementController == null) {
+            return TaskStatus.Failure;
+        }
+
+        if (!movementController.CanAct || hitReactionVersion != movementController.HitReactionVersion) {
+            movementController.StopMovement();
             return TaskStatus.Failure;
         }
 
@@ -52,6 +59,11 @@ public class RandomAttack : TargetGameObjectAction
 
         nextAttackTime = Time.time + m_Cooldown.Value;
         return TaskStatus.Success;
+    }
+
+    public override void OnEnd()
+    {
+        attackStarted = false;
     }
 
     public override void Reset()

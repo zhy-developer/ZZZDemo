@@ -69,9 +69,9 @@ namespace ZZZ
         public void FinishSkillInput()
         {
             if (comboData.finishSkillCombo == null) { return; }
-            if (reusableData.currentCombo == null || reusableData.currentCombo != comboData.finishSkillCombo)
+            if (comboResuableData.currentCombo == null || comboResuableData.currentCombo != comboData.finishSkillCombo)
             {
-                reusableData.currentSkill = comboData.finishSkillCombo;
+                comboResuableData.currentSkill = comboData.finishSkillCombo;
             }
             ExecuteSkill();
         }
@@ -80,10 +80,13 @@ namespace ZZZ
         /// </summary>
         public void SkillInput()
         {
-            if (comboData.skillCombo == null) { return; }
-            if (reusableData.currentCombo == null || reusableData.currentCombo != comboData.skillCombo)
+            if (comboData.skillCombo == null) {
+                DeLogger.LogErrorTrace("SkillCombo数据为空");
+                return; 
+            }
+            if (comboResuableData.currentCombo == null || comboResuableData.currentCombo != comboData.skillCombo)
             {
-                reusableData.currentSkill = comboData.skillCombo;
+                comboResuableData.currentSkill = comboData.skillCombo;
             }
             ExecuteSkill();
         }
@@ -95,10 +98,10 @@ namespace ZZZ
         {
             ReSetATKIndex(0);
             //播放语音
-            PlayCharacterVoice(reusableData.currentSkill);
+            PlayCharacterVoice(comboResuableData.currentSkill);
             //播放武器音效
-            PlayWeaponSound(reusableData.currentSkill);
-            animator.CrossFadeInFixedTime(reusableData.currentSkill.comboName, 0.1f);
+            PlayWeaponSound(comboResuableData.currentSkill);
+            animator.CrossFadeInFixedTime(comboResuableData.currentSkill.comboName, 0.1f);
         }
 
         /// <summary>
@@ -108,7 +111,7 @@ namespace ZZZ
         protected override void CanSwitchSkill(Transform transform)
         {
             if (playerTransform != transform) { return; }
-             reusableData.canQTE = true;
+             comboResuableData.canQTE = true;
         }
         protected override void TriggerSwitchSkill()
         {
@@ -119,7 +122,7 @@ namespace ZZZ
             //激活切人相机
             CameraSwitcher.Instance.ActiveSwitchCamera(true);   
             //注册输入切人事件
-            reusableData.canQTE = false;
+            comboResuableData.canQTE = false;
             //留0.5的时间然后放慢是因为镜头要切换到位
             TimerManager.Instance.GetOneTimer(0.3f, startSlowTime);
 
@@ -191,13 +194,13 @@ namespace ZZZ
             //结束切人相机
             CameraSwitcher.Instance.ActiveSwitchCamera(false);
             //改技能
-            reusableData.currentSkill = comboData.switchSkill;
+            comboResuableData.currentSkill = comboData.switchSkill;
             //播放切人动画,//通知切换角色管理器处理切换技能
-            SwitchCharacter.Instance.SwitchSkillInput(characterName, reusableData.currentSkill.comboName);
+            SwitchCharacter.Instance.SwitchSkillInput(characterName, comboResuableData.currentSkill.comboName);
             //播放语音
-            PlayCharacterVoice(reusableData.currentSkill);
+            PlayCharacterVoice(comboResuableData.currentSkill);
             //播放武器音效
-            PlayWeaponSound(reusableData.currentSkill);
+            PlayWeaponSound(comboResuableData.currentSkill);
             //恢复输入
             CharacterInputSystem.Instance.inputActions.Player.Enable();
            
@@ -211,39 +214,39 @@ namespace ZZZ
         public void UpdateDetectionDir()
         {
             Vector3 camForwardDir = Vector3.zero;
-            camForwardDir.Set(reusableData.cameraTransform.forward.x, 0, reusableData.cameraTransform.forward.z);
+            camForwardDir.Set(comboResuableData.cameraTransform.forward.x, 0, comboResuableData.cameraTransform.forward.z);
             camForwardDir.Normalize();
 
             Vector3 camRightDir = Vector3.zero;
-            camRightDir.Set(reusableData.cameraTransform.right.x, 0, reusableData.cameraTransform.right.z);
+            camRightDir.Set(comboResuableData.cameraTransform.right.x, 0, comboResuableData.cameraTransform.right.z);
             camRightDir.Normalize();
 
-            reusableData.detectionDir = camForwardDir * CharacterInputSystem.Instance.PlayerMove.y + camRightDir * CharacterInputSystem.Instance.PlayerMove.x;
+            comboResuableData.detectionDir = camForwardDir * CharacterInputSystem.Instance.PlayerMove.y + camRightDir * CharacterInputSystem.Instance.PlayerMove.x;
 
-            if (reusableData.detectionDir.sqrMagnitude <= 0.0001f)
+            if (comboResuableData.detectionDir.sqrMagnitude <= 0.0001f)
             {
                 Transform currentEnemy = GameBlackboard.Instance.GetEnemy();
                 if (currentEnemy != null)
                 {
                     Vector3 targetDir = currentEnemy.position - playerTransform.position;
                     targetDir.y = 0;
-                    reusableData.detectionDir = targetDir;
+                    comboResuableData.detectionDir = targetDir;
                 }
                 else
                 {
-                    reusableData.detectionDir = playerTransform.forward;
+                    comboResuableData.detectionDir = playerTransform.forward;
                 }
             }
 
-            reusableData.detectionDir.Normalize();
+            comboResuableData.detectionDir.Normalize();
         }
         public void UpdateEnemy()
         {
             UpdateDetectionDir();
 
-            reusableData.detectionOrigin = new Vector3(playerTransform.position.x, playerTransform.position.y + 0.7f, playerTransform.position.z);
+            comboResuableData.detectionOrigin = new Vector3(playerTransform.position.x, playerTransform.position.y + 0.7f, playerTransform.position.z);
            
-            if (Physics.SphereCast(reusableData.detectionOrigin,enemyDetectionData.detectionRadius, reusableData.detectionDir, out var hit, enemyDetectionData.detectionLength, enemyDetectionData.WhatIsEnemy))
+            if (Physics.SphereCast(comboResuableData.detectionOrigin,enemyDetectionData.detectionRadius, comboResuableData.detectionDir, out var hit, enemyDetectionData.detectionLength, enemyDetectionData.WhatIsEnemy))
             {
                 if (GameBlackboard.Instance.GetEnemy() != hit.collider.transform || GameBlackboard.Instance.GetEnemy() == null)
                 {   
@@ -254,7 +257,7 @@ namespace ZZZ
         public void OnDrawGizmos()
         {
             Gizmos.color = Color.white;
-            Gizmos.DrawWireSphere(reusableData. detectionOrigin + reusableData.detectionDir * enemyDetectionData.detectionLength, enemyDetectionData.detectionRadius);
+            Gizmos.DrawWireSphere(comboResuableData. detectionOrigin + comboResuableData.detectionDir * enemyDetectionData.detectionLength, enemyDetectionData.detectionRadius);
         }
 
         #endregion

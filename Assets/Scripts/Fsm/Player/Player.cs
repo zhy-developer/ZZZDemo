@@ -6,22 +6,29 @@ namespace ZZZ
     [RequireComponent(typeof(Animator), typeof(CharacterController))]
     public class Player : CharacterMoveControllerBase
     {
+        //当前角色名称
         [SerializeField] public CharacterNameList characterName;
+
+        [SerializeField] public Transform enemy;
+
+        //当前角色数据
+        [SerializeField] public PlayerSO playerSO;
+        //玩家摄像机数据
+        [SerializeField] public PlayerCameraUtility playerCameraUtility;
+
+
         //现在的移动状态
         [SerializeField] public string currentMovementState;
         //现在的连招状态
         [SerializeField] public string currentComboState;
-
-        [SerializeField] public Transform enemy;
-
-        [SerializeField] public PlayerSO playerSO;
-        //玩家摄像机数据
-        [SerializeField] public PlayerCameraUtility playerCameraUtility;
         //玩家移动状态机
         public PlayerMovementStateMachine movementStateMachine { get;private set; }
         //玩家连招状态机
         public PlayerComboStateMachine comboStateMachine { get;private set; }
+
         public new Transform camera { get; private set; }
+
+        //游戏黑板数据
         private GameBlackboard gameBlackboard;
 
         /// <summary>
@@ -42,8 +49,8 @@ namespace ZZZ
         {
             base.Awake();
 
-            camera=Camera.main.transform;
-            movementStateMachine =new PlayerMovementStateMachine(this);
+            camera = Camera.main.transform;
+            movementStateMachine = new PlayerMovementStateMachine(this);
             comboStateMachine = new PlayerComboStateMachine(this);
             playerCameraUtility.Init();
         }
@@ -180,25 +187,40 @@ namespace ZZZ
         }
         #endregion
 
-        #region 连招动画事件
+        #region 连招动画帧事件
+        /// <summary>
+        /// 启动预输入
+        /// </summary>
         public void EnablePreInput()
         {
             comboStateMachine.ATKIngState.EnablePreInput();
         }
+        /// <summary>
+        /// 取消攻击冷却
+        /// </summary>
         public void CancelAttackColdTime()
         { 
-        comboStateMachine.ATKIngState.CancelAttackColdTime();
+            comboStateMachine.ATKIngState.CancelAttackColdTime();
         }
-      
+
+        /// <summary>
+        /// 取消连招
+        /// </summary>
         public void DisableLinkCombo()
         { 
-        comboStateMachine.ATKIngState.DisableLinkCombo();
+            comboStateMachine.ATKIngState.DisableLinkCombo();
         }
+        /// <summary>
+        /// 打断移动
+        /// </summary>
         public void EnableMoveInterrupt()
         {
             comboStateMachine.ATKIngState.EnableMoveInterrupt();
         }
-     
+    
+        /// <summary>
+        /// 攻击事件
+        /// </summary>
         public void ATK()
         {
             comboStateMachine.ATKIngState.ATK();
@@ -206,8 +228,8 @@ namespace ZZZ
 
         #endregion
 
-        #region 动画事件音效
-        //KeLin_Saw
+        #region 动画音特效帧事件
+
         public void PlayVFX(string name)
         {
             VFX_PoolManager.Instance.TryGetVFX(characterName, name);

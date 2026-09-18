@@ -54,7 +54,7 @@ public class CameraHitFeel : MonoSingleton<CameraHitFeel>
 
         if (PauseFrameCoroutine != null)
         { 
-        StopCoroutine(PauseFrameCoroutine);
+            StopCoroutine(PauseFrameCoroutine);
         }
         PauseFrameCoroutine = StartCoroutine(PauseFrameOnAnimation(time));
     }

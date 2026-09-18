@@ -12,6 +12,8 @@ public class CharacterHealthBase : MonoBehaviour
     protected Transform currentEnemy;
     [SerializeField]protected CharacterHealthInfo characterHealthInfo;
     protected CharacterHealthInfo healthInfo;
+    // Read the runtime instance, not the shared ScriptableObject asset.
+    public bool IsDead => healthInfo != null && healthInfo.onDead.Value;
     protected Animator animator;
     protected virtual void Awake()
     {
@@ -61,7 +63,7 @@ public class CharacterHealthBase : MonoBehaviour
     private void OnCharacterHitEventHandler(float Damage, string HitName, string ParryName, Transform Attacker, Transform Bearer, ZZZ.CharacterComboBase characterCombo)
     {
       
-        if (Bearer != this.transform) { return; }
+        if (Bearer != this.transform || IsDead) { return; }
         SetEnemy(Attacker);
         CharacterHitAction(Damage, HitName, ParryName);
         OnCharacterDamageAction(Damage);
@@ -72,6 +74,7 @@ public class CharacterHealthBase : MonoBehaviour
  
     protected void OnCharacterDamageAction(float damage)
     {
+        if (IsDead) { return; }
         healthInfo.TakeDamage(damage);
     }
     protected void CharacterStrengthAction(float damage)
@@ -93,7 +96,7 @@ public class CharacterHealthBase : MonoBehaviour
     }
     private void LookAtAttacker()
     {
-        if (currentEnemy == null) { return; }
+        if (currentEnemy == null || IsDead) { return; }
         if (animator.AnimationAtTag("Hit")&&animator.GetCurrentAnimatorStateInfo(0).normalizedTime<0.3f)
         {
             transform.Look(currentEnemy.position, 50);
