@@ -221,9 +221,9 @@ namespace ZZZ
         /// <summary>
         /// 攻击事件
         /// </summary>
-        public void ATK()
+        public void ATK(AnimationEvent animationEvent = null)
         {
-            comboStateMachine.ATKIngState.ATK();
+            comboStateMachine.ATKIngState.ATK(animationEvent);
         }
 
         #endregion

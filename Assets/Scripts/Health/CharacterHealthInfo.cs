@@ -23,6 +23,9 @@ public class CharacterHealthInfo : ScriptableObject
         currentHP.Value = healthData.healthData.maxHP;
         currentStrength.Value=healthData.healthData.maxStrength;
         currentDefenseValue.Value = healthData.healthData.maxDefenseValue;
+        // Reset flags explicitly even when the bindable numbers were already at their maxima.
+        onDead.Value = currentHP.Value <= 0;
+        hasStrength.Value = currentStrength.Value > 0;
         Debug.Log("敌人初始化的血量为" + currentHP.Value);
     }
     public void TakeDamage(float Damage)

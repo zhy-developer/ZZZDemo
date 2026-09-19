@@ -1,4 +1,5 @@
 using Tools;
+using UnityEngine;
 
 namespace ZZZ
 {
@@ -38,9 +39,9 @@ namespace ZZZ
         /// <summary>
         /// ATK这是攻击触发的核心事件，包括了伤害、受击动画、格挡攻击、攻击者、打击感（震屏、顿帧）、受击音效、受击特效
         /// </summary>
-        public void ATK()
+        public void ATK(AnimationEvent animationEvent = null)
         { 
-           characterCombo.ATK();
+           characterCombo.ATK(animationEvent);
         }
         #endregion
         /// <summary>

@@ -17,6 +17,7 @@ public class RandomAttack : TargetGameObjectAction
     private bool attackStarted;
     private int hitReactionVersion;
     private float nextAttackTime;
+    private int spawnVersion = -1;
 
     protected override void InitializeTarget()
     {
@@ -27,6 +28,10 @@ public class RandomAttack : TargetGameObjectAction
     public override void OnStart()
     {
         attackStarted = false;
+        if (movementController != null && spawnVersion != movementController.SpawnVersion) {
+            nextAttackTime = 0f;
+            spawnVersion = movementController.SpawnVersion;
+        }
         hitReactionVersion = movementController != null ? movementController.HitReactionVersion : 0;
     }
 

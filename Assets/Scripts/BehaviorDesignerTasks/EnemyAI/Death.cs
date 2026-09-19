@@ -9,8 +9,8 @@ using UnityEngine.AI;
 [Opsive.Shared.Utility.Description("Fails while alive. When dead, stops navigation and plays the death state once, succeeding after the animation finishes.")]
 public class Death : TargetGameObjectAction
 {
-    [Tooltip("Full Animator state path. The existing Hit sub-state machine has a trailing space.")]
-    [SerializeField] private SharedVariable<string> m_DeathState = "Base Layer.Hit .Dead";
+    [Tooltip("Full Animator state path for the death animation.")]
+    [SerializeField] private SharedVariable<string> m_DeathState = "Base Layer.Hit.Dead";
     [SerializeField] private SharedVariable<int> m_Layer = 0;
     [SerializeField] private SharedVariable<float> m_CrossFadeDuration = 0.1f;
 
@@ -19,6 +19,7 @@ public class Death : TargetGameObjectAction
     private Animator animator;
     private NavMeshAgent agent;
     private bool deathStarted;
+    private EnemyPoolItem pooledItem;
 
     protected override void InitializeTarget()
     {
@@ -27,6 +28,7 @@ public class Death : TargetGameObjectAction
         movementController = m_ResolvedGameObject != null ? m_ResolvedGameObject.GetComponent<EnemyAIMovementController>() : null;
         animator = m_ResolvedGameObject != null ? m_ResolvedGameObject.GetComponent<Animator>() : null;
         agent = m_ResolvedGameObject != null ? m_ResolvedGameObject.GetComponent<NavMeshAgent>() : null;
+        pooledItem = m_ResolvedGameObject != null ? m_ResolvedGameObject.GetComponent<EnemyPoolItem>() : null;
     }
 
     public override void OnStart()
@@ -73,14 +75,18 @@ public class Death : TargetGameObjectAction
             deathStarted = true;
         }
 
-        return current.IsName(stateName) && current.normalizedTime >= 1f && !transitioning
-            ? TaskStatus.Success : TaskStatus.Running;
+        var finished = current.IsName(stateName) && current.normalizedTime >= 1f && !transitioning;
+        if (finished) {
+            // Release in LateUpdate, after Behavior Designer has finished this task evaluation.
+            pooledItem?.ScheduleReturnAfterDeath();
+        }
+        return finished ? TaskStatus.Success : TaskStatus.Running;
     }
 
     public override void Reset()
     {
         base.Reset();
-        m_DeathState = "Base Layer.Hit .Dead";
+        m_DeathState = "Base Layer.Hit.Dead";
         m_Layer = 0;
         m_CrossFadeDuration = 0.1f;
     }

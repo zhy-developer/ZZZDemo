@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 21b6f9d9a5ac8954a898117706d3e787, type: 3}
-  m_Name: SoundDate
+  m_Name: SoundData
   m_EditorClassIdentifier: 
   soundInfoList:
   - soundStye: 1

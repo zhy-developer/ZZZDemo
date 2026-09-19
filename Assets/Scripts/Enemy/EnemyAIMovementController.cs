@@ -42,6 +42,7 @@ public class EnemyAIMovementController : MonoBehaviour
     public bool LastMoveFailed { get; private set; }
     public bool CanAnimate => animator != null && animator.isActiveAndEnabled;
     public int HitReactionVersion { get; private set; }
+    public int SpawnVersion { get; private set; }
     private int lastHitReactionFrame = -1;
 
     // Include the incoming state: CrossFade does not replace the current state immediately.
@@ -97,6 +98,11 @@ public class EnemyAIMovementController : MonoBehaviour
 
     private void Awake()
     {
+        InitializeReferences();
+    }
+
+    private void InitializeReferences()
+    {
         health = GetComponent<CharacterHealthBase>();
         if (agent == null) {
             agent = GetComponent<NavMeshAgent>();
@@ -118,6 +124,27 @@ public class EnemyAIMovementController : MonoBehaviour
             if (!agentDrivesPosition && agent.isOnNavMesh) {
                 agent.nextPosition = transform.position;
             }
+        }
+    }
+
+    /// <summary>Called once per pool checkout, after placement and before the AI starts.</summary>
+    public void ResetForSpawn()
+    {
+        InitializeReferences();
+        StopMovement();
+        SpawnVersion++;
+        HitReactionVersion++;
+        lastHitReactionFrame = -1;
+        LastMoveFailed = false;
+        chaseStopWasEntered = false;
+        chaseStopPlayedFully = false;
+        currentAttackState = null;
+        currentAttackLayer = 0;
+        currentAttackWasEntered = false;
+        if (animator != null) {
+            animator.SetFloat(movementHash, 0f);
+            animator.SetFloat(turnDeltaAngleHash, 0f);
+            animator.SetBool(hasInputForStopHash, false);
         }
     }
 

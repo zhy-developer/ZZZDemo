@@ -129,6 +129,13 @@ ModelImporter:
         floatParameter: 0
         intParameter: 0
         messageOptions: 0
+      - time: 0.5317837
+        functionName: EnableMoveInterrupt
+        data:
+        objectReferenceParameter: {instanceID: 0}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
       - time: 0.83848786
         functionName: DisableLinkCombo
         data: 
@@ -296,6 +303,13 @@ ModelImporter:
       - time: 0.3536226
         functionName: CancelAttackColdTime
         data: 
+        objectReferenceParameter: {instanceID: 0}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
+      - time: 0.3536226
+        functionName: EnableMoveInterrupt
+        data:
         objectReferenceParameter: {instanceID: 0}
         floatParameter: 0
         intParameter: 0
@@ -623,6 +637,13 @@ ModelImporter:
         floatParameter: 0
         intParameter: 0
         messageOptions: 0
+      - time: 0.12614179
+        functionName: EnableMoveInterrupt
+        data:
+        objectReferenceParameter: {instanceID: 0}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
       transformMask: []
       maskType: 3
       maskSource: {instanceID: 0}
@@ -796,6 +817,13 @@ ModelImporter:
         floatParameter: 0
         intParameter: 0
         messageOptions: 0
+      - time: 0.16223304
+        functionName: EnableMoveInterrupt
+        data:
+        objectReferenceParameter: {instanceID: 0}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
       - time: 0.23956105
         functionName: DisableLinkCombo
         data: 
@@ -961,6 +989,13 @@ ModelImporter:
         floatParameter: 0
         intParameter: 0
         messageOptions: 0
+      - time: 0.21856816
+        functionName: EnableMoveInterrupt
+        data:
+        objectReferenceParameter: {instanceID: 0}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
       - time: 0.35489142
         functionName: DisableLinkCombo
         data: 
@@ -1035,6 +1070,13 @@ ModelImporter:
       - time: 0.5576035
         functionName: CancelAttackColdTime
         data: 
+        objectReferenceParameter: {instanceID: 0}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
+      - time: 0.5576035
+        functionName: EnableMoveInterrupt
+        data:
         objectReferenceParameter: {instanceID: 0}
         floatParameter: 0
         intParameter: 0

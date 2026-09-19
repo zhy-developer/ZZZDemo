@@ -14,16 +14,18 @@ namespace ZZZ
         }
 
         #region 闪A处理
-       
-
         public  void DodgeComboInput()
         {
+            //以后可以改为给获取Player示例，Player根据PlayerSO获取是否还有特殊闪避攻击
             switch (SwitchCharacter.Instance.newCharacterName.Value)
             {
                 case CharacterNameList.AnBi:
                     {
                         NormalDodgeCombo();
                     }
+                    break;
+                case CharacterNameList.Xingjianya:
+                    NormalDodgeCombo();
                     break;
             }
         }
@@ -261,7 +263,6 @@ namespace ZZZ
         }
 
         #endregion
-
 
     }
 }

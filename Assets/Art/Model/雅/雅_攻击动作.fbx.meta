@@ -360,9 +360,9 @@ ModelImporter:
         floatParameter: 0
         intParameter: 0
         messageOptions: 0
-      - time: 0.16208054
-        functionName: DisableLinkCombo
-        data: 
+      - time: 0.06271077
+        functionName: PlayVFX
+        data: Unagi_01
         objectReferenceParameter: {instanceID: 0}
         floatParameter: 0
         intParameter: 0
@@ -374,8 +374,22 @@ ModelImporter:
         floatParameter: 0
         intParameter: 0
         messageOptions: 0
-      - time: 0.06271077
-        functionName: PlayVFX
+      - time: 0.1409396
+        functionName: EnableMoveInterrupt
+        data: 
+        objectReferenceParameter: {instanceID: 0}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
+      - time: 0.16208054
+        functionName: DisableLinkCombo
+        data: 
+        objectReferenceParameter: {instanceID: 0}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
+      - time: 0.17372328
+        functionName: EnableMoveInterrupt
         data: Unagi_01
         objectReferenceParameter: {instanceID: 0}
         floatParameter: 0
@@ -634,6 +648,13 @@ ModelImporter:
         floatParameter: 0
         intParameter: 0
         messageOptions: 0
+      - time: 0.089261
+        functionName: EnableMoveInterrupt
+        data: 
+        objectReferenceParameter: {instanceID: 0}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
       - time: 0.15995654
         functionName: DisableLinkCombo
         data: 
@@ -758,6 +779,13 @@ ModelImporter:
         messageOptions: 0
       - time: 0.09997843
         functionName: CancelAttackColdTime
+        data: 
+        objectReferenceParameter: {instanceID: 0}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
+      - time: 0.09997843
+        functionName: EnableMoveInterrupt
         data: 
         objectReferenceParameter: {instanceID: 0}
         floatParameter: 0
@@ -901,6 +929,13 @@ ModelImporter:
         messageOptions: 0
       - time: 0.13140793
         functionName: CancelAttackColdTime
+        data: 
+        objectReferenceParameter: {instanceID: 0}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
+      - time: 0.13140793
+        functionName: EnableMoveInterrupt
         data: 
         objectReferenceParameter: {instanceID: 0}
         floatParameter: 0
@@ -1406,6 +1441,13 @@ ModelImporter:
         messageOptions: 0
       - time: 0.08255786
         functionName: CancelAttackColdTime
+        data: 
+        objectReferenceParameter: {instanceID: 0}
+        floatParameter: 0
+        intParameter: 0
+        messageOptions: 0
+      - time: 0.08255786
+        functionName: EnableMoveInterrupt
         data: 
         objectReferenceParameter: {instanceID: 0}
         floatParameter: 0

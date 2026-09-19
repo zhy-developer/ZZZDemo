@@ -165,24 +165,6 @@ public partial class @CharacterInput: IInputActionCollection2, IDisposable
                     ""initialStateCheck"": false
                 },
                 {
-                    ""name"": ""R_Atk"",
-                    ""type"": ""Button"",
-                    ""id"": ""d20d782d-943d-4fe3-b7af-52bd1aa86e1e"",
-                    ""expectedControlType"": """",
-                    ""processors"": """",
-                    ""interactions"": """",
-                    ""initialStateCheck"": false
-                },
-                {
-                    ""name"": ""Aim"",
-                    ""type"": ""Button"",
-                    ""id"": ""10a40714-7362-4126-af0f-80dc156b6d02"",
-                    ""expectedControlType"": """",
-                    ""processors"": """",
-                    ""interactions"": """",
-                    ""initialStateCheck"": false
-                },
-                {
                     ""name"": ""Continue_Atk"",
                     ""type"": ""Button"",
                     ""id"": ""b9995602-cb0f-4709-beec-9c046a03abf6"",
@@ -288,6 +270,17 @@ public partial class @CharacterInput: IInputActionCollection2, IDisposable
                 },
                 {
                     ""name"": """",
+                    ""id"": ""bb21df9d-5227-4e3f-8422-3148fffbac3f"",
+                    ""path"": ""<Mouse>/rightButton"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Run"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
                     ""id"": ""bb231bf2-6662-401b-89fc-33620a77ed22"",
                     ""path"": ""<Pointer>/delta"",
                     ""interactions"": """",
@@ -349,28 +342,6 @@ public partial class @CharacterInput: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""groups"": """",
                     ""action"": ""L_AtK"",
-                    ""isComposite"": false,
-                    ""isPartOfComposite"": false
-                },
-                {
-                    ""name"": """",
-                    ""id"": ""31bf0d11-f55f-4345-b6bb-7d6ede103550"",
-                    ""path"": ""<Mouse>/rightButton"",
-                    ""interactions"": """",
-                    ""processors"": """",
-                    ""groups"": """",
-                    ""action"": ""R_Atk"",
-                    ""isComposite"": false,
-                    ""isPartOfComposite"": false
-                },
-                {
-                    ""name"": """",
-                    ""id"": ""d0c3c624-745e-43f1-aae9-0b7c90c1e56a"",
-                    ""path"": ""<Mouse>/rightButton"",
-                    ""interactions"": """",
-                    ""processors"": """",
-                    ""groups"": """",
-                    ""action"": ""Aim"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 },
@@ -481,8 +452,6 @@ public partial class @CharacterInput: IInputActionCollection2, IDisposable
         m_Player_SwitchCharacter = m_Player.FindAction("SwitchCharacter", throwIfNotFound: true);
         m_Player_Zoom = m_Player.FindAction("Zoom", throwIfNotFound: true);
         m_Player_L_AtK = m_Player.FindAction("L_AtK", throwIfNotFound: true);
-        m_Player_R_Atk = m_Player.FindAction("R_Atk", throwIfNotFound: true);
-        m_Player_Aim = m_Player.FindAction("Aim", throwIfNotFound: true);
         m_Player_Continue_Atk = m_Player.FindAction("Continue_Atk", throwIfNotFound: true);
         m_Player_Skill = m_Player.FindAction("Skill", throwIfNotFound: true);
         m_Player_FinishSkill = m_Player.FindAction("FinishSkill", throwIfNotFound: true);
@@ -580,8 +549,6 @@ public partial class @CharacterInput: IInputActionCollection2, IDisposable
     private readonly InputAction m_Player_SwitchCharacter;
     private readonly InputAction m_Player_Zoom;
     private readonly InputAction m_Player_L_AtK;
-    private readonly InputAction m_Player_R_Atk;
-    private readonly InputAction m_Player_Aim;
     private readonly InputAction m_Player_Continue_Atk;
     private readonly InputAction m_Player_Skill;
     private readonly InputAction m_Player_FinishSkill;
@@ -629,14 +596,6 @@ public partial class @CharacterInput: IInputActionCollection2, IDisposable
         /// Provides access to the underlying input action "Player/L_AtK".
         /// </summary>
         public InputAction @L_AtK => m_Wrapper.m_Player_L_AtK;
-        /// <summary>
-        /// Provides access to the underlying input action "Player/R_Atk".
-        /// </summary>
-        public InputAction @R_Atk => m_Wrapper.m_Player_R_Atk;
-        /// <summary>
-        /// Provides access to the underlying input action "Player/Aim".
-        /// </summary>
-        public InputAction @Aim => m_Wrapper.m_Player_Aim;
         /// <summary>
         /// Provides access to the underlying input action "Player/Continue_Atk".
         /// </summary>
@@ -703,12 +662,6 @@ public partial class @CharacterInput: IInputActionCollection2, IDisposable
             @L_AtK.started += instance.OnL_AtK;
             @L_AtK.performed += instance.OnL_AtK;
             @L_AtK.canceled += instance.OnL_AtK;
-            @R_Atk.started += instance.OnR_Atk;
-            @R_Atk.performed += instance.OnR_Atk;
-            @R_Atk.canceled += instance.OnR_Atk;
-            @Aim.started += instance.OnAim;
-            @Aim.performed += instance.OnAim;
-            @Aim.canceled += instance.OnAim;
             @Continue_Atk.started += instance.OnContinue_Atk;
             @Continue_Atk.performed += instance.OnContinue_Atk;
             @Continue_Atk.canceled += instance.OnContinue_Atk;
@@ -756,12 +709,6 @@ public partial class @CharacterInput: IInputActionCollection2, IDisposable
             @L_AtK.started -= instance.OnL_AtK;
             @L_AtK.performed -= instance.OnL_AtK;
             @L_AtK.canceled -= instance.OnL_AtK;
-            @R_Atk.started -= instance.OnR_Atk;
-            @R_Atk.performed -= instance.OnR_Atk;
-            @R_Atk.canceled -= instance.OnR_Atk;
-            @Aim.started -= instance.OnAim;
-            @Aim.performed -= instance.OnAim;
-            @Aim.canceled -= instance.OnAim;
             @Continue_Atk.started -= instance.OnContinue_Atk;
             @Continue_Atk.performed -= instance.OnContinue_Atk;
             @Continue_Atk.canceled -= instance.OnContinue_Atk;
@@ -977,20 +924,6 @@ public partial class @CharacterInput: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnL_AtK(InputAction.CallbackContext context);
-        /// <summary>
-        /// Method invoked when associated input action "R_Atk" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
-        /// </summary>
-        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
-        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
-        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
-        void OnR_Atk(InputAction.CallbackContext context);
-        /// <summary>
-        /// Method invoked when associated input action "Aim" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
-        /// </summary>
-        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
-        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
-        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
-        void OnAim(InputAction.CallbackContext context);
         /// <summary>
         /// Method invoked when associated input action "Continue_Atk" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
         /// </summary>

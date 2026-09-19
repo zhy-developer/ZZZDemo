@@ -28,6 +28,9 @@ namespace ZZZ
         [SerializeField] public BindableProperty<CharacterNameList> newCharacterName = new BindableProperty<CharacterNameList>();
         [SerializeField] private GameObject currentCharacter;
         [SerializeField] public GameObject newCharacter;
+
+        /// <summary>当前由玩家控制的角色；退场角色仍激活时也指向新角色。</summary>
+        public GameObject CurrentPlayer { get; private set; }
         [SerializeField] private CinemachineVirtualCamera[] virtualCameras;
         private int characterIndex = 0;
         protected override void Awake()
@@ -80,6 +83,10 @@ namespace ZZZ
                 waitingCharacterList.Add(switchCharacterInfos[i].characterName);
             }
             //初始化默认角色
+            var initialCharacterInfo = switchCharacterInfos.Find(
+                info => info.characterName == CharacterNameList.Xingjianya);
+            CurrentPlayer = initialCharacterInfo?.character;
+            newCharacter = CurrentPlayer;
             newCharacterName.Value = CharacterNameList.Xingjianya;
         }
 
@@ -164,6 +171,8 @@ namespace ZZZ
 
                 newCharacter.transform.localRotation = currentCharacter.transform.localRotation;
 
+                // 新角色的 OnEnable 中读取时，就能拿到正确的当前角色。
+                CurrentPlayer = newCharacter;
                 newCharacter.SetActive(true);
 
                

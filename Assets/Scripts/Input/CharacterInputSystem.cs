@@ -48,14 +48,14 @@ public class CharacterInputSystem : MonoSingleton<CharacterInputSystem>
     { 
     get => inputActions.Player.L_AtK.triggered;
     }
-    public bool R_Atk
-    { 
-    get => inputActions.Player.R_Atk.triggered;
-    }
-    public bool Aim
-    {
-        get => inputActions.Player.R_Atk.phase==InputActionPhase.Performed;
-    }
+    //public bool R_Atk
+    //{ 
+    //get => inputActions.Player.R_Atk.triggered;
+    //}
+    //public bool Aim
+    //{
+    //    get => inputActions.Player.R_Atk.phase==InputActionPhase.Performed;
+    //}
     public bool L_Atk_Continue
     {
         get=>inputActions.Player.Continue_Atk.phase==InputActionPhase.Performed;

@@ -127,6 +127,8 @@ namespace ZZZ
 
             comboResuableData.currentIndex.Value = comboResuableData.comboIndex;
             string comboName = comboResuableData.currentCombo.GetComboName(comboResuableData.currentIndex.Value);
+            // 每一段新攻击都重新等待动画事件开放移动打断。
+            comboResuableData.canMoveInterrupt = false;
             animator.CrossFadeInFixedTime(comboName, 0.111f, 0, 0f);
             //播放语音
             PlayCharacterVoice(comboResuableData.currentCombo.comboDatas[comboResuableData.currentIndex.Value]);
@@ -192,9 +194,13 @@ namespace ZZZ
 
 
         //注册转递伤害的动画事件
-        public void ATK()
+        public void ATK(AnimationEvent animationEvent = null)
         {
-            AttackTrigger();
+            // 淡入期间 CurrentState 可能仍是旧动画，伤害类型应由事件来源决定。
+            AnimatorStateInfo attackState = animationEvent != null && animationEvent.isFiredByAnimator
+                ? animationEvent.animatorStateInfo
+                : animator.GetCurrentAnimatorStateInfo(0);
+            AttackTrigger(attackState);
 
         }
         #region 伤害检测
@@ -241,10 +247,11 @@ namespace ZZZ
         #endregion
 
         #region 传递伤害
-        private void AttackTrigger()
+        private void AttackTrigger(AnimatorStateInfo attackState)
         {
-            if (animator.AnimationAtTag("ATK") )//给普通攻击传递伤害和可能多个攻击点的受击动画
+            if (attackState.IsTag("ATK"))//给普通攻击传递伤害和可能多个攻击点的受击动画
             {
+                if (comboResuableData.currentCombo == null) { return; }
                 UpdateATKIndex();
                 CameraHitFeel.Instance.CameraShake(comboResuableData.currentCombo.GetComboShakeForce(comboResuableData.currentIndex.Value,comboResuableData.ATKIndex));
                 Debug.Log(comboResuableData.currentCombo);
@@ -267,8 +274,9 @@ namespace ZZZ
                 #endregion
 
             }
-            else if (animator.AnimationAtTag("Skill"))
+            else if (attackState.IsTag("Skill"))
             {
+                if (comboResuableData.currentSkill == null) { return; }
                 UpdateATKIndex();
 
                 if (!SkillDetection(comboResuableData.currentSkill)) { return; }
@@ -304,8 +312,9 @@ namespace ZZZ
                 CameraHitFeel.Instance.CameraShake(comboResuableData.currentSkill.shakeForce[comboResuableData.ATKIndex-1]);
                 #endregion
             }
-            else//处理只有一次受击动画，但是可能有多次伤害
+            else if (attackState.IsTag("Execute"))//只有明确的处决动画才使用处决数据
             {
+                if (comboData.executeCombo == null) { return; }
                 if (!AttackDetection(comboData.executeCombo)) { return; }
                 GameEventsManager.Instance.CallEvent("生成伤害", comboData.executeCombo.GetComboDamage(comboResuableData.executeIndex));
             }
@@ -328,6 +337,7 @@ namespace ZZZ
         public void CheckMoveInterrupt()
         {
             if (comboResuableData.canMoveInterrupt == false) { return; }
+            if (!animator.AnimationAtTag("ATK") || animator.IsInTransition(0)) { return; }
             if (CharacterInputSystem.Instance.PlayerMove.sqrMagnitude != 0)
             {
                 animator.CrossFadeInFixedTime("Locomotion", 0.155f, 0);
@@ -338,7 +348,10 @@ namespace ZZZ
         {
             if (!comboResuableData.canLink || CharacterInputSystem.Instance.Run)
             {
+                // 连招超时只重置连段，当前攻击的后摇打断窗口仍然有效。
+                bool canMoveInterrupt = comboResuableData.canMoveInterrupt;
                 ReSetComboInfo();
+                comboResuableData.canMoveInterrupt = canMoveInterrupt;
             }
         }
 

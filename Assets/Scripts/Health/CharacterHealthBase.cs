@@ -17,18 +17,34 @@ public class CharacterHealthBase : MonoBehaviour
     protected Animator animator;
     protected virtual void Awake()
     {
-        animator = GetComponent<Animator>();
-        healthInfo=Instantiate(characterHealthInfo);
+        // A pool may have already prepared this instance while its GameObject was inactive.
+        if (healthInfo == null)
+        {
+            ResetHealthForSpawn();
+        }
+    }
 
+    private void InitializeHealth()
+    {
+        if (healthInfo != null) { return; }
+        animator = GetComponent<Animator>();
+        healthInfo = Instantiate(characterHealthInfo);
         healthInfo.currentHP.OnValueChanged += OnUpdatePH;
         healthInfo.currentStrength.OnValueChanged += OnUpdateStrength;
         healthInfo.currentDefenseValue.OnValueChanged += OnUpdateDefenseValue;
     }
 
- 
-    private void Start()
+    /// <summary>Start a new life explicitly; ordinary enable/disable preserves health.</summary>
+    public void ResetHealthForSpawn()
     {
+        InitializeHealth();
+        // Clear before value notifications so a previous attacker cannot trigger defense reactions.
+        currentEnemy = null;
         healthInfo.InitHealthData();
+        // Equal bindable values do not notify, but the Inspector mirrors must still be current.
+        currentHP = healthInfo.currentHP.Value;
+        currentStrength = healthInfo.currentStrength.Value;
+        currentDefenseValue = healthInfo.currentDefenseValue.Value;
     }
     protected virtual void Update()
     {
@@ -50,12 +66,16 @@ public class CharacterHealthBase : MonoBehaviour
 
         GameEventsManager.Instance.ReMoveEvent<float>("生成伤害", OnCharacterDamageAction);
 
+    }
+
+    protected virtual void OnDestroy()
+    {
+        if (healthInfo == null) { return; }
         healthInfo.currentHP.OnValueChanged -= OnUpdatePH;
-
         healthInfo.currentStrength.OnValueChanged -= OnUpdateStrength;
-
         healthInfo.currentDefenseValue.OnValueChanged -= OnUpdateDefenseValue;
-
+        Destroy(healthInfo);
+        healthInfo = null;
     }
 
   
@@ -126,8 +146,6 @@ public class CharacterHealthBase : MonoBehaviour
             return;
         }
         healthInfo.onDead.Value = true;
-
-
     }
     private void OnUpdateStrength(float value)
     {

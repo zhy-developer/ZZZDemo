@@ -79,24 +79,6 @@
                     "initialStateCheck": false
                 },
                 {
-                    "name": "R_Atk",
-                    "type": "Button",
-                    "id": "d20d782d-943d-4fe3-b7af-52bd1aa86e1e",
-                    "expectedControlType": "",
-                    "processors": "",
-                    "interactions": "",
-                    "initialStateCheck": false
-                },
-                {
-                    "name": "Aim",
-                    "type": "Button",
-                    "id": "10a40714-7362-4126-af0f-80dc156b6d02",
-                    "expectedControlType": "",
-                    "processors": "",
-                    "interactions": "",
-                    "initialStateCheck": false
-                },
-                {
                     "name": "Continue_Atk",
                     "type": "Button",
                     "id": "b9995602-cb0f-4709-beec-9c046a03abf6",
@@ -202,6 +184,17 @@
                 },
                 {
                     "name": "",
+                    "id": "bb21df9d-5227-4e3f-8422-3148fffbac3f",
+                    "path": "<Mouse>/rightButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Run",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
                     "id": "bb231bf2-6662-401b-89fc-33620a77ed22",
                     "path": "<Pointer>/delta",
                     "interactions": "",
@@ -263,28 +256,6 @@
                     "processors": "",
                     "groups": "",
                     "action": "L_AtK",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "31bf0d11-f55f-4345-b6bb-7d6ede103550",
-                    "path": "<Mouse>/rightButton",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "R_Atk",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "d0c3c624-745e-43f1-aae9-0b7c90c1e56a",
-                    "path": "<Mouse>/rightButton",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "Aim",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },

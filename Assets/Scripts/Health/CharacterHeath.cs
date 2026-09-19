@@ -14,6 +14,10 @@ public class CharacterHeath : CharacterHealthBase
         base.CharacterHitAction(damage, hitName, parryName);
         // Abort the AI action before its animation is replaced by Hit or Parry.
         GetComponent<EnemyAIMovementController>()?.NotifyHitReaction();
+        if (healthInfo.onDead.Value) {
+            return;
+        }
+
         if (healthInfo.hasStrength.Value)//格挡
         {
             healthInfo.TakeStrength(damage);
@@ -30,8 +34,9 @@ public class CharacterHeath : CharacterHealthBase
         }
         healthInfo.TakeDefenseValue(damage);
     }
+
     /// <summary>
-    /// 处理敌人的破防逻辑   
+    /// 处理敌人的失衡逻辑   
     /// </summary>
     /// <param name="value"></param>
     protected override void OnUpdateDefenseValue(float value)

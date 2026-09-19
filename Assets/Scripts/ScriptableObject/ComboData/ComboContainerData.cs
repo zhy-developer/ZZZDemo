@@ -32,7 +32,10 @@ public class ComboContainerData : ScriptableObject
   
     public void SwitchDodgeATK()
     { 
-        if (DodgeATKData==null) { return; }
+        if (DodgeATKData==null) {
+            DeLogger.LogErrorTrace("闪A数据为空");
+            return; 
+        }
         comboDatas[0]= DodgeATKData;
     }
     public void SwitchBackDodgeATK()
