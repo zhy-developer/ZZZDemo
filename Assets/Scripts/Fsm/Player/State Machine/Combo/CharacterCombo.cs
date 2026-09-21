@@ -44,6 +44,20 @@ namespace ZZZ
         /// <returns></returns>
         public bool CanFinishSkillInput()
         {
+            // 大招收尾期间禁止再次释放大招，保留移动和攻击。
+            if (animator.GetCurrentAnimatorStateInfo(0)
+                .IsName("Unagi_FishSkill_End"))
+            {
+                return false;
+            }
+
+            if (animator.IsInTransition(0) &&
+                animator.GetNextAnimatorStateInfo(0)
+                    .IsName("Unagi_FishSkill_End"))
+            {
+                return false;
+            }
+
             if (animator.AnimationAtTag("Skill")) { return false; }
             if (animator.AnimationAtTag("Hit")) { return false; }
             if (animator.AnimationAtTag("Parry")) { return false; }

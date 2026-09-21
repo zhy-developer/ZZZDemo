@@ -114,7 +114,7 @@ public class CameraHitFeel : MonoSingleton<CameraHitFeel>
         currentEnemyAnimator.speed = 0f;
         VFXManager.Instance.PauseVFX();
         yield return new WaitForSeconds(time);
-        VFXManager.Instance.ResetVXF();
+        VFXManager.Instance.ResetVFX();
         currentCharacterAnimator.speed = 1f;
         currentEnemyAnimator.speed = 1f;
     }

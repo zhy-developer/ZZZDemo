@@ -25,15 +25,6 @@ namespace TPF
         public override void Update()
         {
             base.Update();
-            ////没有输入就退出
-            //if (CharacterInputSystem.Instance.PlayerMove==Vector2.zero)
-            //{
-            //    return;
-            //}
-            //else //有输入执行跳转
-            //{
-               
-            //}
         }
         protected override void AddInputActionCallBacks()
         {
@@ -48,14 +39,21 @@ namespace TPF
             TimerManager.Instance.UnregisterTimer(GameTimer);
         }
 
+        /// <summary>
+        /// 添加缓冲事件去run
+        /// </summary>
+        /// <param name="context"></param>
         private void bufferToRun(InputAction.CallbackContext context)
-        {          
-          GameTimer=TimerManager.Instance.GetTimer(0.11f,CheckMoveInput);
+        {  
+           //在0.11秒后检查移动输入，如果还有将会移动，若没有输入了说明角色只是短按转向
+           GameTimer = TimerManager.Instance.GetTimer(0.11f,CheckMoveInput);
         }
 
+        /// <summary>
+        /// 检查移动输入
+        /// </summary>
         private void CheckMoveInput()
-        {
-           
+        { 
             //视为轻击角色没有Walk或者Run而是Run_Start_End，（如果角色只是短按转向，播放Run_Start_End动画）
             if (CharacterInputSystem.Instance.PlayerMove == Vector2.zero)
             {

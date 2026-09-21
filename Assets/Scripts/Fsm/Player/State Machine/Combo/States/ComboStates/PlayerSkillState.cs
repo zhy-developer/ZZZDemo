@@ -16,6 +16,10 @@ public class PlayerSkillState : PlayerComboState
         comboStateMachine.Player.movementStateMachine.ChangeState(comboStateMachine.Player.movementStateMachine.playerMovementNullState);
         //激活状态相机-这里修改一下传入StateDriveCameras，从连招里面获取
         CameraSwitcher.Instance.ActiveStateCamera(player.characterName, reusableData.currentSkill.attackStyle);
+
+        if (reusableData.currentSkill.attackStyle == AttackStyle.FinishSkill) {
+            player.PlayFinishSkillTimeline();
+        }
       
     }
 

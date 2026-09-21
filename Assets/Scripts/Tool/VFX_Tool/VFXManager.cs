@@ -33,7 +33,7 @@ public class VFXManager : MonoSingleton<VFXManager>
         }
     }
 
-    public void ResetVXF()
+    public void ResetVFX()
     {
         foreach (var particleSystem in allParticleSystems)
         {

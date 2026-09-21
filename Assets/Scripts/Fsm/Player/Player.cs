@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Playables;
 using static OnAnimationTranslation;
 
 namespace ZZZ  
@@ -21,6 +22,10 @@ namespace ZZZ
         [SerializeField] public string currentMovementState;
         //现在的连招状态
         [SerializeField] public string currentComboState;
+
+        [SerializeField, Header("大招演出")]
+        private PlayableDirector finishSkillTimeline;
+
         //玩家移动状态机
         public PlayerMovementStateMachine movementStateMachine { get;private set; }
         //玩家连招状态机
@@ -101,10 +106,6 @@ namespace ZZZ
                 case OnEnterAnimationPlayerState.TurnBack:
                     movementStateMachine.OnAnimationTranslateEvent(movementStateMachine.returnRunState);
                     break;
-                case OnEnterAnimationPlayerState.Dash:
-                    movementStateMachine.OnAnimationTranslateEvent(movementStateMachine.dashingState);
-                    comboStateMachine.OnAnimationTranslateEvent(comboStateMachine.NullState);
-                    break;
                 case OnEnterAnimationPlayerState.Switch:
                     movementStateMachine.OnAnimationTranslateEvent(movementStateMachine.onSwitchState);
                     break;
@@ -115,6 +116,10 @@ namespace ZZZ
                 case OnEnterAnimationPlayerState.ATK:
                     comboStateMachine.OnAnimationTranslateEvent(comboStateMachine.ATKIngState);
                     movementStateMachine.OnAnimationTranslateEvent(movementStateMachine.playerMovementNullState);
+                    break;
+                case OnEnterAnimationPlayerState.Dash:
+                    movementStateMachine.OnAnimationTranslateEvent(movementStateMachine.dashingState);
+                    comboStateMachine.OnAnimationTranslateEvent(comboStateMachine.NullState);
                     break;
                 case OnEnterAnimationPlayerState.DashBack:
                     movementStateMachine.OnAnimationTranslateEvent(movementStateMachine.dashBackingState);
@@ -179,7 +184,9 @@ namespace ZZZ
         }
         private void ComboStateChanged(IState state)
         {
-           currentComboState= state.GetType().Name;
+            string previousComboState = currentComboState;
+            currentComboState = state.GetType().Name;
+            Debug.Log($"[ComboState] {characterName} ({gameObject.name}) | Frame {Time.frameCount} | {previousComboState} -> {currentComboState}", this);
         }
         private void EnemyChanged(Transform transform)
         {
@@ -267,6 +274,12 @@ namespace ZZZ
         public void PlaySwitchInVoice()
         {
             SFX_PoolManager.Instance.TryGetSoundPool(SoundStyle.SwitchInVoice, characterName.ToString(), transform.position);
-        }    
+        }
+
+        public void PlayFinishSkillTimeline() {
+            if (finishSkillTimeline == null) return;
+            finishSkillTimeline.time = 0;
+            finishSkillTimeline.Play();
+        }
     }
 }

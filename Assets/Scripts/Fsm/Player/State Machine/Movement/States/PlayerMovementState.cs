@@ -66,6 +66,11 @@ namespace ZZZ
         {
             
         }
+
+        /// <summary>
+        /// 获取玩家移动输入方向
+        /// </summary>
+        /// <returns></returns>
         protected Vector2 GetPlayerMovementInputDirection()
         {
             return CharacterInputSystem.Instance.PlayerMove;
@@ -91,7 +96,7 @@ namespace ZZZ
         {
             //角色walk委托  
             CharacterInputSystem.Instance.inputActions.Player.Walk.started += OnWalkStart;
-            CharacterInputSystem.Instance.inputActions.Player.Run.started += OnDashStart;
+            CharacterInputSystem.Instance.inputActions.Player.Dash.started += OnDashStart;
             CharacterInputSystem.Instance.inputActions.Player.SwitchCharacter.started += OnSwitchCharacterStart;
             CharacterInputSystem.Instance.inputActions.Player.Movement.canceled += OnMovementCanceled;
             CharacterInputSystem.Instance.inputActions.Player.Movement.performed += OnMovementPerformed;
@@ -100,7 +105,7 @@ namespace ZZZ
         protected virtual void RemoveInputActionCallBacks()
         {
             CharacterInputSystem.Instance.inputActions.Player.Walk.started -= OnWalkStart;
-            CharacterInputSystem.Instance.inputActions.Player.Run.started -= OnDashStart;
+            CharacterInputSystem.Instance.inputActions.Player.Dash.started -= OnDashStart;
             CharacterInputSystem.Instance.inputActions.Player.SwitchCharacter.started -= OnSwitchCharacterStart;
             CharacterInputSystem.Instance.inputActions.Player.Movement.canceled -= OnMovementCanceled;
             CharacterInputSystem.Instance.inputActions.Player.Movement.performed -= OnMovementPerformed;

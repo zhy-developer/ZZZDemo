@@ -30,11 +30,11 @@ public class CharacterInputSystem : MonoSingleton<CharacterInputSystem>
     }
     public bool Run
     {
-        get => inputActions.Player.Run.triggered;
+        get => inputActions.Player.Dash.triggered;
     }
     public bool Run_Continue
     {
-        get => inputActions.Player.Run.phase == InputActionPhase.Performed;
+        get => inputActions.Player.Dash.phase == InputActionPhase.Performed;
     }
     public bool Jump
     { 

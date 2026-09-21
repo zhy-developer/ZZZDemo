@@ -60,7 +60,6 @@ namespace ZZZ
         {
             CharacterInputSystem.Instance.inputActions.Player.Movement.started -= OnUnregisterBufferTimer;
             movementStateMachine.ChangeState(movementStateMachine.idlingState);
-            //movementStateMachine.ChangeState(movementStateMachine.idlingState);
         }
         private void OnUnregisterBufferTimer(InputAction.CallbackContext context)
         {
