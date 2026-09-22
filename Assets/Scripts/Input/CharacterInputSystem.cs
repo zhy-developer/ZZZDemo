@@ -36,10 +36,10 @@ public class CharacterInputSystem : MonoSingleton<CharacterInputSystem>
     {
         get => inputActions.Player.Dash.phase == InputActionPhase.Performed;
     }
-    public bool Jump
-    { 
-       get =>inputActions.Player.Jump.triggered;
-    }
+    //public bool Jump
+    //{ 
+    //   get =>inputActions.Player.Jump.triggered;
+    //}
     public bool Crouch
     { 
        get =>inputActions.Player.Crouch.phase==InputActionPhase.Performed;
