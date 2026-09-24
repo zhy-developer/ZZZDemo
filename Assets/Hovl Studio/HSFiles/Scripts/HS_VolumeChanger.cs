@@ -246,10 +246,12 @@ public class HS_VolumeChanger : MonoBehaviour
 
     void ApplyPosition(Vector3 pos)
     {
-        if (useLocalPosition)
-            target.localPosition = pos;
-        else
-            target.position = pos;
+        if (target != null) {
+            if (useLocalPosition)
+                target.localPosition = pos;
+            else
+                target.position = pos;
+        }
     }
 
     void ResetPosition()
