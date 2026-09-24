@@ -176,6 +176,17 @@ public class GameEventsManager : Singleton<GameEventsManager>
         }
     }
 
+    /// <summary>可选通知：没有订阅者时不报错，事件签名不匹配时返回 false。</summary>
+    public bool TryCallEvent<T>(string name, T value)
+    {
+        if (EventCenters.TryGetValue(name, out var entry) && entry is EventHander<T> handler)
+        {
+            handler.CallBack(value);
+            return true;
+        }
+        return false;
+    }
+
     public void CallEvent<T>(string name, T value)
     {
         if (EventCenters.TryGetValue(name, out var e))

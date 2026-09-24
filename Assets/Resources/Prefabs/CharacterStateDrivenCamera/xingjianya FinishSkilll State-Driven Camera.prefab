@@ -13,6 +13,8 @@ GameObject:
   - component: {fileID: 4987131394813287591}
   - component: {fileID: 7322852455461231085}
   - component: {fileID: 8399155662265627711}
+  - component: {fileID: 7000000000000000191}
+  - component: {fileID: 7000000000000000192}
   m_Layer: 0
   m_Name: "\u96C5\u5927\u62DB_\u8D77\u624B\u7279\u5199"
   m_TagString: CloseShot
@@ -817,3 +819,33 @@ MonoBehaviour:
   m_BiasX: 0
   m_BiasY: 0
   m_CenterOnActivate: 1
+--- !u!114 &7000000000000000191
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 519800751005555760}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cb11d1f7ed4c4df0a2a202ec1c0ec1a9, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  cullingMask:
+    serializedVersion: 2
+    m_Bits: 128
+  backgroundColor: {r: 0.4, g: 0.4745098, b: 0.52156866, a: 1}
+  disablePostProcessing: 1
+--- !u!114 &7000000000000000192
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 519800751005555760}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e2145d30362f4132b4c1074fcea1e7d9, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  brain: {fileID: 0}
