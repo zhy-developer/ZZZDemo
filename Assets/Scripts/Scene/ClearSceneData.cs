@@ -40,7 +40,7 @@ public class ClearSceneData : MonoBehaviour {
 	public static void LoadScene(int _nextScene)
 	{
 		nextScene = _nextScene;
-		SceneManager.LoadScene (GameConfig.clearScene);  
+		SceneManager.LoadScene (GameConfig.CLEAR_SCENE);  
 
 	}
 

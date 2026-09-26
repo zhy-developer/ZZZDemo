@@ -50,8 +50,17 @@ message TcpResponseRequestMatch{
 	required bool result = 1;
 }
 
+message TcpRequestMatch{
+	required int32 uid = 1;
+	required int32 roleId = 2;
+}
+
 message TcpResponseCancelMatch{
 	required bool result = 1;
+}
+
+message TcpRequestCancelMatch{
+	required int32 uid = 1;
 }
 
 //战场相关

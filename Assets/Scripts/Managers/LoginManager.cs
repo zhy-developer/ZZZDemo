@@ -39,7 +39,7 @@ public class LoginManager : MonoSingleton<LoginManager>
         {
             NetGlobal.Instance.userUid = message.uid;
             NetGlobal.Instance.udpSendPort = message.udpPort;
-            ClearSceneData.LoadScene(GameConfig.mainScene);
+            ClearSceneData.LoadScene(GameConfig.MAIN_SCENE);
                 
         }
         else {

@@ -75,6 +75,30 @@ namespace GameProtocol
       { return global::ProtoBuf.Extensible.GetExtensionObject(ref extensionObject, createIfMissing); }
   }
   
+  [global::System.Serializable, global::ProtoBuf.ProtoContract(Name=@"TcpRequestMatch")]
+  public partial class TcpRequestMatch : global::ProtoBuf.IExtensible
+  {
+    public TcpRequestMatch() {}
+    
+    private int _uid;
+    [global::ProtoBuf.ProtoMember(1, IsRequired = true, Name=@"uid", DataFormat = global::ProtoBuf.DataFormat.TwosComplement)]
+    public int uid
+    {
+      get { return _uid; }
+      set { _uid = value; }
+    }
+    private int _roleId;
+    [global::ProtoBuf.ProtoMember(2, IsRequired = true, Name=@"roleId", DataFormat = global::ProtoBuf.DataFormat.TwosComplement)]
+    public int roleId
+    {
+      get { return _roleId; }
+      set { _roleId = value; }
+    }
+    private global::ProtoBuf.IExtension extensionObject;
+    global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
+      { return global::ProtoBuf.Extensible.GetExtensionObject(ref extensionObject, createIfMissing); }
+  }
+  
   [global::System.Serializable, global::ProtoBuf.ProtoContract(Name=@"TcpResponseCancelMatch")]
   public partial class TcpResponseCancelMatch : global::ProtoBuf.IExtensible
   {
@@ -86,6 +110,23 @@ namespace GameProtocol
     {
       get { return _result; }
       set { _result = value; }
+    }
+    private global::ProtoBuf.IExtension extensionObject;
+    global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
+      { return global::ProtoBuf.Extensible.GetExtensionObject(ref extensionObject, createIfMissing); }
+  }
+  
+  [global::System.Serializable, global::ProtoBuf.ProtoContract(Name=@"TcpRequestCancelMatch")]
+  public partial class TcpRequestCancelMatch : global::ProtoBuf.IExtensible
+  {
+    public TcpRequestCancelMatch() {}
+    
+    private int _uid;
+    [global::ProtoBuf.ProtoMember(1, IsRequired = true, Name=@"uid", DataFormat = global::ProtoBuf.DataFormat.TwosComplement)]
+    public int uid
+    {
+      get { return _uid; }
+      set { _uid = value; }
     }
     private global::ProtoBuf.IExtension extensionObject;
     global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)

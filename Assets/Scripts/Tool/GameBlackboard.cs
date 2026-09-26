@@ -1,4 +1,4 @@
-
+﻿
 using UnityEngine;
 using System.Collections.Generic;
 
@@ -24,7 +24,7 @@ public class GameBlackboard: MonoSingleton<GameBlackboard>
       return this.enemy.Value;
     }
     
-    public void SetGameData<T>(string DataName, T value )where T : class
+    public void SetGameData<T>(string DataName, T value )
     {
         if (GameData.ContainsKey(DataName))
         {
@@ -36,11 +36,11 @@ public class GameBlackboard: MonoSingleton<GameBlackboard>
         }
     
     }
-    public T GetGameData<T>(string DataName)where T : class
+    public T GetGameData<T>(string DataName)
     {
-        if (GameData.TryGetValue(DataName, out var e))
+        if (GameData.TryGetValue(DataName, out var e) && e is T result)
         { 
-        return e as T;
+          return result;
         }
         return default(T);
         //泛型T的返回类型比object更具有类型的安全性，因为在调用设置方法时需要说明指定的类型，从而直接转换为该类型

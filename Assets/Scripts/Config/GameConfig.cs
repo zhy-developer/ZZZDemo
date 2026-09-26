@@ -4,9 +4,17 @@ using UnityEngine;
 
 public class GameConfig : MonoBehaviour
 {
-    public const int loginScene = 0;
-    public const int mainScene = 1;
-    public const int battleScene = 2;
-    public const int clearScene = 3;
-    public const int replayScene = 4;
+    /// <summary>
+    /// 场景常量
+    /// </summary>
+    public const int LOGIN_SCENE = 0;
+    public const int MAIN_SCENE = 1;
+    public const int BATTLE_SCENE = 2;
+    public const int CLEAR_SCENE = 3;
+    public const int REPLAY_SCENE = 4;
+
+    /// <summary>
+    /// 全局数据常量
+    /// </summary>
+    public const string ROLE_CURRENTNAME = "currentRole";
 }

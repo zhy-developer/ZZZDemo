@@ -1,4 +1,4 @@
-using System;
+ï»¿using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -6,17 +6,17 @@ using System.Threading;
 using UnityEngine;
 
 /// <summary>
-/// ÍøÂçÏß³ÌÖ»¸ºÔğÊÕÊı¾İºÍ½âÎöÊı¾İ£¬ÕæÕıÉæ¼° Unity ¶ÔÏóµÄÂß¼­¶ª¸øÖ÷Ïß³ÌÖ´ĞĞ¡£
+/// ç½‘ç»œçº¿ç¨‹åªè´Ÿè´£æ”¶æ•°æ®å’Œè§£ææ•°æ®ï¼ŒçœŸæ­£æ¶‰åŠ Unity å¯¹è±¡çš„é€»è¾‘ä¸¢ç»™ä¸»çº¿ç¨‹æ‰§è¡Œã€‚
 /// </summary>
 public class NetGlobal : Singleton<NetGlobal>
 {
     private List<Action> list_action = new List<Action>();
     /// <summary>
-    /// mutex: »¥³âËø£¬Ä¿µÄ£º·ÀÖ¹¶à¸öÏß³ÌÍ¬Ê±ĞŞ¸Älist_action
+    /// mutex: äº’æ–¥é”ï¼Œç›®çš„ï¼šé˜²æ­¢å¤šä¸ªçº¿ç¨‹åŒæ—¶ä¿®æ”¹list_action
     /// </summary>
     private Mutex mutex_actionList = new Mutex();
 
-    //¶ÔÓÚÕâÖÖ³¡¾°£¨ÍøÂçÏß³Ì²»¶ÏÈûÈÎÎñ£¬UnityÖ÷Ïß³Ì²»¶ÏÈ¡ÈÎÎñ£©£¨list<Action> + Mutex£© ¸üÍÆ¼öÊ¹ÓÃConcurrentQueue<T> ----- Ïß³Ì°²È«¶ÓÁĞ
+    //å¯¹äºè¿™ç§åœºæ™¯ï¼ˆç½‘ç»œçº¿ç¨‹ä¸æ–­å¡ä»»åŠ¡ï¼ŒUnityä¸»çº¿ç¨‹ä¸æ–­å–ä»»åŠ¡ï¼‰ï¼ˆlist<Action> + Mutexï¼‰ æ›´æ¨èä½¿ç”¨ConcurrentQueue<T> ----- çº¿ç¨‹å®‰å…¨é˜Ÿåˆ—
     private readonly ConcurrentQueue<Action> actions = new ConcurrentQueue<Action>();
 
     public string serverIP;
@@ -31,11 +31,11 @@ public class NetGlobal : Singleton<NetGlobal>
 
     //public void AddAction(Action _action)
     //{
-    //    //Èç¹ûÃ»ÈËÊ¹ÓÃ£¬ÎÒÒªÄÃµ½Õâ¸öËø
+    //    //å¦‚æœæ²¡äººä½¿ç”¨ï¼Œæˆ‘è¦æ‹¿åˆ°è¿™ä¸ªé”
     //    mutex_actionList.WaitOne();
-    //    //¼ÓÈëÈËÎï
+    //    //åŠ å…¥äººç‰©
     //    list_action.Add(_action);
-    //    //ÊÍ·ÅËø£¨¸æËßÆäËûÈË£¬Õâ¸öËøÎÒ²Ù×÷ÍêÁË£¬ÄãÃÇ¿ÉÒÔÓÃÁË£©
+    //    //é‡Šæ”¾é”ï¼ˆå‘Šè¯‰å…¶ä»–äººï¼Œè¿™ä¸ªé”æˆ‘æ“ä½œå®Œäº†ï¼Œä½ ä»¬å¯ä»¥ç”¨äº†ï¼‰
     //    mutex_actionList.ReleaseMutex();
     //}
 
@@ -53,18 +53,18 @@ public class NetGlobal : Singleton<NetGlobal>
         }
     }
 
-    //ÏÂÃæÕâ¸ö·½·¨¿ÉÄÜ»áÒòÎªlist_actionÖĞµÄÒ»¸öÈÎÎñÖ´ĞĞ¹ı³Ì¹ı³¤¶øµ¼ÖÂÍøÂçÏß³Ì³¤ÆÚ±»Ëø
+    //ä¸‹é¢è¿™ä¸ªæ–¹æ³•å¯èƒ½ä¼šå› ä¸ºlist_actionä¸­çš„ä¸€ä¸ªä»»åŠ¡æ‰§è¡Œè¿‡ç¨‹è¿‡é•¿è€Œå¯¼è‡´ç½‘ç»œçº¿ç¨‹é•¿æœŸè¢«é”
     //public void DoForAction()
     //{
-    //    //1.ÄÃËø£¬ÕâÑùÖ´ĞĞÆÚ¼äÍøÂçÏß³ÌÎŞ·¨¼ÌĞøĞŞ¸ÄÕâ¸ölist
+    //    //1.æ‹¿é”ï¼Œè¿™æ ·æ‰§è¡ŒæœŸé—´ç½‘ç»œçº¿ç¨‹æ— æ³•ç»§ç»­ä¿®æ”¹è¿™ä¸ªlist
     //    mutex_actionList.WaitOne();
     //    for (int i = 0; i < list_action.Count; i++)
     //    {
     //        list_action[i]();
     //    }
-    //    //Ö´ĞĞÍê³ÉºóÇåÀíÈÎÎñ
+    //    //æ‰§è¡Œå®Œæˆåæ¸…ç†ä»»åŠ¡
     //    list_action.Clear();
-    //    //ÊÍ·ÅËø
+    //    //é‡Šæ”¾é”
     //    mutex_actionList.ReleaseMutex();
     //}
 
