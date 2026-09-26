@@ -34,6 +34,31 @@ enum TeamType
 	TEAM4 = 4;
 }
 
+message TcpLogin{
+	required string token = 1;
+}
+
+//登录相关
+message TcpResponseLogin{
+	required bool result = 1;
+	required int32 uid = 2;
+	required int32 udpPort = 3;
+}
+
+//匹配相关
+message TcpResponseRequestMatch{
+	required bool result = 1;
+}
+
+message TcpResponseCancelMatch{
+	required bool result = 1;
+}
+
+//战场相关
+message TcpEnterBattle{
+	required bool result = 1;
+}
+
 //角色移动
 message MoveInput{
     required int32 playerId = 1;

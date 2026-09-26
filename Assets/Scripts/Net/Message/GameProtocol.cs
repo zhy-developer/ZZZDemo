@@ -10,6 +10,105 @@
 // Generated from: Game.proto
 namespace GameProtocol
 {
+  [global::System.Serializable, global::ProtoBuf.ProtoContract(Name=@"TcpLogin")]
+  public partial class TcpLogin : global::ProtoBuf.IExtensible
+  {
+    public TcpLogin() {}
+    
+    private string _token;
+    [global::ProtoBuf.ProtoMember(1, IsRequired = true, Name=@"token", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    public string token
+    {
+      get { return _token; }
+      set { _token = value; }
+    }
+    private global::ProtoBuf.IExtension extensionObject;
+    global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
+      { return global::ProtoBuf.Extensible.GetExtensionObject(ref extensionObject, createIfMissing); }
+  }
+  
+  [global::System.Serializable, global::ProtoBuf.ProtoContract(Name=@"TcpResponseLogin")]
+  public partial class TcpResponseLogin : global::ProtoBuf.IExtensible
+  {
+    public TcpResponseLogin() {}
+    
+    private bool _result;
+    [global::ProtoBuf.ProtoMember(1, IsRequired = true, Name=@"result", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    public bool result
+    {
+      get { return _result; }
+      set { _result = value; }
+    }
+    private int _uid;
+    [global::ProtoBuf.ProtoMember(2, IsRequired = true, Name=@"uid", DataFormat = global::ProtoBuf.DataFormat.TwosComplement)]
+    public int uid
+    {
+      get { return _uid; }
+      set { _uid = value; }
+    }
+    private int _udpPort;
+    [global::ProtoBuf.ProtoMember(3, IsRequired = true, Name=@"udpPort", DataFormat = global::ProtoBuf.DataFormat.TwosComplement)]
+    public int udpPort
+    {
+      get { return _udpPort; }
+      set { _udpPort = value; }
+    }
+    private global::ProtoBuf.IExtension extensionObject;
+    global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
+      { return global::ProtoBuf.Extensible.GetExtensionObject(ref extensionObject, createIfMissing); }
+  }
+  
+  [global::System.Serializable, global::ProtoBuf.ProtoContract(Name=@"TcpResponseRequestMatch")]
+  public partial class TcpResponseRequestMatch : global::ProtoBuf.IExtensible
+  {
+    public TcpResponseRequestMatch() {}
+    
+    private bool _result;
+    [global::ProtoBuf.ProtoMember(1, IsRequired = true, Name=@"result", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    public bool result
+    {
+      get { return _result; }
+      set { _result = value; }
+    }
+    private global::ProtoBuf.IExtension extensionObject;
+    global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
+      { return global::ProtoBuf.Extensible.GetExtensionObject(ref extensionObject, createIfMissing); }
+  }
+  
+  [global::System.Serializable, global::ProtoBuf.ProtoContract(Name=@"TcpResponseCancelMatch")]
+  public partial class TcpResponseCancelMatch : global::ProtoBuf.IExtensible
+  {
+    public TcpResponseCancelMatch() {}
+    
+    private bool _result;
+    [global::ProtoBuf.ProtoMember(1, IsRequired = true, Name=@"result", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    public bool result
+    {
+      get { return _result; }
+      set { _result = value; }
+    }
+    private global::ProtoBuf.IExtension extensionObject;
+    global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
+      { return global::ProtoBuf.Extensible.GetExtensionObject(ref extensionObject, createIfMissing); }
+  }
+  
+  [global::System.Serializable, global::ProtoBuf.ProtoContract(Name=@"TcpEnterBattle")]
+  public partial class TcpEnterBattle : global::ProtoBuf.IExtensible
+  {
+    public TcpEnterBattle() {}
+    
+    private bool _result;
+    [global::ProtoBuf.ProtoMember(1, IsRequired = true, Name=@"result", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    public bool result
+    {
+      get { return _result; }
+      set { _result = value; }
+    }
+    private global::ProtoBuf.IExtension extensionObject;
+    global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
+      { return global::ProtoBuf.Extensible.GetExtensionObject(ref extensionObject, createIfMissing); }
+  }
+  
   [global::System.Serializable, global::ProtoBuf.ProtoContract(Name=@"MoveInput")]
   public partial class MoveInput : global::ProtoBuf.IExtensible
   {
@@ -17,14 +116,14 @@ namespace GameProtocol
     
     private int _playerId;
     [global::ProtoBuf.ProtoMember(1, IsRequired = true, Name=@"playerId", DataFormat = global::ProtoBuf.DataFormat.TwosComplement)]
-    public int PlayerId
+    public int playerId
     {
       get { return _playerId; }
       set { _playerId = value; }
     }
     private int _frame;
     [global::ProtoBuf.ProtoMember(2, IsRequired = true, Name=@"frame", DataFormat = global::ProtoBuf.DataFormat.TwosComplement)]
-    public int Frame
+    public int frame
     {
       get { return _frame; }
       set { _frame = value; }
@@ -33,7 +132,7 @@ namespace GameProtocol
     private float _horizontal = default(float);
     [global::ProtoBuf.ProtoMember(3, IsRequired = false, Name=@"horizontal", DataFormat = global::ProtoBuf.DataFormat.FixedSize)]
     [global::System.ComponentModel.DefaultValue(default(float))]
-    public float Horizontal
+    public float horizontal
     {
       get { return _horizontal; }
       set { _horizontal = value; }
@@ -42,7 +141,7 @@ namespace GameProtocol
     private float _vertical = default(float);
     [global::ProtoBuf.ProtoMember(4, IsRequired = false, Name=@"vertical", DataFormat = global::ProtoBuf.DataFormat.FixedSize)]
     [global::System.ComponentModel.DefaultValue(default(float))]
-    public float Vertical
+    public float vertical
     {
       get { return _vertical; }
       set { _vertical = value; }
@@ -57,25 +156,25 @@ namespace GameProtocol
     {
             
       [global::ProtoBuf.ProtoEnum(Name=@"TCP_LOGIN", Value=1)]
-      TCPLOGIN = 1,
+      TCP_LOGIN = 1,
             
       [global::ProtoBuf.ProtoEnum(Name=@"TCP_REQUEST_MATCH", Value=10)]
-      TCPREQUESTMATCH = 10,
+      TCP_REQUEST_MATCH = 10,
             
       [global::ProtoBuf.ProtoEnum(Name=@"TCP_CANCEL_MATCH", Value=11)]
-      TCPCANCELMATCH = 11,
+      TCP_CANCEL_MATCH = 11,
             
       [global::ProtoBuf.ProtoEnum(Name=@"UDP_BATTLE_READY", Value=51)]
-      UDPBATTLEREADY = 51,
+      UDP_BATTLE_READY = 51,
             
       [global::ProtoBuf.ProtoEnum(Name=@"UDP_UP_PLAYER_OPERATIONS", Value=53)]
-      UDPUPPLAYEROPERATIONS = 53,
+      UDP_UP_PLAYER_OPERATIONS = 53,
             
       [global::ProtoBuf.ProtoEnum(Name=@"UDP_UP_DELTA_FRAMES", Value=55)]
-      UDPUPDELTAFRAMES = 55,
+      UDP_UP_DELTA_FRAMES = 55,
             
       [global::ProtoBuf.ProtoEnum(Name=@"UDP_UP_GAME_OVER", Value=57)]
-      UDPUPGAMEOVER = 57
+      UDP_UP_GAME_OVER = 57
     }
   
     [global::ProtoBuf.ProtoContract(Name=@"SCID")]
@@ -83,28 +182,28 @@ namespace GameProtocol
     {
             
       [global::ProtoBuf.ProtoEnum(Name=@"TCP_RESPONSE_LOGIN", Value=1)]
-      TCPRESPONSELOGIN = 1,
+      TCP_RESPONSE_LOGIN = 1,
             
       [global::ProtoBuf.ProtoEnum(Name=@"TCP_RESPONSE_REQUEST_MATCH", Value=10)]
-      TCPRESPONSEREQUESTMATCH = 10,
+      TCP_RESPONSE_REQUEST_MATCH = 10,
             
       [global::ProtoBuf.ProtoEnum(Name=@"TCP_RESPONSE_CANCEL_MATCH", Value=11)]
-      TCPRESPONSECANCELMATCH = 11,
+      TCP_RESPONSE_CANCEL_MATCH = 11,
             
       [global::ProtoBuf.ProtoEnum(Name=@"TCP_ENTER_BATTLE", Value=50)]
-      TCPENTERBATTLE = 50,
+      TCP_ENTER_BATTLE = 50,
             
       [global::ProtoBuf.ProtoEnum(Name=@"UDP_BATTLE_START", Value=51)]
-      UDPBATTLESTART = 51,
+      UDP_BATTLE_START = 51,
             
       [global::ProtoBuf.ProtoEnum(Name=@"UDP_DOWN_FRAME_OPERATIONS", Value=53)]
-      UDPDOWNFRAMEOPERATIONS = 53,
+      UDP_DOWN_FRAME_OPERATIONS = 53,
             
       [global::ProtoBuf.ProtoEnum(Name=@"UDP_DOWN_DELTA_FRAMES", Value=55)]
-      UDPDOWNDELTAFRAMES = 55,
+      UDP_DOWN_DELTA_FRAMES = 55,
             
       [global::ProtoBuf.ProtoEnum(Name=@"UDP_DOWN_GAME_OVER", Value=57)]
-      UDPDOWNGAMEOVER = 57
+      UDP_DOWN_GAME_OVER = 57
     }
   
     [global::ProtoBuf.ProtoContract(Name=@"TeamType")]

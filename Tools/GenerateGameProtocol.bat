@@ -23,7 +23,7 @@ if not exist "protobuf-net.dll" (
     )
 )
 
-protogen.exe -i:Game.proto "-o:%TEMP_FILE%" -p:fixCase
+protogen.exe -i:Game.proto "-o:%TEMP_FILE%"
 if errorlevel 1 (
     echo [ERROR] Generation failed. The destination file was not changed.
     goto finish
