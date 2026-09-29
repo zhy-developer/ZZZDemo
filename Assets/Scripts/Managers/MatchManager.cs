@@ -8,33 +8,39 @@ public class MatchManager : MonoSingleton<MatchManager>
 {
     private void OnEnable()
     {
-        PBTcpManager.Instance.mes_request_match_result += OnResponseMatchRequestResult;
-        PBTcpManager.Instance.mes_cancel_match_result += OnResponseMatchCancelResult;
+        TcpMessageDispatcher.Instance.mes_request_match_result += OnResponseMatchRequestResult;
+        TcpMessageDispatcher.Instance.mes_cancel_match_result += OnResponseMatchCancelResult;
+        TcpMessageDispatcher.Instance.mes_enter_battle += OnResponseEnterBattle;
     }
 
     private void OnDisable()
     {
-        PBTcpManager.Instance.mes_request_match_result -= OnResponseMatchRequestResult;
-        PBTcpManager.Instance.mes_cancel_match_result -= OnResponseMatchCancelResult;
+        TcpMessageDispatcher.Instance.mes_request_match_result -= OnResponseMatchRequestResult;
+        TcpMessageDispatcher.Instance.mes_cancel_match_result -= OnResponseMatchCancelResult;
+        TcpMessageDispatcher.Instance.mes_enter_battle -= OnResponseEnterBattle;
     }
 
     public void SendRequestMatchRequest() {
         TcpRequestMatch mes = new TcpRequestMatch();
         mes.uid = NetGlobal.Instance.userUid;
         mes.roleId = (int)GameBlackboard.Instance.GetGameData<CharacterNameList>(GameConfig.ROLE_CURRENTNAME);
-        ClientTCP.Instance.SendMessage(PackageHandler.PackSendMessage(mes,GameProtocol.CSID.TCP_REQUEST_MATCH));
+        TcpClientConnection.Instance.SendMessage(PackageHandler.PackSendMessage(mes,GameProtocol.CSID.TCP_REQUEST_MATCH));
     }
 
-    public void SendCancelMatchRequest() { 
-    
-    }
     private void OnResponseMatchRequestResult(TcpResponseRequestMatch message)
     {
-        ClearSceneData.LoadScene(GameConfig.BATTLE_SCENE);
+        //ClearSceneData.LoadScene(GameConfig.BATTLE_SCENE);
+        DeLogger.LogTrace("匹配成功,等待对手进入");
     }
 
     private void OnResponseMatchCancelResult(TcpResponseCancelMatch message)
     {
         throw new NotImplementedException();
+    }
+
+    private void OnResponseEnterBattle(TcpEnterBattle message)
+    {
+        //todo 更新战场信息
+        ClearSceneData.LoadScene(GameConfig.BATTLE_SCENE);
     }
 }

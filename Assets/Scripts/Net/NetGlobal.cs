@@ -26,6 +26,7 @@ public class NetGlobal : Singleton<NetGlobal>
     protected override void Initialize() {
         base.Initialize();
         GameObject obj = new GameObject("NetGlobal");
+        GameObject.DontDestroyOnLoad(obj);
         obj.AddComponent<NetUpdate>();
     }
 

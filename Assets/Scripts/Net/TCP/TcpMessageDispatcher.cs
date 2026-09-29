@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class PBTcpManager : Singleton<PBTcpManager>
+public class TcpMessageDispatcher : Singleton<TcpMessageDispatcher>
 {
     //返回给游戏的delegate
     public delegate void DelegateReceiveMessage<T>(T message);
@@ -30,6 +30,7 @@ public class PBTcpManager : Singleton<PBTcpManager>
                 break;
             case SCID.TCP_RESPONSE_REQUEST_MATCH:
                 {
+                    DeLogger.LogTrace("收到匹配消息回应");
                     TcpResponseRequestMatch pb_ReceiveMes = PackageHandler.DeserializeData<TcpResponseRequestMatch>(bodyData);
                     NetGlobal.Instance.AddAction(() =>
                     {

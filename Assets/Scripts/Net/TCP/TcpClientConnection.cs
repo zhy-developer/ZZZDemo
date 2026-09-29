@@ -7,7 +7,7 @@ using System.Threading;
 using Unity.Burst.Intrinsics;
 using UnityEngine;
 
-public class ClientTCP : Singleton<ClientTCP>
+public class TcpClientConnection : Singleton<TcpClientConnection>
 {
     private static readonly object padlock = new object();
 
@@ -126,7 +126,7 @@ public class ClientTCP : Singleton<ClientTCP>
                 byte[] bodyData = new byte[bodyDataLenth];
                 Array.Copy(result, PackageConstant.PacketHeadLength, bodyData, 0, bodyDataLenth);
 
-                PBTcpManager.Instance.AnalyzeMessage((GameProtocol.SCID)packMessageId, bodyData);
+                TcpMessageDispatcher.Instance.AnalyzeMessage((GameProtocol.SCID)packMessageId, bodyData);
             }
             catch (Exception ex)
             {

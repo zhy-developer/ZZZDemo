@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.Playables;
 using static OnAnimationTranslation;
 
@@ -186,7 +186,7 @@ namespace ZZZ
         {
             string previousComboState = currentComboState;
             currentComboState = state.GetType().Name;
-            Debug.Log($"[ComboState] {characterName} ({gameObject.name}) | Frame {Time.frameCount} | {previousComboState} -> {currentComboState}", this);
+            //Debug.Log($"[ComboState] {characterName} ({gameObject.name}) | Frame {Time.frameCount} | {previousComboState} -> {currentComboState}", this);
         }
         private void EnemyChanged(Transform transform)
         {
