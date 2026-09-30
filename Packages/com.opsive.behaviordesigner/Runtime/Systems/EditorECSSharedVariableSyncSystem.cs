@@ -1,4 +1,4 @@
-#if GRAPH_DESIGNER
+#if GRAPH_DESIGNER && UNITY_EDITOR
 /// ---------------------------------------------
 /// Behavior Designer
 /// Copyright (c) Opsive. All Rights Reserved.
