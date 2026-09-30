@@ -65,7 +65,7 @@ public class BattleData {
 
 		dic_speed = new Dictionary<int, GameVector2> ();
 		//初始化速度表
-		GlobalData.Instance ().GetFileStringFromStreamingAssets ("Desktopspeed.txt", _fileStr => {
+		StreamingAssetService.Instance.GetFileStringFromStreamingAssets ("Desktopspeed.txt", _fileStr => {
 			InitSpeedInfo (_fileStr);
 		});
 

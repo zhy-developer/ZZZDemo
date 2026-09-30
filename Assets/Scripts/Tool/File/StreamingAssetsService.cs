@@ -6,29 +6,15 @@ using System;
 //using System.Threading;
 using System.IO;
 
-public class GlobalData
+public class StreamingAssetService : Singleton<StreamingAssetService>
 {
-	private static GlobalData instance;
 	//StreamingAssets文件夹路径
 	public string m_sStreamingAssetsPath;
 	//assetbundle对应的平台后缀
 	public string m_strABExtra;
 	private ClassForUpdate classForUpdate;
 
-	public static GlobalData Instance ()
-	{
-		if (instance == null) {
-			instance = new GlobalData ();
-		}
-		return instance;
-	}
-
-	public void Destory ()
-	{
-		instance = null;
-	}
-
-	public GlobalData ()
+	public StreamingAssetService ()
 	{
 		GameObject obj = new GameObject ("GlobalObj");
 		classForUpdate = obj.AddComponent<ClassForUpdate> ();
