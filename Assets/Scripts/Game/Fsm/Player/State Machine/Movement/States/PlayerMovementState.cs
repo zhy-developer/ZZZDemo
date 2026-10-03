@@ -74,42 +74,51 @@ namespace ZZZ
         protected Vector2 GetPlayerMovementInputDirection()
         {
             return CharacterInputSystem.Instance.PlayerMove;
-
         }
 
         float currentVelocity=0;
         protected void CharacterRotation(Vector2 movementDirection)
         {
-
-            if (GetPlayerMovementInputDirection() == Vector2.zero) { return; }
+            //如果没有输入就不旋转
+            if (GetPlayerMovementInputDirection() == Vector2.zero) {
+                BattleData.Instance.StopMove();
+                return; }
 
             reusableData.targetAngle= Mathf.Atan2(movementDirection.x, movementDirection.y) *Mathf.Rad2Deg+ movementStateMachine.player.camera.eulerAngles.y;
 
-            movementStateMachine.player.transform.eulerAngles = Vector3.up * Mathf.SmoothDampAngle(movementStateMachine.player.transform.eulerAngles.y, reusableData.targetAngle, ref currentVelocity, reusableData.rotationTime);
+            //转化为世界坐标系的方向
+            Vector3 worldMoveDir = Quaternion.Euler(0f, reusableData.targetAngle, 0f)*Vector3.forward;
 
-           // Vector3 targetDirection = Quaternion.Euler(0, targetAngle, 0) * Vector3.forward;
+            Vector2 direction = new Vector2(worldMoveDir.x,worldMoveDir.z);
+            float angle = Mathf.Repeat(Vector2.SignedAngle(Vector2.right, direction),360f);
 
-           //movementStateMachine.player.transform.rotation = Quaternion.lerp(movementStateMachine.player.transform.rotation,Quaternion.Euler(0, targetAngle,0),Time.deltaTime*20);
+            // 每 3° 一档，编码范围 0～119。
+            int upDir = (int)(angle / 3f);
+
+            DeLogger.LogNoticeTrace("角色转向输入，转到更新玩家方向");
+            BattleData.Instance.UpdateMoveDir(upDir);
+
+            //表现层转向，需转到接受同步帧时执行
+            //movementStateMachine.player.transform.eulerAngles = Vector3.up * Mathf.SmoothDampAngle(movementStateMachine.player.transform.eulerAngles.y, reusableData.targetAngle, ref currentVelocity, reusableData.rotationTime);
+
         }
         #region 输入回调
         protected virtual void AddInputActionCallBacks()
         {
             //角色walk委托  
-            CharacterInputSystem.Instance.inputActions.Player.Walk.started += OnWalkStart;
-            CharacterInputSystem.Instance.inputActions.Player.Dash.started += OnDashStart;
-            CharacterInputSystem.Instance.inputActions.Player.SwitchCharacter.started += OnSwitchCharacterStart;
-            CharacterInputSystem.Instance.inputActions.Player.Movement.canceled += OnMovementCanceled;
-            CharacterInputSystem.Instance.inputActions.Player.Movement.performed += OnMovementPerformed;
-            CharacterInputSystem.Instance.inputActions.Player.CameraLook.started += OnMouseMovementStarted;
+            //CharacterInputSystem.Instance.inputActions.Player.Walk.started += OnWalkStart;
+            //CharacterInputSystem.Instance.inputActions.Player.Dash.started += OnDashStart;
+            //CharacterInputSystem.Instance.inputActions.Player.Movement.canceled += OnMovementCanceled;
+            //CharacterInputSystem.Instance.inputActions.Player.Movement.performed += OnMovementPerformed;
+            //CharacterInputSystem.Instance.inputActions.Player.CameraLook.started += OnMouseMovementStarted;
         }
         protected virtual void RemoveInputActionCallBacks()
         {
-            CharacterInputSystem.Instance.inputActions.Player.Walk.started -= OnWalkStart;
-            CharacterInputSystem.Instance.inputActions.Player.Dash.started -= OnDashStart;
-            CharacterInputSystem.Instance.inputActions.Player.SwitchCharacter.started -= OnSwitchCharacterStart;
-            CharacterInputSystem.Instance.inputActions.Player.Movement.canceled -= OnMovementCanceled;
-            CharacterInputSystem.Instance.inputActions.Player.Movement.performed -= OnMovementPerformed;
-            CharacterInputSystem.Instance.inputActions.Player.CameraLook.started -= OnMouseMovementStarted;
+            //CharacterInputSystem.Instance.inputActions.Player.Walk.started -= OnWalkStart;
+            //CharacterInputSystem.Instance.inputActions.Player.Dash.started -= OnDashStart;
+            //CharacterInputSystem.Instance.inputActions.Player.Movement.canceled -= OnMovementCanceled;
+            //CharacterInputSystem.Instance.inputActions.Player.Movement.performed -= OnMovementPerformed;
+            //CharacterInputSystem.Instance.inputActions.Player.CameraLook.started -= OnMouseMovementStarted;
         }
         #endregion
         protected virtual void OnWalkStart(InputAction.CallbackContext context)
@@ -134,24 +143,6 @@ namespace ZZZ
                 }
             }
            
-        }
-
-        private void OnSwitchCharacterStart(InputAction.CallbackContext context)
-        {
-            
-            if (movementStateMachine.player.characterName == SwitchCharacter.Instance.newCharacterName.Value)
-            {
-              
-                if (movementStateMachine.player.currentMovementState == "PlayerSprintingState")
-                {
-                    movementStateMachine.player.CanSprintOnSwitch = true;
-                }
-                else
-                {
-                    movementStateMachine.player.CanSprintOnSwitch = false;
-                }
-                SwitchCharacter.Instance.SwitchInput();
-            }
         }
 
         public virtual void ResetDash()

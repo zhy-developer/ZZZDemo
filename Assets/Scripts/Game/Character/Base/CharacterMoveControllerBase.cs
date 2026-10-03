@@ -1,4 +1,4 @@
-using Tools;
+﻿using Tools;
 using UnityEngine;
 
 /// <summary>
@@ -12,6 +12,7 @@ public class CharacterMoveControllerBase : MonoBehaviour
     //移动接口
     public Animator characterAnimator { get; private set; }
     protected CharacterController characterController;
+
     [SerializeField, Header("重力")] private float characterGravity=-9;
     protected float fallOutdeltaTimer;
     protected float fallOutTimer = 0.2f;
@@ -19,9 +20,11 @@ public class CharacterMoveControllerBase : MonoBehaviour
     [SerializeField] protected float minVerticalSpeed=-3;
     [SerializeField]protected float verticalSpeed;
     protected Vector3 verticalVelocity;
+
     [SerializeField, Header("地面检测")] private float GroundDetectionRadius;
     [SerializeField] private float GroundDetectionOffset;
     [SerializeField] private LayerMask whatIsGround;
+    public LayerMask GroundMask => whatIsGround;
     [SerializeField] protected bool isOnGround;
     private Vector3 groundDetectionOrigin;
 
@@ -51,10 +54,7 @@ public class CharacterMoveControllerBase : MonoBehaviour
     /// </summary>
     protected virtual void OnAnimatorMove()
     {       
-        //开启角色的RootMotion
-        characterAnimator.ApplyBuiltinRootMotion();
-
-        UpdateCharacterVelocity(characterAnimator.deltaPosition);
+        //UpdateCharacterVelocity(characterAnimator.deltaPosition);
     }
    
     /// <summary>
@@ -102,8 +102,7 @@ public class CharacterMoveControllerBase : MonoBehaviour
     protected void UpdateVerticalVelocity()
     {
         verticalVelocity.Set(0, verticalSpeed, 0);
-        characterController.Move(verticalVelocity*Time.deltaTime);
-    
+        //characterController.Move(verticalVelocity*Time.deltaTime);
     }
     /// <summary>
     /// 坡面检测
@@ -130,14 +129,14 @@ public class CharacterMoveControllerBase : MonoBehaviour
     protected virtual void UpdateCharacterVelocity(Vector3 movement)
     {
         Vector3 dir = ResetVelocityOnSlop(movement);
-        if (characterAnimator.AnimationAtTag("Movement"))
-        {
-            characterController.Move(dir * Time.deltaTime * moveMult);
-        }
-        else if (characterAnimator.AnimationAtTag("Dodge"))
-        {
-            characterController.Move(dir * Time.deltaTime * dodgeMult);
-        }
+        //if (characterAnimator.AnimationAtTag("Movement"))
+        //{
+        //    characterController.Move(dir * Time.deltaTime * moveMult);
+        //}
+        //else if (characterAnimator.AnimationAtTag("Dodge"))
+        //{
+        //    characterController.Move(dir * Time.deltaTime * dodgeMult);
+        //}
 
     }
     /// <summary>

@@ -13,7 +13,8 @@ public class CharacterInputSystem : MonoSingleton<CharacterInputSystem>
     }
     private void OnEnable()
     {
-        inputActions?.Enable();
+        inputActions?.Player.Enable();
+        inputActions?.Player.SwitchCharacter.Disable();
     }
     private void OnDisable()
     {
@@ -36,10 +37,7 @@ public class CharacterInputSystem : MonoSingleton<CharacterInputSystem>
     {
         get => inputActions.Player.Dash.phase == InputActionPhase.Performed;
     }
-    //public bool Jump
-    //{ 
-    //   get =>inputActions.Player.Jump.triggered;
-    //}
+
     public bool Crouch
     { 
        get =>inputActions.Player.Crouch.phase==InputActionPhase.Performed;
@@ -48,22 +46,12 @@ public class CharacterInputSystem : MonoSingleton<CharacterInputSystem>
     { 
     get => inputActions.Player.L_AtK.triggered;
     }
-    //public bool R_Atk
-    //{ 
-    //get => inputActions.Player.R_Atk.triggered;
-    //}
-    //public bool Aim
-    //{
-    //    get => inputActions.Player.R_Atk.phase==InputActionPhase.Performed;
-    //}
+
     public bool L_Atk_Continue
     {
         get=>inputActions.Player.Continue_Atk.phase==InputActionPhase.Performed;
     }
-    public bool SwitchCharacter
-    { 
-        get => inputActions.Player.SwitchCharacter.triggered;
-    }
+
     public bool Skill
     { 
         get => inputActions.Player.Skill.triggered;

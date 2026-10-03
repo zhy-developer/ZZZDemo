@@ -28,12 +28,6 @@ namespace ZZZ
             }
             else
             {
-              
-                if (GameBlackboard.Instance.GetGameData<Player>(SwitchCharacter.Instance.currentCharacterName.ToString()).CanSprintOnSwitch)
-                {
-                    movementStateMachine.ChangeState(movementStateMachine.sprintingState);
-                    return;
-                }
                 movementStateMachine.ChangeState(movementStateMachine.runningState);
             }
            

@@ -39,14 +39,12 @@ namespace ZZZ
         public void AddEventAction()
         {
             comboResuableData.currentIndex.OnValueChanged += ReSetATKIndex;
-            GameEventsManager.Instance.AddEventListening<Transform>("达到连携技条件", CanSwitchSkill);    
         }
 
         
         public void RemoveEventActon()
         {
             comboResuableData.currentIndex.OnValueChanged -= ReSetATKIndex;
-            GameEventsManager.Instance.ReMoveEvent<Transform>("达到连携技条件", CanSwitchSkill);
         }
 
        
@@ -152,18 +150,6 @@ namespace ZZZ
         }
         #endregion
 
-        #region 被动技能
-        protected virtual void CanSwitchSkill(Transform transform)
-        {
-            
-        }
-        protected virtual void TriggerSwitchSkill()
-        {
-
-        }
-
-        #endregion
-
 
 
 
@@ -266,12 +252,6 @@ namespace ZZZ
                   this);
 
                  CameraHitFeel.Instance.PF(pauseFrameTime);
-                #region 触发QTE
-                if (comboResuableData.canQTE && comboResuableData.ATKIndex >= comboResuableData.currentCombo.GetComboATKCount(comboResuableData.currentIndex.Value))
-                {
-                    TriggerSwitchSkill();
-                }
-                #endregion
 
             }
             else if (attackState.IsTag("Skill"))
@@ -294,14 +274,6 @@ namespace ZZZ
                     CameraHitFeel.Instance.PF(comboResuableData.currentSkill.pauseFrameTime);
                 }
 
-                #endregion
-
-                #region 触发QTE
-
-                if (comboResuableData.canQTE && comboResuableData.ATKIndex >= comboResuableData.currentSkill.ATKCount)
-                {
-                    TriggerSwitchSkill();
-                }
                 #endregion
 
                 #region 震屏

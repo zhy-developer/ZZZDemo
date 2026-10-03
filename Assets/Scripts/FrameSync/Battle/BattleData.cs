@@ -1,8 +1,10 @@
-﻿using System.Collections;
+﻿using GameProtocol;
+using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
-using GameProtocol;
-public class BattleData {
+public class BattleData{
+
 	public int randSeed; //随机种子
 	public int battleID;
 	public bool isReplay;
@@ -13,8 +15,12 @@ public class BattleData {
 	public int mapTotalGrid;
 	public int mapWidth;
 	public int mapHeigh;
+    public int mapMinX;
+    public int mapMaxX;
+    public int mapMinY; // 对应 Unity 的 Z
+    public int mapMaxY;
 
-	public List<BattleUserInfo> list_battleUser;
+    public List<BattleUserInfo> list_battleUser;
 	private Dictionary<int,GameVector2> dic_speed;
 
 	private int curOperationID;
@@ -53,11 +59,6 @@ public class BattleData {
 	}
 
 	private BattleData(){
-
-		mapTotalGrid = mapRow * mapColumn;
-		mapWidth = mapColumn * gridLenth;
-		mapHeigh = mapRow * gridLenth;
-
 		curOperationID = 1;
 		selfOperation = new PlayerOperation ();
 		selfOperation.move = 121;
@@ -78,6 +79,11 @@ public class BattleData {
 		dic_frameDate = new Dictionary<int, AllPlayerOperation> ();
 	}
 
+	/// <summary>
+	/// 更新战场信息
+	/// </summary>
+	/// <param name="_randseed"></param>
+	/// <param name="_userInfo"></param>
 	public void UpdateBattleInfo(int _randseed,List<BattleUserInfo> _userInfo){
         Debug.Log("UpdateBattleInfo  更新战场信息 "  + Time.realtimeSinceStartup);
 		randSeed = _randseed;
@@ -91,13 +97,15 @@ public class BattleData {
 			if (item.uid == NetGlobal.Instance.userUid) {
 				battleID = item.battleID;
 				selfOperation.battleID = battleID;
-				Debug.Log ("自己的战斗id:" + battleID);
+				DeLogger.LogNoticeTrace ("自己的战斗id:" + battleID);
 			}
-
 			dic_rightOperationID [item.battleID] = 0;
 		}
 	}
 
+	/// <summary>
+	/// 重置数据状态
+	/// </summary>
 	public void ClearData ()
 	{
 		curOperationID = 1;
@@ -113,15 +121,37 @@ public class BattleData {
 		dic_frameDate.Clear();
 	}
 
-
 	public void Destory ()
 	{
-		list_battleUser.Clear ();
-		list_battleUser = null;
+		ClearData();
 		instance = null;
 	}
 
-	void InitSpeedInfo (string _fileStr)
+	/// <summary>
+	/// 初始化地图
+	/// </summary>
+	/// <param name="bounds"></param>
+    public void InitMapBounds(Bounds bounds)
+    {
+        // 向地图内部取整，避免边界超出地面
+        int scale = ToolMethod.Render2LogicScale;
+
+        mapMinX = Mathf.CeilToInt(bounds.min.x * scale);
+        mapMaxX = Mathf.FloorToInt(bounds.max.x * scale);
+
+        mapMinY = Mathf.CeilToInt(bounds.min.z * scale);
+        mapMaxY = Mathf.FloorToInt(bounds.max.z * scale);
+
+        mapWidth = mapMaxX - mapMinX;
+        mapHeigh = mapMaxY - mapMinY;
+
+        mapTotalGrid = mapRow * mapColumn;
+    }
+    /// <summary>
+    /// 通过解析Desktopspeed方向查找表获取的字符串信息来初始化速度信息
+    /// </summary>
+    /// <param name="_fileStr"></param>
+    void InitSpeedInfo (string _fileStr)
 	{
 		string[] lineArray = _fileStr.Split ("\n" [0]); 
 
@@ -138,43 +168,68 @@ public class BattleData {
 		}
 	}
 
+	/// <summary>
+	/// 根据角度查表获取对应的速度
+	/// </summary>
+	/// <param name="_dir"></param>
+	/// <returns></returns>
 	public GameVector2 GetSpeed (int _dir)
 	{
 		return dic_speed [_dir];
 	}
+
+	/// <summary>
+	/// 获取在地图中的逻辑位置
+	/// </summary>
+	/// <param name="_pos"></param>
+	/// <returns></returns>
 	//坐标不超出地图
 	public GameVector2 GetMapLogicPosition(GameVector2 _pos){
 		return new GameVector2 (Mathf.Clamp(_pos.x,0,mapWidth),Mathf.Clamp(_pos.y,0,mapHeigh));
 	}
 
-	public GameVector2 GetMapGridCenterPosition(int _row,int _column){
-		return new GameVector2 (_column * gridLenth + gridHalfLenth,_row * gridLenth + gridHalfLenth);
+	public GameVector2 GetMapGridCenterPosition(int _row, int _column)
+	{
+		return new GameVector2(_column * gridLenth + gridHalfLenth, _row * gridLenth + gridHalfLenth);
 	}
 
-	public GameVector2 GetMapGridFromRand(int _randNum){
+	public GameVector2 GetMapGridFromRand(int _randNum)
+	{
 		int _num1 = _randNum % mapTotalGrid;
 		int _row = _num1 / mapColumn;
 		int _column = _num1 % mapColumn;
-		return new GameVector2 (_row, _column);
+		return new GameVector2(_row, _column);
 	}
 
-	public GameVector2 GetMapGridCenterPositionFromRand(int _randNum){
-		GameVector2 grid = GetMapGridFromRand (_randNum);
-		return GetMapGridCenterPosition (grid.x, grid.y);
+	public GameVector2 GetMapGridCenterPositionFromRand(int _randNum)
+	{
+		GameVector2 grid = GetMapGridFromRand(_randNum);
+		return GetMapGridCenterPosition(grid.x, grid.y);
 	}
 
-
+	/// <summary>
+	/// 更新玩家移动方向
+	/// </summary>
+	/// <param name="_dir"></param>
 	public void UpdateMoveDir (int _dir)
 	{
-       // Debug.Log("_dir  ************   "  + _dir);
+		DeLogger.LogTrace("更新玩家移动方向 dir:"+ _dir);
 		selfOperation.move = _dir;
 		lastDir = _dir;
 	}
+
+	public void StopMove() {
+		selfOperation.move = 121;
+		lastDir = 121;
+	}
+
 	public void UpdateMoveDirUp(int _dir)
 	{
 		// Debug.Log("_dir  ************   "  + _dir);
 		selfOperation.move = _dir;
 	}
+
+
 	public void UpdateRightOperation(RightOpType _type,int _value1,int _value2){
 		selfOperation.rightOperation = _type;
 		selfOperation.operationValue1 = _value1;

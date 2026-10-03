@@ -1,121 +1,80 @@
-using Cinemachine;
+﻿using Cinemachine;
 using System.Collections.Generic;
-using ZZZ;
 using UnityEngine;
+using ZZZ;
 
 public class CameraSwitcher : MonoSingleton<CameraSwitcher>
 {
-    private CinemachineBrain brain;
-    [SerializeField, Header("切人时的相机")] private CinemachineVirtualCamera switchCharacterSkillCamera;
-    [System.Serializable]
-    public class CharacterStateCameraInfo
-    {
-       public CharacterNameList characterName;
-       public List<StateCameraInfo> stateCameraList=new List<StateCameraInfo>();
-    }
-    [System.Serializable]
-    public class StateCameraInfo
-    {
-        public AttackStyle AttackStyle;
-        public CinemachineStateDrivenCamera stateCamera;
-    }
-    [SerializeField,Header("技能相机组")] private List<CharacterStateCameraInfo> stateCameraInfoList = new List<CharacterStateCameraInfo>();
+    // 使用实例作为键，同一种角色可以由不同玩家分别创建。
+    private readonly Dictionary<Player, CharacterSkillCameraGroup> owners = new Dictionary<Player, CharacterSkillCameraGroup>();
 
-    private Dictionary<CharacterNameList, Dictionary<AttackStyle, CinemachineStateDrivenCamera>> stateCameraPool = new Dictionary<CharacterNameList, Dictionary<AttackStyle, CinemachineStateDrivenCamera>>();
-    //这里有两种方式可以实现：字典里面再写一个字典；字典里面写自定义的数据结构；第二种更灵活,但是没有字典省性能
-    
-    
-    protected override void Awake()
-    {
-        base.Awake();
-        brain =Camera.main.GetComponent<CinemachineBrain>();
-        
-    }
+    private readonly Dictionary<Player, Dictionary<AttackStyle, CinemachineStateDrivenCamera>> stateCameraPool = new Dictionary<Player, Dictionary<AttackStyle, CinemachineStateDrivenCamera>>();
+
     private void Start()
     {
-        InitSwitchCamera();
-        InitSkillCamera();
+        // 支持相机管理器晚于角色生成；后续生成的角色也会主动注册。
+        foreach (var group in FindObjectsOfType<CharacterSkillCameraGroup>(true)) {
+            if (group.isActiveAndEnabled) group.RegisterWith(this);
+        }
     }
 
-    private void InitSwitchCamera()
+    public void RegisterCharacter(CharacterSkillCameraGroup group)
     {
-        if (stateCameraInfoList.Count == 0) { return; }
-        for (int i = 0; i < stateCameraInfoList.Count; i++)
+
+        if (group == null || !group.IsLocalPlayer || group.Player == null) return;
+        var player = group.Player;
+        if (owners.TryGetValue(player, out var existing))
         {
-            if (stateCameraInfoList[i].stateCameraList.Count == 0) { continue; }//跳过当前元素 
-            stateCameraPool.Add(stateCameraInfoList[i].characterName, new Dictionary<AttackStyle, CinemachineStateDrivenCamera>());
-            for (int j = 0; j < stateCameraInfoList[i].stateCameraList.Count; j++)
+            if (existing == group) return;
+            Debug.LogWarning($"角色 {player.name} 已有技能相机配置，忽略重复组件。", group);
+            return;
+        }
+
+        var cameras = new Dictionary<AttackStyle, CinemachineStateDrivenCamera>();
+        foreach (var entry in group.Cameras)
+        {
+            if (entry == null || entry.camera == null) continue;
+            if (cameras.ContainsKey(entry.attackStyle))
             {
-                stateCameraInfoList[i].stateCameraList[j].stateCamera.Priority = 0;
-                //加入到字典里面
-                stateCameraPool[stateCameraInfoList[i].characterName].Add(stateCameraInfoList[i].stateCameraList[j].AttackStyle, stateCameraInfoList[i].stateCameraList[j].stateCamera);
-                
+                Debug.LogWarning($"角色 {player.name} 重复配置技能相机：{entry.attackStyle}", group);
+                continue;
             }
+            entry.camera.m_AnimatedTarget = player.GetComponent<Animator>();
+            entry.camera.Priority = 0;
+            cameras.Add(entry.attackStyle, entry.camera);
         }
+        group.TrackRegistration(this);
+        owners.Add(player, group);
+        stateCameraPool.Add(player, cameras);
     }
 
-    private void InitSkillCamera()
+    public void UnregisterCharacter(CharacterSkillCameraGroup group)
     {
-        switchCharacterSkillCamera.Priority = 0;
-    }
-    public void ActiveStateCamera(CharacterNameList characterName,AttackStyle attackStyle)
-    {
-        if (stateCameraPool.TryGetValue(characterName, out var stateCameraList))
-        {
-            //然后在列表里面查找符合要求的元素类
-            if (stateCameraList.TryGetValue(attackStyle, out var stateDrivenCamera))
-            {
-                stateDrivenCamera.Priority = 20;
-            }
-            
-        }
-    }
-    public void UnActiveStateCamera(CharacterNameList characterName, AttackStyle attackStyle)
-    {
-        if (stateCameraPool.TryGetValue(characterName, out var stateCameraList))
-        {
-            //然后在列表里面查找符合要求的元素类
-            if (stateCameraList.TryGetValue(attackStyle, out var stateDrivenCamera))
-            {
-                stateDrivenCamera.Priority = 0;
-            }
-
-        }
-    }
-    public void ActiveSwitchCamera(bool applySwitchCamera)
-    {
-        if (applySwitchCamera)
-        {
-            switchCharacterSkillCamera.Priority = 20;
-        }
-        else
-        {
-            switchCharacterSkillCamera.Priority = 0;
-        }
+        // Player 已销毁时也要清理它的实例键。
+        Player key = null;
+        foreach (var entry in owners)
+            if (entry.Value == group) { key = entry.Key; break; }
+        if (ReferenceEquals(key, null)) return;
+        foreach (var camera in stateCameraPool[key].Values)
+            if (camera != null) camera.Priority = 0;
+        stateCameraPool.Remove(key);
+        owners.Remove(key);
     }
 
-    private void OnEnable()
+    public void ActiveStateCamera(Player player, AttackStyle attackStyle)
     {
-       
-        brain.m_CameraActivatedEvent.AddListener(OnCameraActivated);
+        SetStateCameraPriority(player, attackStyle, 20);
     }
 
-    private void OnDisable()
+    public void UnActiveStateCamera(Player player, AttackStyle attackStyle)
     {
-       
-        brain.m_CameraActivatedEvent.RemoveListener(OnCameraActivated);
-    }
-   
-
-   
-    /// <summary>
-    /// 相机退出时的处理
-    /// </summary>
-    /// <param name="newCamera"></param>
-    /// <param name="oldCamera"></param>
-    private void OnCameraActivated(ICinemachineCamera newCamera, ICinemachineCamera oldCamera)
-    {
-       
+        SetStateCameraPriority(player, attackStyle, 0);
     }
 
+    private void SetStateCameraPriority(Player player, AttackStyle attackStyle, int priority)
+    {
+        if (player != null && stateCameraPool.TryGetValue(player, out var cameras)
+            && cameras.TryGetValue(attackStyle, out var camera) && camera != null)
+            camera.Priority = priority;
+    }
 }

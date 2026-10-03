@@ -11,7 +11,6 @@ public class CameraHitFeel : MonoSingleton<CameraHitFeel>
     [SerializeField] private Animator currentCharacterAnimator;
     [SerializeField] private Animator currentEnemyAnimator;
     [SerializeField] private float slowMotionResetSpeed;
-    [SerializeField] private Dictionary<CharacterNameList,Animator> characterAnimator=new Dictionary<CharacterNameList, Animator>();
     [SerializeField] private Dictionary<Transform, Animator> enemiesAnimator = new Dictionary<Transform, Animator>();
     [SerializeField] private CinemachineImpulseSource cinemachineImpulseSource;
    // [SerializeField] private Camera_ZoomController zoomController;
@@ -133,12 +132,8 @@ public class CameraHitFeel : MonoSingleton<CameraHitFeel>
     }
     private Animator GetCurrentCharacterAnimator()
     {
-        CharacterNameList characterName = SwitchCharacter.Instance.newCharacterName.Value;
-        if (characterAnimator.TryGetValue(characterName, out var A))
-        {
-            return A;
-        }
-        return null;
+        var player = BattleManager.roleManage != null ? BattleManager.roleManage.LocalPlayer : null;
+        return player != null ? player.characterAnimator : null;
 
     }
     

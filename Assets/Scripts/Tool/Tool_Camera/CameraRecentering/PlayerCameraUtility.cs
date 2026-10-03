@@ -25,6 +25,7 @@ public class PlayerCameraUtility
 
     public void EnableRecentering(float waitTime = -1f, float recenteringTime = -1f)
     {
+        if (cinemachinePOV == null) return;
         //开启水平居中相机
         cinemachinePOV.m_HorizontalRecentering.m_enabled = true;
         //Debug.Log("水平居中相机开启！"+ cinemachinePOV.m_HorizontalRecentering.m_enabled);
@@ -44,12 +45,19 @@ public class PlayerCameraUtility
     }
     public void DisableRecentering()
     {
+        if (cinemachinePOV == null) return;
         cinemachinePOV.m_HorizontalRecentering.m_enabled = false;
         //Debug.Log("水平居中相机关闭！");
     }
 
     public void Init()
     {
-        cinemachinePOV= virtualCamera.GetCinemachineComponent<CinemachinePOV>();  
+        cinemachinePOV = virtualCamera != null ? virtualCamera.GetCinemachineComponent<CinemachinePOV>() : null;
+    }
+
+    public void Bind(CinemachineVirtualCamera camera)
+    {
+        virtualCamera = camera;
+        Init();
     }
 }

@@ -1,6 +1,7 @@
 using Opsive.BehaviorDesigner.Runtime.Tasks.Actions.GameObjectTasks;
 using UnityEngine;
 using ZZZ;
+using System.Collections;
 
 /// <summary>Inspector entry point for one spawn. Wave scheduling belongs to the caller.</summary>
 public class EnemySpawner : MonoBehaviour
@@ -17,14 +18,18 @@ public class EnemySpawner : MonoBehaviour
     {
     }
 
-    private void Start()
+    private IEnumerator Start()
     {
-        if (spawnOnStart) { Spawn(); }
+        if (!spawnOnStart) yield break;
+        yield return new WaitUntil(() => BattleManager.roleManage != null && BattleManager.roleManage.LocalPlayer != null);
+        Spawn();
     }
 
     public EnemyPoolItem Spawn()
     {
-        GameObject currentPlayer = SwitchCharacter.Instance.CurrentPlayer;
+        var player = BattleManager.roleManage != null ? BattleManager.roleManage.LocalPlayer : null;
+        if (player == null) { Debug.LogWarning("Local player is not ready.", this); return null; }
+        GameObject currentPlayer = player.gameObject;
         if (pool == null || enemyPrefab == null) {
             Debug.LogWarning("EnemySpawner needs a pool and an enemy prefab.", this);
             return null;

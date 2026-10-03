@@ -5,7 +5,6 @@ using UnityEngine;
 public class UIManager : MonoSingleton<UIManager>
 {
     [SerializeField] public StateBarUI stateBarUI;
-    [SerializeField] public SwitchTimeUI switchTimeUI;
      GameObject uIRoot;
     private Dictionary<Type, IUI> uiDictionary = new Dictionary<Type, IUI>();
     public void RegisterUI<T>(IUI uI) where T : IUI
@@ -83,14 +82,14 @@ public class UIManager : MonoSingleton<UIManager>
     protected override void Awake()
     {
         base.Awake();
-        if(stateBarUI == null || switchTimeUI == null)
+        uIRoot = GameObject.Find("UIRoot");
+        if (uIRoot != null)
         {
-            uIRoot = GameObject.Find("UIRoot");
-            if (uIRoot != null)
-            {
-                stateBarUI = uIRoot.transform.Find("State Bar").GetComponent<StateBarUI>();
-                switchTimeUI = uIRoot.transform.Find("Switch Time").GetComponent<SwitchTimeUI>();
-            }
+            if (stateBarUI == null)
+                stateBarUI = uIRoot.transform.Find("State Bar")?.GetComponent<StateBarUI>();
+            // 单角色对战不显示候补角色选择 UI。
+            var switchUI = uIRoot.transform.Find("Switch Time");
+            if (switchUI != null) switchUI.gameObject.SetActive(false);
         }
     }
 

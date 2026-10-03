@@ -40,7 +40,8 @@ public class MatchManager : MonoSingleton<MatchManager>
 
     private void OnResponseEnterBattle(TcpEnterBattle message)
     {
-        //todo 更新战场信息
+        DeLogger.LogNoticeTrace(message.battleUserInfo + "进入战场");
+        BattleData.Instance.UpdateBattleInfo(message.randSeed, message.battleUserInfo);
         ClearSceneData.LoadScene(GameConfig.BATTLE_SCENE);
     }
 }

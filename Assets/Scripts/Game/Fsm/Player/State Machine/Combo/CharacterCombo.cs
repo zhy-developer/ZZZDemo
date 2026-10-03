@@ -17,7 +17,7 @@ namespace ZZZ
         public  void DodgeComboInput()
         {
             //以后可以改为给获取Player示例，Player根据PlayerSO获取是否还有特殊闪避攻击
-            switch (SwitchCharacter.Instance.newCharacterName.Value)
+            switch (player.characterName)
             {
                 case CharacterNameList.AnBi:
                     {
@@ -118,110 +118,6 @@ namespace ZZZ
             //播放武器音效
             PlayWeaponSound(comboResuableData.currentSkill);
             animator.CrossFadeInFixedTime(comboResuableData.currentSkill.comboName, 0.1f);
-        }
-
-        /// <summary>
-        /// 被动技能:等待选择切换的角色
-        /// </summary>
-        /// <param name="attacker"></param>
-        protected override void CanSwitchSkill(Transform transform)
-        {
-            if (playerTransform != transform) { return; }
-             comboResuableData.canQTE = true;
-        }
-        protected override void TriggerSwitchSkill()
-        {
-            //禁用人物所有输入
-            CharacterInputSystem.Instance.inputActions.Player.Disable();
-            //重置玩家连招
-            ReSetComboInfo();
-            //激活切人相机
-            CameraSwitcher.Instance.ActiveSwitchCamera(true);   
-            //注册输入切人事件
-            comboResuableData.canQTE = false;
-            //留0.5的时间然后放慢是因为镜头要切换到位
-            TimerManager.Instance.GetOneTimer(0.3f, startSlowTime);
-
-        }
-        protected void startSlowTime()
-        {
-            //放慢时间，但是还不能输入
-            SFX_PoolManager.Instance.TryGetSoundPool(SoundStyle.SwitchTime,player.characterName.ToString(),playerTransform.position); 
-            CameraHitFeel.Instance.StartSlowTime(0.06f);
-            TimerManager.Instance.GetRealTimer(0.2f, StartSwitchSkill);
-        }
-        protected void StartSwitchSkill()
-        {
-            //QTE倒计时
-            TimerManager.Instance.GetRealTimer(3, CancelSwitchSkill);
-            //激活UI
-            UIManager.Instance.switchTimeUI.ActiveImage(SwitchCharacter.Instance.waitingCharacterList[0], SwitchCharacter.Instance.waitingCharacterList[1],3);
-            CharacterInputSystem.Instance.inputActions.SwitchSkill.L.started += SwitchL;
-            CharacterInputSystem.Instance.inputActions.SwitchSkill.R.started += SwitchR;
-        }
-        protected void CancelSwitchSkill()
-        {
-            //恢复时间
-            CameraHitFeel.Instance.EndSlowTime();
-            //关闭UI
-            UIManager.Instance.switchTimeUI.UnActive();
-            //恢复镜头
-            CameraSwitcher.Instance.ActiveSwitchCamera(false);
-            //注销输入
-            CharacterInputSystem.Instance.inputActions.SwitchSkill.L.started -= SwitchL;
-            CharacterInputSystem.Instance.inputActions.SwitchSkill.R.started -= SwitchR;
-            //恢复输入
-            CharacterInputSystem.Instance.inputActions.Player.Enable();
-        }
-
-        /// <summary>
-        /// 切到右边角色
-        /// </summary>
-        /// <param name="context"></param>
-        private void SwitchR(InputAction.CallbackContext context)
-        {
-            //选择切人的角色
-            CharacterNameList selectCharacter = SwitchCharacter.Instance.waitingCharacterList[1];
-            //通知对象你要触发技能：通过黑板模式通知
-            GameBlackboard.Instance.GetGameData<Player>(selectCharacter.ToString()).comboStateMachine.ATKIngState.SwitchSkill();
-            CharacterInputSystem.Instance.inputActions.SwitchSkill.L.started -= SwitchL;
-            CharacterInputSystem.Instance.inputActions.SwitchSkill.R.started -= SwitchR;
-        }
-
-        private void SwitchL(InputAction.CallbackContext context)
-        {
-            CharacterNameList selectCharacter = SwitchCharacter.Instance.waitingCharacterList[0];
-            //通知对象你要触发技能：通过黑板模式通知
-            GameBlackboard.Instance.GetGameData<Player>(selectCharacter.ToString()).comboStateMachine.ATKIngState.SwitchSkill();
-            CharacterInputSystem.Instance.inputActions.SwitchSkill.L.started -= SwitchL;
-            CharacterInputSystem.Instance.inputActions.SwitchSkill.R.started -= SwitchR;
-        }
-
-        /// <summary>
-        /// 支援技
-        /// </summary>
-        /// <param name="characterName"></param>
-        public void SwitchSkill(CharacterNameList characterName)
-        {
-            //恢复时间
-            CameraHitFeel.Instance.EndSlowTime();
-            //关闭UI
-            UIManager.Instance.switchTimeUI.UnActive();
-            //结束切人相机
-            CameraSwitcher.Instance.ActiveSwitchCamera(false);
-            //改技能
-            comboResuableData.currentSkill = comboData.switchSkill;
-            //播放切人动画,//通知切换角色管理器处理切换技能
-            SwitchCharacter.Instance.SwitchSkillInput(characterName, comboResuableData.currentSkill.comboName);
-            //播放语音
-            PlayCharacterVoice(comboResuableData.currentSkill);
-            //播放武器音效
-            PlayWeaponSound(comboResuableData.currentSkill);
-            //恢复输入
-            CharacterInputSystem.Instance.inputActions.Player.Enable();
-           
-
-
         }
 
         #endregion

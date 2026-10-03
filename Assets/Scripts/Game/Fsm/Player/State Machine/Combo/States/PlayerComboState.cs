@@ -89,7 +89,7 @@ namespace ZZZ
         }
         private void OnAttackInput(InputAction.CallbackContext context)
         {
-            if (player.characterName != SwitchCharacter.Instance.newCharacterName.Value) { return; }
+            if (!player.IsLocalPlayer || !player.isActiveAndEnabled) { return; }
           
             if (characterCombo.CanBaseComboInput())
             {
@@ -108,7 +108,7 @@ namespace ZZZ
         }
         private void OnFinishSkill(InputAction.CallbackContext context)
         {
-            if (player.characterName != SwitchCharacter.Instance.newCharacterName.Value) { return; }
+            if (!player.IsLocalPlayer || !player.isActiveAndEnabled) { return; }
             if (characterCombo.CanFinishSkillInput())
             {
                 characterCombo.FinishSkillInput();
@@ -117,19 +117,14 @@ namespace ZZZ
         }
         private void OnSkill(InputAction.CallbackContext context)
         {
-            if (player.characterName != SwitchCharacter.Instance.newCharacterName.Value) { return; }
+            if (!player.IsLocalPlayer || !player.isActiveAndEnabled) { return; }
             if (characterCombo.CanSkillInput())
             {
                 characterCombo.SkillInput();
                 comboStateMachine.ChangeState(comboStateMachine.SkillState);
             }
         }
-        public void SwitchSkill()
-        {
-            characterCombo.SwitchSkill(player.characterName);
-            //切换到技能状态
-            comboStateMachine.ChangeState(comboStateMachine.SkillState);
-        }
+
 
     }
 }

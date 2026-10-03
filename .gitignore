@@ -81,3 +81,8 @@ Thumbs.db
 # Secrets and local environment
 .env
 .env.*
+
+# Standalone movement logic tests
+!Tests/**/*.csproj
+Tests/**/bin/
+Tests/**/obj/

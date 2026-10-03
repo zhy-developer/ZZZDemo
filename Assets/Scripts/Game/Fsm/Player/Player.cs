@@ -36,28 +36,28 @@ namespace ZZZ
         //游戏黑板数据
         private GameBlackboard gameBlackboard;
 
-        /// <summary>
-        /// 是否能继承切人前的疾跑状态
-        /// </summary>
-        private bool canSprintOnSwitch;
-        public bool CanSprintOnSwitch
-        { 
-        get { return canSprintOnSwitch; } 
+        public int BattleID { get; private set; }
+        public bool IsLocalPlayer { get; private set; }
+        [SerializeField] private Transform cameraFollowTarget;
+        [SerializeField] private Transform cameraLookAtTarget;
+        public Transform CameraFollowTarget => cameraFollowTarget != null ? cameraFollowTarget : transform;
+        public Transform CameraLookAtTarget => cameraLookAtTarget != null ? cameraLookAtTarget : transform;
+        private bool statesStarted;
 
-        set {
-                if (value != canSprintOnSwitch)
-                { canSprintOnSwitch = value; } 
-            }
+        // RoleManager 在创建后、Start 之前明确指定归属；未初始化角色不接收本地输入。
+        public void InitializeNetworkRole(int battleID, bool isLocalPlayer)
+        {
+            BattleID = battleID;
+            IsLocalPlayer = isLocalPlayer;
         }
 
         protected override void Awake()
         {
             base.Awake();
 
-            camera = Camera.main.transform;
+            camera = Camera.main != null ? Camera.main.transform : transform;
             movementStateMachine = new PlayerMovementStateMachine(this);
             comboStateMachine = new PlayerComboStateMachine(this);
-            playerCameraUtility.Init();
         }
 
        
@@ -65,30 +65,14 @@ namespace ZZZ
         protected override void Start()
         {
             base.Start();
-            if (characterName == SwitchCharacter.Instance.newCharacterName.Value)
-            {
-                movementStateMachine.ChangeState(movementStateMachine.idlingState); 
-            }
-            else
-            {
-                
-                movementStateMachine.ChangeState(movementStateMachine.onSwitchOutState);
-            }
-         
-            comboStateMachine.ChangeState(comboStateMachine.NullState);
-
-
-            Player player= GetComponent<Player>();
-            //注册黑板信息
-            GameBlackboard.Instance.SetGameData<Player>(characterName.ToString(), player);
+            if (IsLocalPlayer) StartLocalStates();
           
         }
        protected override void Update()
         {
-            base.Update();
-
-            if (characterName==SwitchCharacter.Instance.newCharacterName.Value)
+            if (IsLocalPlayer)
             {
+                base.Update();
                 movementStateMachine.HandInput();
 
                 movementStateMachine.Update();
@@ -101,6 +85,7 @@ namespace ZZZ
         #region 相关动画进入或退出触发的方法
         public void OnAnimationTranslateEvent(OnEnterAnimationPlayerState playerState)
         {
+            if (!IsLocalPlayer || !statesStarted) return;
             switch (playerState)
             {
                 case OnEnterAnimationPlayerState.TurnBack:
@@ -131,6 +116,7 @@ namespace ZZZ
 
         public void OnAnimationExitEvent()
         {
+            if (!IsLocalPlayer || !statesStarted) return;
             movementStateMachine.OnAnimationExitEvent();
 
             comboStateMachine.OnAnimationExitEvent();
@@ -140,6 +126,8 @@ namespace ZZZ
         #region 状态变更事件
         public void OnEnable()
         {
+            if (IsLocalPlayer && movementStateMachine != null && !statesStarted)
+                StartLocalStates();
             //注册movement状态机中的状态变更事件
             if (movementStateMachine != null)
             {
@@ -151,16 +139,19 @@ namespace ZZZ
                 comboStateMachine.currentState.OnValueChanged += ComboStateChanged;
             }
 
-            gameBlackboard = GameBlackboard.Instance;
-            if (gameBlackboard != null)
-            {
-                gameBlackboard.enemy.OnValueChanged += EnemyChanged;
-            }
         }
        
 
         public void OnDisable()
         {
+            if (statesStarted)
+            {
+                movementStateMachine.currentState.Value?.Exit();
+                comboStateMachine.currentState.Value?.Exit();
+                movementStateMachine.currentState.Value = null;
+                comboStateMachine.currentState.Value = null;
+                statesStarted = false;
+            }
             if (movementStateMachine != null)
             {
                 movementStateMachine.currentState.OnValueChanged -= MovementStateChanged;
@@ -176,16 +167,28 @@ namespace ZZZ
                 gameBlackboard.enemy.OnValueChanged -= EnemyChanged;
             }
         }
+
+        private void StartLocalStates()
+        {
+            if (statesStarted) return;
+            statesStarted = true;
+            playerCameraUtility?.Init();
+            movementStateMachine.ChangeState(movementStateMachine.idlingState);
+            comboStateMachine.ChangeState(comboStateMachine.NullState);
+            gameBlackboard = GameBlackboard.Instance;
+            gameBlackboard.enemy.OnValueChanged += EnemyChanged;
+            enemy = gameBlackboard.GetEnemy();
+        }
     
 
         public void MovementStateChanged(IState currentState)
         {
-            currentMovementState= currentState.GetType().Name;
+            currentMovementState = currentState != null ? currentState.GetType().Name : string.Empty;
         }
         private void ComboStateChanged(IState state)
         {
             string previousComboState = currentComboState;
-            currentComboState = state.GetType().Name;
+            currentComboState = state != null ? state.GetType().Name : string.Empty;
             //Debug.Log($"[ComboState] {characterName} ({gameObject.name}) | Frame {Time.frameCount} | {previousComboState} -> {currentComboState}", this);
         }
         private void EnemyChanged(Transform transform)
@@ -200,6 +203,7 @@ namespace ZZZ
         /// </summary>
         public void EnablePreInput()
         {
+            if (!IsLocalPlayer) return;
             comboStateMachine.ATKIngState.EnablePreInput();
         }
         /// <summary>
@@ -207,6 +211,7 @@ namespace ZZZ
         /// </summary>
         public void CancelAttackColdTime()
         { 
+            if (!IsLocalPlayer) return;
             comboStateMachine.ATKIngState.CancelAttackColdTime();
         }
 
@@ -215,6 +220,7 @@ namespace ZZZ
         /// </summary>
         public void DisableLinkCombo()
         { 
+            if (!IsLocalPlayer) return;
             comboStateMachine.ATKIngState.DisableLinkCombo();
         }
         /// <summary>
@@ -222,6 +228,7 @@ namespace ZZZ
         /// </summary>
         public void EnableMoveInterrupt()
         {
+            if (!IsLocalPlayer) return;
             comboStateMachine.ATKIngState.EnableMoveInterrupt();
         }
     
@@ -230,6 +237,7 @@ namespace ZZZ
         /// </summary>
         public void ATK(AnimationEvent animationEvent = null)
         {
+            if (!IsLocalPlayer) return;
             comboStateMachine.ATKIngState.ATK(animationEvent);
         }
 

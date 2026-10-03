@@ -12,7 +12,7 @@ public class LoginUI : MonoBehaviour
     {
         IsNetworkReachability();
         Screen.sleepTimeout = SleepTimeout.NeverSleep;
-        Application.targetFrameRate = 60;
+        Application.targetFrameRate = 120;
 
         _ = NetGlobal.Instance;
 
