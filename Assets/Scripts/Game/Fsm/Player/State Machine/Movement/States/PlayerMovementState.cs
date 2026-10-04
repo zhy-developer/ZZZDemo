@@ -1,4 +1,4 @@
-
+﻿
 using System;
 using ZZZ;
 using UnityEngine;
@@ -98,27 +98,15 @@ namespace ZZZ
             DeLogger.LogNoticeTrace("角色转向输入，转到更新玩家方向");
             BattleData.Instance.UpdateMoveDir(upDir);
 
-            //表现层转向，需转到接受同步帧时执行
-            //movementStateMachine.player.transform.eulerAngles = Vector3.up * Mathf.SmoothDampAngle(movementStateMachine.player.transform.eulerAngles.y, reusableData.targetAngle, ref currentVelocity, reusableData.rotationTime);
-
         }
         #region 输入回调
         protected virtual void AddInputActionCallBacks()
         {
-            //角色walk委托  
-            //CharacterInputSystem.Instance.inputActions.Player.Walk.started += OnWalkStart;
-            //CharacterInputSystem.Instance.inputActions.Player.Dash.started += OnDashStart;
-            //CharacterInputSystem.Instance.inputActions.Player.Movement.canceled += OnMovementCanceled;
-            //CharacterInputSystem.Instance.inputActions.Player.Movement.performed += OnMovementPerformed;
-            //CharacterInputSystem.Instance.inputActions.Player.CameraLook.started += OnMouseMovementStarted;
+
         }
         protected virtual void RemoveInputActionCallBacks()
         {
-            //CharacterInputSystem.Instance.inputActions.Player.Walk.started -= OnWalkStart;
-            //CharacterInputSystem.Instance.inputActions.Player.Dash.started -= OnDashStart;
-            //CharacterInputSystem.Instance.inputActions.Player.Movement.canceled -= OnMovementCanceled;
-            //CharacterInputSystem.Instance.inputActions.Player.Movement.performed -= OnMovementPerformed;
-            //CharacterInputSystem.Instance.inputActions.Player.CameraLook.started -= OnMouseMovementStarted;
+
         }
         #endregion
         protected virtual void OnWalkStart(InputAction.CallbackContext context)
