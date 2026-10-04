@@ -5,6 +5,8 @@ using UnityEngine;
 
 public class LoginManager : MonoSingleton<LoginManager>
 {
+    // 同机联调：每个客户端进程使用独立身份，进程内重连保持不变。
+    private static readonly string sessionToken = System.Guid.NewGuid().ToString("N");
     private void OnEnable()
     {
         TcpMessageDispatcher.Instance.mes_login_result += OnLoginResponse;
@@ -23,7 +25,7 @@ public class LoginManager : MonoSingleton<LoginManager>
                 Debug.Log("连接成功");
                 NetGlobal.Instance.serverIP = _ip;
                 TcpLogin _loginInfo = new TcpLogin();
-                _loginInfo.token = SystemInfo.deviceUniqueIdentifier; // 客户端凭证
+                _loginInfo.token = SystemInfo.deviceUniqueIdentifier + ":" + sessionToken;
                                                                       // 连接成功后发送消息
                 TcpClientConnection.Instance.SendMessage(PackageHandler.PackSendMessage<TcpLogin>(_loginInfo, CSID.TCP_LOGIN));
             }
@@ -38,6 +40,7 @@ public class LoginManager : MonoSingleton<LoginManager>
         if (message.result)
         {
             NetGlobal.Instance.userUid = message.uid;
+            Debug.Log("登录成功，当前客户端 UID: " + message.uid);
             NetGlobal.Instance.udpSendPort = message.udpPort;
             ClearSceneData.LoadScene(GameConfig.MAIN_SCENE);
                 

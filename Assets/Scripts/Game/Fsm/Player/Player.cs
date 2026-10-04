@@ -126,8 +126,6 @@ namespace ZZZ
         #region 状态变更事件
         public void OnEnable()
         {
-            if (IsLocalPlayer && movementStateMachine != null && !statesStarted)
-                StartLocalStates();
             //注册movement状态机中的状态变更事件
             if (movementStateMachine != null)
             {
@@ -139,6 +137,9 @@ namespace ZZZ
                 comboStateMachine.currentState.OnValueChanged += ComboStateChanged;
             }
 
+            // 先恢复监听，再进入状态，否则重新启用后状态名称仍为空。
+            if (IsLocalPlayer && movementStateMachine != null && !statesStarted)
+                StartLocalStates();
         }
        
 

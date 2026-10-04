@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Net;
@@ -11,7 +11,6 @@ public class TcpClientConnection : Singleton<TcpClientConnection>
 {
     private static readonly object padlock = new object();
 
-    private byte[] result = new byte[1024];
     private Socket clientSocket;
 
     public bool isRun = false;
@@ -112,20 +111,13 @@ public class TcpClientConnection : Singleton<TcpClientConnection>
                 }
 
                 //通过clientSocket接收数据  
-                int _size = clientSocket.Receive(result);
-
-                if (_size <= 0)
-                {
-                    throw new Exception("客户端关闭了2~");
-                }
-
-
-                byte packMessageId = result[PackageConstant.PackMessageIdOffset];     //消息id (1个字节)
-                Int16 packlength = BitConverter.ToInt16(result, PackageConstant.PacklengthOffset);  //消息包长度 (2个字节)
-                int bodyDataLenth = packlength - PackageConstant.PacketHeadLength;  // 计算包体长度
-                byte[] bodyData = new byte[bodyDataLenth];
-                Array.Copy(result, PackageConstant.PacketHeadLength, bodyData, 0, bodyDataLenth);
-
+                byte[] header = new byte[PackageConstant.PacketHeadLength];
+                if (!ReceiveExactly(clientSocket, header)) throw new Exception("TCP connection closed");
+                byte packMessageId = header[PackageConstant.PackMessageIdOffset];
+                int packlength = BitConverter.ToUInt16(header, PackageConstant.PacklengthOffset);
+                if (packlength < header.Length) throw new Exception("Invalid TCP packet length");
+                byte[] bodyData = new byte[packlength - header.Length];
+                if (!ReceiveExactly(clientSocket, bodyData)) throw new Exception("TCP connection closed mid-packet");
                 TcpMessageDispatcher.Instance.AnalyzeMessage((GameProtocol.SCID)packMessageId, bodyData);
             }
             catch (Exception ex)
@@ -137,6 +129,17 @@ public class TcpClientConnection : Singleton<TcpClientConnection>
         }
     }
 
+    private static bool ReceiveExactly(Socket socket, byte[] data)
+    {
+        int offset = 0;
+        while (offset < data.Length)
+        {
+            int count = socket.Receive(data, offset, data.Length - offset, SocketFlags.None);
+            if (count == 0) return false;
+            offset += count;
+        }
+        return true;
+    }
     public void SendMessage(byte[] _mes)
     {
         if (isRun)

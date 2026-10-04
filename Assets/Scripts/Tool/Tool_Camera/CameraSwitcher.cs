@@ -21,7 +21,8 @@ public class CameraSwitcher : MonoSingleton<CameraSwitcher>
     public void RegisterCharacter(CharacterSkillCameraGroup group)
     {
 
-        if (group == null || !group.IsLocalPlayer || group.Player == null) return;
+        if (group == null || !group.IsLocalPlayer || group.Player == null
+            || !group.Player.IsLocalPlayer) return;
         var player = group.Player;
         if (owners.TryGetValue(player, out var existing))
         {
