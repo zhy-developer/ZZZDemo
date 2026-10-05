@@ -13,6 +13,8 @@ namespace ZZZ
         protected PlayerEnemyDetectionData enemyDetectionData { get; }
 
         public Player player { get; }
+        private readonly ComboContainerData lightCombo;
+        private readonly ComboContainerData heavyCombo;
 
 
         public CharacterComboBase(Animator animator, Transform playerTransform,Transform cameraTransform , PlayerComboReusableData reusableData, PlayerComboSOData playerComboSOData, PlayerEnemyDetectionData playerEnemyDetectionData,Player player)
@@ -26,16 +28,49 @@ namespace ZZZ
                 reusableData.cameraTransform = cameraTransform;
                 this.player = player;
 
-                if (comboData.heavyCombo != null)
-                {
-                    comboData.heavyCombo.Init();
-                }
-                if (comboData.lightCombo != null)
-                {
-                    comboData.lightCombo.Init();
-                }
+                lightCombo = CloneCombo(comboData.lightCombo);
+                heavyCombo = CloneCombo(comboData.heavyCombo);
             }
 
+        private static ComboContainerData CloneCombo(ComboContainerData source)
+        {
+            if (source == null) return null;
+            var copy = Object.Instantiate(source);
+            copy.comboDatas = new System.Collections.Generic.List<ComboData>(source.comboDatas);
+            copy.Init();
+            return copy;
+        }
+
+        public void Dispose()
+        {
+            if (lightCombo != null) Object.Destroy(lightCombo);
+            if (heavyCombo != null) Object.Destroy(heavyCombo);
+        }
+
+        public bool TryGetAttackIndex(bool heavy, bool dodge, out int index)
+        {
+            var container = heavy ? heavyCombo : lightCombo;
+            index = 0;
+            if (container == null || container.GetComboMaxCount() == 0) return false;
+            if (!dodge && comboResuableData.currentCombo == container && comboResuableData.canLink)
+                index = comboResuableData.comboIndex % container.GetComboMaxCount();
+            return true;
+        }
+
+        // The sender chose the step; never reject/reselect it using this client's animation timing.
+        public bool PlayNetworkAttack(bool heavy, bool dodge, int index)
+        {
+            var container = heavy ? heavyCombo : lightCombo;
+            if (container == null || index < 0 || index >= container.GetComboMaxCount()) return false;
+            if (dodge) container.SwitchDodgeATK();
+            else container.ResetComboDatas();
+            ReSetComboInfo();
+            comboResuableData.currentCombo = container;
+            comboResuableData.comboIndex = index;
+            ExecuteBaseCombo();
+            UpdateComboAnimation();
+            return true;
+        }
         public void AddEventAction()
         {
             comboResuableData.currentIndex.OnValueChanged += ReSetATKIndex;
@@ -52,10 +87,10 @@ namespace ZZZ
         public virtual bool CanBaseComboInput()
         {
             if (!comboResuableData.canInput) { return false; }
-            if (animator.AnimationAtTag("Hit")) return false;
-            if (animator.AnimationAtTag("Parry")) return false;
-            if (animator.AnimationAtTag("Execute")) return false;
-            if (animator.AnimationAtTag("Skill")) { return false; }
+            if (player.IsPlayingAnimationTag("Hit")) return false;
+            if (player.IsPlayingAnimationTag("Parry")) return false;
+            if (player.IsPlayingAnimationTag("Execute")) return false;
+            if (player.IsPlayingAnimationTag("Skill")) { return false; }
       
             return true;
         }
@@ -68,49 +103,6 @@ namespace ZZZ
             }
         }
         #region 一般攻击
-        public virtual void LightComboInput()
-        {
-         
-            if (comboData.lightCombo == null) { return; }
-            
-            if (comboResuableData.currentCombo != comboData.lightCombo || comboResuableData.currentCombo ==null)
-            {
-                comboResuableData.currentCombo = comboData.lightCombo;
-                ReSetComboInfo();
-            }
-            //确保轻攻击是第一个轻攻击
-            comboResuableData.currentCombo.ResetComboDatas();
-
-            ExecuteBaseCombo();
-
-        }
-        public virtual void HeavyComboInput()
-        {
-            if (comboData.heavyCombo == null) { return; }
-            if (comboResuableData.currentCombo != comboData.heavyCombo || comboResuableData.currentCombo == null)
-            {
-                comboResuableData.currentCombo = comboData.heavyCombo;
-
-                ReSetComboInfo();
-            }  
-
-            ExecuteBaseCombo();
-
-        }
-        public virtual void NormalDodgeCombo()
-        {
-            if (comboData.lightCombo == null) { return; }
-            if (comboResuableData.currentCombo != comboData.lightCombo || comboResuableData.currentCombo == null)
-            {
-                comboResuableData.currentCombo = comboData.lightCombo;
-
-            }
-            comboResuableData.currentCombo.SwitchDodgeATK();
-            ReSetComboInfo();
-            ReSetATKIndex(0);
-            ExecuteBaseCombo();
-        }
-
         protected virtual void ExecuteBaseCombo()
         {
             if (comboResuableData.currentCombo == null) { return; }
@@ -124,6 +116,9 @@ namespace ZZZ
             if (!comboResuableData.hasATKCommand) { return; }
 
             comboResuableData.currentIndex.Value = comboResuableData.comboIndex;
+            ReSetATKIndex(0);
+            player.comboStateMachine.ChangeState(player.comboStateMachine.ATKIngState);
+            player.movementStateMachine.ChangeState(player.movementStateMachine.playerMovementNullState);
             string comboName = comboResuableData.currentCombo.GetComboName(comboResuableData.currentIndex.Value);
             // 每一段新攻击都重新等待动画事件开放移动打断。
             comboResuableData.canMoveInterrupt = false;
@@ -143,6 +138,7 @@ namespace ZZZ
         public virtual void ReSetComboInfo()
         {
             comboResuableData.comboIndex = 0;
+            comboResuableData.hasATKCommand = false;
             comboResuableData.canInput = true;
             comboResuableData.canLink = true;
             comboResuableData.canMoveInterrupt = false;
@@ -195,20 +191,20 @@ namespace ZZZ
             //敌人
             //距离
             //角度
-            if (GameBlackboard.Instance.GetEnemy() == null) { return false; }
+            if (player.enemy == null) { return false; }
            // Debug.Log("敌人条件满足");
-            if (DevelopmentTools.DistanceForTarget(GameBlackboard.Instance.GetEnemy(), playerTransform) > comboContainerData.GetComboDistance(comboResuableData.currentIndex.Value)) { return false; }
+            if (DevelopmentTools.DistanceForTarget(player.enemy, playerTransform) > comboContainerData.GetComboDistance(comboResuableData.currentIndex.Value)) { return false; }
            // Debug.Log("距离满足");
-            if (DevelopmentTools.GetAngleForTargetDirection(GameBlackboard.Instance.GetEnemy(), playerTransform) < 80) { return false; }
+            if (DevelopmentTools.GetAngleForTargetDirection(player.enemy, playerTransform) < 80) { return false; }
            // Debug.Log("角度条件满足");
             return true;
         }
 
         protected bool SkillDetection(ComboData comboData)
         {
-            if (GameBlackboard.Instance.GetEnemy() == null) { return false; }
-            if (DevelopmentTools.DistanceForTarget(GameBlackboard.Instance.GetEnemy(), playerTransform) > comboData.attackDistance) { return false; }
-            if (DevelopmentTools.GetAngleForTargetDirection(GameBlackboard.Instance.GetEnemy(), playerTransform) < 135) { return false; }
+            if (player.enemy == null) { return false; }
+            if (DevelopmentTools.DistanceForTarget(player.enemy, playerTransform) > comboData.attackDistance) { return false; }
+            if (DevelopmentTools.GetAngleForTargetDirection(player.enemy, playerTransform) < 135) { return false; }
             return true;
         }
         #endregion
@@ -248,7 +244,7 @@ namespace ZZZ
                   comboResuableData.currentCombo.GetComboDamage(comboResuableData.currentIndex.Value),
                   comboResuableData.currentCombo.GetComboHitName(comboResuableData.currentIndex.Value),
                   comboResuableData.currentCombo.GetComboParryName(comboResuableData.currentIndex.Value),
-                  playerTransform, GameBlackboard.Instance.GetEnemy(),
+                  playerTransform, player.enemy,
                   this);
 
                  CameraHitFeel.Instance.PF(pauseFrameTime);
@@ -261,7 +257,7 @@ namespace ZZZ
 
                 if (!SkillDetection(comboResuableData.currentSkill)) { return; }
                
-                GameEventsManager.Instance.CallEvent("触发伤害", comboResuableData.currentSkill.comboDamage, comboResuableData.currentSkill.hitName, comboResuableData.currentSkill.parryName, playerTransform, GameBlackboard.Instance.GetEnemy(),this);
+                GameEventsManager.Instance.CallEvent("触发伤害", comboResuableData.currentSkill.comboDamage, comboResuableData.currentSkill.hitName, comboResuableData.currentSkill.parryName, playerTransform, player.enemy,this);
 
                 #region 顿帧
                 if (comboResuableData.currentSkill.pauseFrameTimeList!=null && comboResuableData.currentSkill.pauseFrameTimeList.Length > 0&& comboResuableData.ATKIndex <= comboResuableData.currentSkill.pauseFrameTimeList.Length)
@@ -294,36 +290,29 @@ namespace ZZZ
         }
         #endregion
 
-        public void UpdateAttackLookAtEnemy()
-        {
-            if (GameBlackboard.Instance.GetEnemy() == null) { return; }
-            if ((animator.AnimationAtTag("ATK") && animator.GetCurrentAnimatorStateInfo(0).normalizedTime < 0.3f)|| animator.AnimationAtTag("Skill"))
-            {
-                if (DevelopmentTools.DistanceForTarget(playerTransform, GameBlackboard.Instance.GetEnemy()) > 6.5f) return;
-                if (DevelopmentTools.DistanceForTarget(playerTransform, GameBlackboard.Instance.GetEnemy()) < 0.09f) return;
-                playerTransform.Look(GameBlackboard.Instance.GetEnemy().position, 60);
-            }
-
-        }
-
         public void CheckMoveInterrupt()
         {
             if (comboResuableData.canMoveInterrupt == false) { return; }
-            if (!animator.AnimationAtTag("ATK") || animator.IsInTransition(0)) { return; }
-            if (CharacterInputSystem.Instance.PlayerMove.sqrMagnitude != 0)
+            if (!player.IsPlayingAnimationTag("ATK") || animator.IsInTransition(0)) { return; }
+            if (player.HasNetworkMovement)
             {
                 animator.CrossFadeInFixedTime("Locomotion", 0.155f, 0);
                 comboResuableData.canMoveInterrupt = false;
+                player.comboStateMachine.ChangeState(player.comboStateMachine.NullState);
+                player.movementStateMachine.ReturnToLocomotion();
             }
         }
         public void CheckCanLinkCombo()
         {
-            if (!comboResuableData.canLink || CharacterInputSystem.Instance.Run)
+            if (!comboResuableData.canLink)
             {
                 // 连招超时只重置连段，当前攻击的后摇打断窗口仍然有效。
                 bool canMoveInterrupt = comboResuableData.canMoveInterrupt;
+                bool pendingAttack = comboResuableData.hasATKCommand;
                 ReSetComboInfo();
                 comboResuableData.canMoveInterrupt = canMoveInterrupt;
+                comboResuableData.hasATKCommand = pendingAttack;
+                comboResuableData.canInput = !pendingAttack;
             }
         }
 

@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+using GameProtocol;
+using UnityEngine;
 using UnityEngine.Playables;
 using static OnAnimationTranslation;
 
@@ -43,12 +44,17 @@ namespace ZZZ
         public Transform CameraFollowTarget => cameraFollowTarget != null ? cameraFollowTarget : transform;
         public Transform CameraLookAtTarget => cameraLookAtTarget != null ? cameraLookAtTarget : transform;
         private bool statesStarted;
+        private bool networkRoleInitialized;
+        public bool HasNetworkMovement { get; private set; }
+        private PlayerNetworkInput networkInput;
+        private PlayerActionController actions;
 
         // RoleManager 在创建后、Start 之前明确指定归属；未初始化角色不接收本地输入。
         public void InitializeNetworkRole(int battleID, bool isLocalPlayer)
         {
             BattleID = battleID;
             IsLocalPlayer = isLocalPlayer;
+            networkRoleInitialized = true;
         }
 
         protected override void Awake()
@@ -58,6 +64,8 @@ namespace ZZZ
             camera = Camera.main != null ? Camera.main.transform : transform;
             movementStateMachine = new PlayerMovementStateMachine(this);
             comboStateMachine = new PlayerComboStateMachine(this);
+            networkInput = new PlayerNetworkInput(this);
+            actions = new PlayerActionController(this);
         }
 
        
@@ -65,27 +73,64 @@ namespace ZZZ
         protected override void Start()
         {
             base.Start();
-            if (IsLocalPlayer) StartLocalStates();
+            if (networkRoleInitialized) StartStates();
           
         }
-       protected override void Update()
+        protected override void Update()
         {
+            if (!statesStarted) return;
             if (IsLocalPlayer)
             {
                 base.Update();
-                movementStateMachine.HandInput();
-
-                movementStateMachine.Update();
-
-                comboStateMachine.Update();
+                networkInput.Capture();
+                comboStateMachine.Combo.UpdateEnemy(networkInput.WorldMoveDirection);
             }
+            movementStateMachine.UpdateAnimationParameters();
+            movementStateMachine.Update();
+            comboStateMachine.Update();
         }
-       
 
+        public void ApplyNetworkMovement(int direction)
+        {
+            HasNetworkMovement = direction >= 0 && direction <= 120;
+            if (!statesStarted && networkRoleInitialized && isActiveAndEnabled) StartStates();
+            if (!statesStarted || !isActiveAndEnabled) return;
+            movementStateMachine.ApplyMovement(direction);
+        }
+
+        public bool ApplyNetworkAction(PlayerOperation operation)
+        {
+            if (!statesStarted || !isActiveAndEnabled) return false;
+            return actions.Execute(operation.rightOperation, operation.operationValue2);
+        }
+
+        public ActionPreparation PrepareNetworkAction(RightOpType type, int moving, out int payload)
+        {
+            return actions.Prepare(type, moving, out payload);
+        }
+
+        public void LogicTick()
+        {
+            if (statesStarted) actions.LogicTick();
+        }
+
+        public bool IsPlayingAnimationTag(string tag)
+        {
+            var state = characterAnimator.IsInTransition(0)
+                ? characterAnimator.GetNextAnimatorStateInfo(0)
+                : characterAnimator.GetCurrentAnimatorStateInfo(0);
+            // Some existing controllers name TurnRun but leave its tag empty.
+            return state.IsTag(tag) || state.IsName(tag);
+        }
+
+        private void OnDestroy()
+        {
+            comboStateMachine?.Combo.Dispose();
+        }
         #region 相关动画进入或退出触发的方法
         public void OnAnimationTranslateEvent(OnEnterAnimationPlayerState playerState)
         {
-            if (!IsLocalPlayer || !statesStarted) return;
+            if (!statesStarted) return;
             switch (playerState)
             {
                 case OnEnterAnimationPlayerState.TurnBack:
@@ -98,25 +143,15 @@ namespace ZZZ
                     movementStateMachine.OnAnimationTranslateEvent(movementStateMachine.onSwitchOutState);
                     comboStateMachine.OnAnimationTranslateEvent(comboStateMachine.NullState);
                     break;
-                case OnEnterAnimationPlayerState.ATK:
-                    comboStateMachine.OnAnimationTranslateEvent(comboStateMachine.ATKIngState);
-                    movementStateMachine.OnAnimationTranslateEvent(movementStateMachine.playerMovementNullState);
-                    break;
-                case OnEnterAnimationPlayerState.Dash:
-                    movementStateMachine.OnAnimationTranslateEvent(movementStateMachine.dashingState);
-                    comboStateMachine.OnAnimationTranslateEvent(comboStateMachine.NullState);
-                    break;
-                case OnEnterAnimationPlayerState.DashBack:
-                    movementStateMachine.OnAnimationTranslateEvent(movementStateMachine.dashBackingState);
-                    comboStateMachine.OnAnimationTranslateEvent(comboStateMachine.NullState);
-                    break;
+                // ATK/Dash are entered by the network action dispatcher. Late animation
+                // callbacks must not overwrite a newer command.
             }
           
         }
 
         public void OnAnimationExitEvent()
         {
-            if (!IsLocalPlayer || !statesStarted) return;
+            if (!statesStarted) return;
             movementStateMachine.OnAnimationExitEvent();
 
             comboStateMachine.OnAnimationExitEvent();
@@ -138,13 +173,15 @@ namespace ZZZ
             }
 
             // 先恢复监听，再进入状态，否则重新启用后状态名称仍为空。
-            if (IsLocalPlayer && movementStateMachine != null && !statesStarted)
-                StartLocalStates();
+            if (networkRoleInitialized && movementStateMachine != null && !statesStarted)
+                StartStates();
         }
        
 
         public void OnDisable()
         {
+            networkInput?.Clear();
+            if (IsLocalPlayer && networkRoleInitialized) BattleData.Instance.StopMove();
             if (statesStarted)
             {
                 movementStateMachine.currentState.Value?.Exit();
@@ -169,13 +206,15 @@ namespace ZZZ
             }
         }
 
-        private void StartLocalStates()
+        private void StartStates()
         {
             if (statesStarted) return;
             statesStarted = true;
-            playerCameraUtility?.Init();
             movementStateMachine.ChangeState(movementStateMachine.idlingState);
+            movementStateMachine.ReturnToLocomotion();
             comboStateMachine.ChangeState(comboStateMachine.NullState);
+            if (!IsLocalPlayer) return;
+            playerCameraUtility?.Init();
             gameBlackboard = GameBlackboard.Instance;
             gameBlackboard.enemy.OnValueChanged += EnemyChanged;
             enemy = gameBlackboard.GetEnemy();
@@ -204,7 +243,7 @@ namespace ZZZ
         /// </summary>
         public void EnablePreInput()
         {
-            if (!IsLocalPlayer) return;
+            if (!statesStarted || comboStateMachine.currentState.Value != comboStateMachine.ATKIngState) return;
             comboStateMachine.ATKIngState.EnablePreInput();
         }
         /// <summary>
@@ -212,7 +251,7 @@ namespace ZZZ
         /// </summary>
         public void CancelAttackColdTime()
         { 
-            if (!IsLocalPlayer) return;
+            if (!statesStarted || comboStateMachine.currentState.Value != comboStateMachine.ATKIngState) return;
             comboStateMachine.ATKIngState.CancelAttackColdTime();
         }
 
@@ -221,7 +260,7 @@ namespace ZZZ
         /// </summary>
         public void DisableLinkCombo()
         { 
-            if (!IsLocalPlayer) return;
+            if (!statesStarted || comboStateMachine.currentState.Value != comboStateMachine.ATKIngState) return;
             comboStateMachine.ATKIngState.DisableLinkCombo();
         }
         /// <summary>
@@ -229,7 +268,7 @@ namespace ZZZ
         /// </summary>
         public void EnableMoveInterrupt()
         {
-            if (!IsLocalPlayer) return;
+            if (!statesStarted || comboStateMachine.currentState.Value != comboStateMachine.ATKIngState) return;
             comboStateMachine.ATKIngState.EnableMoveInterrupt();
         }
     
@@ -286,7 +325,7 @@ namespace ZZZ
         }
 
         public void PlayFinishSkillTimeline() {
-            if (finishSkillTimeline == null) return;
+            if (!IsLocalPlayer || finishSkillTimeline == null) return;
             finishSkillTimeline.time = 0;
             finishSkillTimeline.Play();
         }

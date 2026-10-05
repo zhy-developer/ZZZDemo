@@ -1,5 +1,6 @@
 
 using System;
+using System.Collections.Generic;
 
 public class BindableProperty<T>
 {
@@ -12,7 +13,7 @@ public class BindableProperty<T>
         get { return mValue; }
         set
         {
-            if (!value.Equals(mValue))
+            if (!EqualityComparer<T>.Default.Equals(value, mValue))
             {
                 mValue = value;
                 OnValueChanged?.Invoke(mValue);

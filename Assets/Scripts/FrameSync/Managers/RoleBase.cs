@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -16,6 +16,7 @@ public class RoleBase : MonoBehaviour {
 	private float currentRotationVelocity;
 
 	private Transform modleParent;
+	private ZZZ.Player player;
 
 	private Vector3 renderPosition;  // 渲染位置
 	private Quaternion renderDir;
@@ -30,6 +31,7 @@ public class RoleBase : MonoBehaviour {
 
 		_modle.transform.SetParent (modleParent);
 		_modle.transform.localPosition = new Vector3(0,0,0);
+		player = _modle.GetComponentInChildren<ZZZ.Player>(true);
 
 		objShape.InitSelf (ObjectType.role,_roleID);
 		objShape.SetPosition (_logicPos);
@@ -60,6 +62,7 @@ public class RoleBase : MonoBehaviour {
 	}
 
 	public virtual void Logic_UpdateMoveDir(int _dir){
+		player?.ApplyNetworkMovement(_dir);
 		if (_dir > 120) { 
 			logicSpeed = GameVector2.zero;
 		} else
@@ -82,6 +85,22 @@ public class RoleBase : MonoBehaviour {
 			GameVector2 _targetPos = objShape.GetPosition () + logicSpeed; // 计算目标位置
 			UpdateLogicPosition (_targetPos); //更新逻辑位置， 
 			renderPosition = objShape.GetPositionVec3 (); // 更新渲染位置。 使用算法平滑处理。
+		}
+	}
+
+	public void Logic_Tick() { player?.LogicTick(); }
+
+	public void Logic_ApplyAction(GameProtocol.PlayerOperation operation)
+	{
+		if (player != null && player.ApplyNetworkAction(operation))
+		{
+			int direction = operation.operationValue1;
+			if (direction >= 0 && direction < 120)
+			{
+				roleDirection = direction * 3;
+				Vector3 facing = ToolGameVector.ChangeGameVectorToVector3(BattleData.Instance.GetSpeed(roleDirection));
+				renderDir = Quaternion.LookRotation(facing);
+			}
 		}
 	}
 

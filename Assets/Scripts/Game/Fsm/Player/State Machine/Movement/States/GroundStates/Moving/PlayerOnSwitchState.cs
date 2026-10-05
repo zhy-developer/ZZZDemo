@@ -20,18 +20,7 @@ namespace ZZZ
 
         public override void OnAnimationExitEvent()
         {
-           
-            if (CharacterInputSystem.Instance.PlayerMove == Vector2.zero)
-            {
-                movementStateMachine.ChangeState(movementStateMachine.idlingState);
-                return;
-            }
-            else
-            {
-                movementStateMachine.ChangeState(movementStateMachine.runningState);
-            }
-           
-          
+            movementStateMachine.ReturnToLocomotion();
         }
     }
 }

@@ -1,57 +1,23 @@
-
-using UnityEngine;
-using Tools;
-
 namespace ZZZ
 {
     public class PlayerMovementNullState : PlayerMovementState
     {
-        public PlayerMovementNullState(PlayerMovementStateMachine playerMovementStateMachine) : base(playerMovementStateMachine)
-        {
-        }
+        private bool actionObserved;
+        public PlayerMovementNullState(PlayerMovementStateMachine stateMachine) : base(stateMachine) { }
         public override void Enter()
         {
-          //base 包含了过渡到闪避的委托，如果需要控制攻击时的闪避时间，则删掉这里然后重写
-             base.Enter();
+            base.Enter();
+            actionObserved = false;
             reusableData.rotationTime = playerMovementData.comboRotaionTime;
-
         }
-        
         public override void Update()
         {
-            //实现在攻击时的转向
-            if (animator.AnimationAtTag("ATK"))
-            {
-                if (animator.GetCurrentAnimatorStateInfo(0).normalizedTime < playerMovementData.comboRotationPercentage)
-                {
-                    base.Update();
-                }   
-            }
+            var player = movementStateMachine.player;
+            if (player.IsPlayingAnimationTag("ATK") || player.IsPlayingAnimationTag("Skill"))
+                actionObserved = true;
+            else if (actionObserved && player.comboStateMachine.currentState.Value == player.comboStateMachine.NullState)
+                movementStateMachine.ReturnToLocomotion();
         }
-     
-        public override void Exit()
-        {
-            base.Exit();
-            
-        }
-        //ATK动画或者技能动画播放完时出发
-        public override void OnAnimationExitEvent()
-        {
-            TimerManager.Instance.GetOneTimer(0.2f, CheckStateExit);
-        }
-
-        private void CheckStateExit()
-        {
-            if (animator.AnimationAtTag("ATK") || animator.AnimationAtTag("Skill"))
-            {
-                return;
-            }
-            if (CharacterInputSystem.Instance.PlayerMove != Vector2.zero)
-            {
-                movementStateMachine.ChangeState(movementStateMachine.runningState);
-                return;
-            }
-            movementStateMachine.ChangeState(movementStateMachine.idlingState);
-        }
+        public override void OnAnimationExitEvent() { Update(); }
     }
 }

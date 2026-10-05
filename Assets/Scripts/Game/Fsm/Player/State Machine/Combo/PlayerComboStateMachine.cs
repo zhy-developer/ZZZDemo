@@ -11,11 +11,15 @@ namespace ZZZ
         public PlayerComboReusableData ReusableData { get; }
 
         public PlayerSkillState SkillState { get; }
+        public CharacterCombo Combo { get; }
         public PlayerComboStateMachine(Player player)
         {
             Player = player;
 
             ReusableData = new PlayerComboReusableData();
+            Combo = new CharacterCombo(player.characterAnimator, player.transform, player.camera,
+                ReusableData, player.playerSO.ComboData.comboData,
+                player.playerSO.ComboData.playerEnemyDetectionData, player);
 
             ATKIngState =new PlayerATKIngState(this);
 

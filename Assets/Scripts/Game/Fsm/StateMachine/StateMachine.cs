@@ -1,4 +1,4 @@
-﻿
+
 namespace ZZZ
 {
     public abstract class StateMachine
@@ -14,7 +14,7 @@ namespace ZZZ
         /// <param name="newState"></param>
         public void ChangeState(IState newState)
         { 
-           
+            if (newState == null || ReferenceEquals(currentState.Value, newState)) return;
             //可能为空用？逻辑符
             currentState.Value?.Exit();
 
@@ -24,12 +24,12 @@ namespace ZZZ
         }
 
         /// <summary>
-        /// 处理输入的接口API
+        /// 每个渲染帧更新动画参数（不读取按键）
         /// </summary>
-        public void HandInput()
+        public void UpdateAnimationParameters()
         {
             //只允许一个状态在这里更新
-            currentState.Value?.HandInput();
+            currentState.Value?.UpdateAnimationParameters();
         }
         /// <summary>
         /// 更新非物理逻辑的接口API

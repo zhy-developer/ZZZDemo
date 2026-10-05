@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Compile Include="../../Assets/Scripts/Tool/Tool_Data/BindableProperty.cs" Link="BindableProperty.cs" />
+    <Compile Include="../../Assets/Scripts/Game/Fsm/StateMachine/IState.cs" Link="IState.cs" />
+    <Compile Include="../../Assets/Scripts/Game/Fsm/StateMachine/StateMachine.cs" Link="StateMachine.cs" />
+    <Compile Include="../../Assets/Scripts/FrameSync/Battle/PlayerActionQueue.cs" Link="PlayerActionQueue.cs" />
+  </ItemGroup>
+</Project>

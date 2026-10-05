@@ -1,4 +1,4 @@
-﻿using GameProtocol;
+using GameProtocol;
 using System.Collections;
 using System.Collections.Generic;
 using Unity.VisualScripting;
@@ -23,8 +23,9 @@ public class BattleData{
     public List<BattleUserInfo> list_battleUser;
 	private Dictionary<int,GameVector2> dic_speed;
 
-	private int curOperationID;
+	private readonly ZZZ.PlayerActionQueue actionQueue = new ZZZ.PlayerActionQueue();
 	public PlayerOperation selfOperation;
+	public int PendingActionCount => actionQueue.Count;
 
 	private int curFramID;
 	private int maxFrameID;
@@ -59,7 +60,7 @@ public class BattleData{
 	}
 
 	private BattleData(){
-		curOperationID = 1;
+		actionQueue.Clear();
 		selfOperation = new PlayerOperation ();
 		selfOperation.move = 121;
 		ResetRightOperation ();
@@ -108,7 +109,7 @@ public class BattleData{
 	/// </summary>
 	public void ClearData ()
 	{
-		curOperationID = 1;
+		actionQueue.Clear();
 		selfOperation.move = 121;
 		ResetRightOperation ();
 
@@ -231,40 +232,38 @@ public class BattleData{
 
 
 	public void UpdateRightOperation(RightOpType _type,int _value1,int _value2){
-		selfOperation.rightOperation = _type;
-		selfOperation.operationValue1 = _value1;
-		selfOperation.operationValue2 = _value2;
-	//	Debug.Log("curOperationID   "  + curOperationID); //当前操作 每次 UpdateRightOperationID之后++
-		selfOperation.operationID = curOperationID;
+		if (_type == RightOpType.noop) return;
+		actionQueue.Enqueue((int)_type, _value1, _value2);
+		RefreshPendingAction();
+	}
+
+	private void RefreshPendingAction()
+	{
+		if (!actionQueue.TryPeek(out var action)) { ResetRightOperation(); return; }
+		selfOperation.rightOperation = (RightOpType)action.Type;
+		selfOperation.operationID = action.Id;
+		selfOperation.operationValue1 = action.Value1;
+		selfOperation.operationValue2 = action.Value2;
 	}
 
 	public void skill1()
 	{
-		selfOperation.rightOperation = RightOpType.rop2;
-		selfOperation.operationValue1 = lastDir;
-		selfOperation.operationValue2 = 0; 
-		selfOperation.operationID = curOperationID;
+		UpdateRightOperation(RightOpType.rop2, lastDir, 0);
 	}
 	public void skill2()
 	{
-		selfOperation.rightOperation = RightOpType.rop3;
-		selfOperation.operationValue1 = 0;
-		selfOperation.operationValue2 = 0;
-		selfOperation.operationID = curOperationID;
+		UpdateRightOperation(RightOpType.rop3, 0, 0);
 	}
 
 	public bool IsValidRightOp(int _battleID,int _rightOpID){
-		return _rightOpID > dic_rightOperationID [_battleID];
+		return _rightOpID > 0 && dic_rightOperationID.TryGetValue(_battleID, out var lastID) && _rightOpID > lastID;
 	}
 
 	public void UpdateRightOperationID(int _battleID,int _opID,RightOpType _type){
 		dic_rightOperationID [_battleID] = _opID;
 		if (battleID == _battleID) {
-			//玩家自己
-			curOperationID++;
-			if (_type == selfOperation.rightOperation) {
-				ResetRightOperation ();
-			}
+			// 按序号确认，避免同类型的旧回包误删下一次输入。
+			if (actionQueue.Acknowledge(_opID)) RefreshPendingAction();
 		}
 	}
 

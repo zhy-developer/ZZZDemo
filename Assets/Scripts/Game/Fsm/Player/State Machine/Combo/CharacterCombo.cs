@@ -13,127 +13,39 @@ namespace ZZZ
            
         }
 
-        #region 闪A处理
-        public  void DodgeComboInput()
-        {
-            //以后可以改为给获取Player示例，Player根据PlayerSO获取是否还有特殊闪避攻击
-            switch (player.characterName)
-            {
-                case CharacterNameList.AnBi:
-                    {
-                        NormalDodgeCombo();
-                    }
-                    break;
-                case CharacterNameList.Xingjianya:
-                    NormalDodgeCombo();
-                    break;
-            }
-        }
-
-        #endregion
-
-        #region 处决处理
-       
-        #endregion
-
-        #region 技能处理
-
-        /// <summary>
-        /// 主动技能
-        /// </summary>
-        /// <returns></returns>
         public bool CanFinishSkillInput()
         {
-            // 大招收尾期间禁止再次释放大招，保留移动和攻击。
-            if (animator.GetCurrentAnimatorStateInfo(0)
-                .IsName("Unagi_FishSkill_End"))
-            {
-                return false;
-            }
-
-            if (animator.IsInTransition(0) &&
-                animator.GetNextAnimatorStateInfo(0)
-                    .IsName("Unagi_FishSkill_End"))
-            {
-                return false;
-            }
-
-            if (animator.AnimationAtTag("Skill")) { return false; }
-            if (animator.AnimationAtTag("Hit")) { return false; }
-            if (animator.AnimationAtTag("Parry")) { return false; }
-            if (animator.AnimationAtTag("ATK")) { return false; }
-            if (comboData.finishSkillCombo == null) { return false; }
-         
-            return true;
-
-        }
-        public bool CanSkillInput()
-        {
-            if (animator.AnimationAtTag("Skill")) { return false; }
-            if (animator.AnimationAtTag("Hit")) { return false; }
-            if (animator.AnimationAtTag("Parry")) { return false; }
-            if (animator.AnimationAtTag("ATK")) { return false; }
-            if (comboData.skillCombo == null) { return false; }
-
-            return true;
-
+            // Preserve the ultimate outro restriction from the existing controller.
+            if (animator.GetCurrentAnimatorStateInfo(0).IsName("Unagi_FishSkill_End")) return false;
+            if (animator.IsInTransition(0) && animator.GetNextAnimatorStateInfo(0).IsName("Unagi_FishSkill_End")) return false;
+            return CanPlaySkill(comboData.finishSkillCombo);
         }
 
-        /// <summary>
-        /// 终极大招
-        /// </summary>
-        public void FinishSkillInput()
+        public bool CanSkillInput() { return CanPlaySkill(comboData.skillCombo); }
+
+        private bool CanPlaySkill(ComboData skill)
         {
-            if (comboData.finishSkillCombo == null) { return; }
-            if (comboResuableData.currentCombo == null || comboResuableData.currentCombo != comboData.finishSkillCombo)
-            {
-                comboResuableData.currentSkill = comboData.finishSkillCombo;
-            }
-            ExecuteSkill();
+            return skill != null && !player.IsPlayingAnimationTag("Skill")
+                && !player.IsPlayingAnimationTag("Hit") && !player.IsPlayingAnimationTag("Parry")
+                && !player.IsPlayingAnimationTag("ATK");
         }
-        /// <summary>
-        /// 大招
-        /// </summary>
-        public void SkillInput()
+
+        public void FinishSkillInput() { PlaySkill(comboData.finishSkillCombo); }
+        public void SkillInput() { PlaySkill(comboData.skillCombo); }
+
+        private void PlaySkill(ComboData skill)
         {
-            if (comboData.skillCombo == null) {
-                DeLogger.LogErrorTrace("SkillCombo数据为空");
-                return; 
-            }
-            if (comboResuableData.currentCombo == null || comboResuableData.currentCombo != comboData.skillCombo)
-            {
-                comboResuableData.currentSkill = comboData.skillCombo;
-            }
-            ExecuteSkill();
-        }
-       
-        /// <summary>
-        /// 执行大招
-        /// </summary>
-        private void ExecuteSkill()
-        {
+            if (skill == null) return;
+            comboResuableData.currentSkill = skill;
             ReSetATKIndex(0);
-            //播放语音
-            PlayCharacterVoice(comboResuableData.currentSkill);
-            //播放武器音效
-            PlayWeaponSound(comboResuableData.currentSkill);
-            animator.CrossFadeInFixedTime(comboResuableData.currentSkill.comboName, 0.1f);
+            PlayCharacterVoice(skill);
+            PlayWeaponSound(skill);
+            animator.CrossFadeInFixedTime(skill.comboName, 0.1f);
         }
-
-        #endregion
-
         #region 敌人检测
-        public void UpdateDetectionDir()
+        public void UpdateDetectionDir(Vector3 worldMoveDirection)
         {
-            Vector3 camForwardDir = Vector3.zero;
-            camForwardDir.Set(comboResuableData.cameraTransform.forward.x, 0, comboResuableData.cameraTransform.forward.z);
-            camForwardDir.Normalize();
-
-            Vector3 camRightDir = Vector3.zero;
-            camRightDir.Set(comboResuableData.cameraTransform.right.x, 0, comboResuableData.cameraTransform.right.z);
-            camRightDir.Normalize();
-
-            comboResuableData.detectionDir = camForwardDir * CharacterInputSystem.Instance.PlayerMove.y + camRightDir * CharacterInputSystem.Instance.PlayerMove.x;
+            comboResuableData.detectionDir = worldMoveDirection;
 
             if (comboResuableData.detectionDir.sqrMagnitude <= 0.0001f)
             {
@@ -152,9 +64,10 @@ namespace ZZZ
 
             comboResuableData.detectionDir.Normalize();
         }
-        public void UpdateEnemy()
+        public void UpdateEnemy(Vector3 worldMoveDirection)
         {
-            UpdateDetectionDir();
+            if (!player.IsLocalPlayer) return;
+            UpdateDetectionDir(worldMoveDirection);
 
             comboResuableData.detectionOrigin = new Vector3(playerTransform.position.x, playerTransform.position.y + 0.7f, playerTransform.position.z);
            

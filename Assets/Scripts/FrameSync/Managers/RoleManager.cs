@@ -1,4 +1,4 @@
-﻿using GameProtocol;
+using GameProtocol;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -105,6 +105,8 @@ public class RoleManager : MonoBehaviour
 
     public void Logic_Operation(AllPlayerOperation _allOp)
     {
+        // Advance cooldowns before applying this frame's new actions.
+        foreach (var role in dic_role.Values) role.Logic_Tick();
         //	Debug.Log("操作数" + _allOp.operations.Count);
         foreach (var item in _allOp.operations)
         {
@@ -119,27 +121,7 @@ public class RoleManager : MonoBehaviour
             {
                 if (BattleData.Instance.IsValidRightOp(item.battleID, item.operationID))
                 {
-                    //操作有效
-                    switch (item.rightOperation)
-                    {
-                        case RightOpType.rop1:
-                            {
-                                //dic_role[item.battleID].Logic_NormalAttack();
-                            }
-                            break;
-                        case RightOpType.rop2:
-                            {
-                                //dic_role[item.battleID].Logic_Skill1(item.operationValue1);
-                            }
-                            break;
-                        case RightOpType.rop3:
-                            {
-                                //dic_role[item.battleID].Logic_Skill2();
-                            }
-                            break;
-                        default:
-                            break;
-                    }
+                    dic_role[item.battleID].Logic_ApplyAction(item);
 
                     BattleData.Instance.UpdateRightOperationID(item.battleID, item.operationID, item.rightOperation);
                 }

@@ -1,130 +1,44 @@
-
-using System;
 using UnityEngine;
-using UnityEngine.InputSystem;
-using Tools;
 
 namespace ZZZ
 {
     public class PlayerComboState : IState
     {
-        protected Player player{ get; }
+        protected Player player { get; }
         protected PlayerComboStateMachine comboStateMachine { get; }
         protected CharacterCombo characterCombo { get; }
-        protected PlayerComboReusableData reusableData { get;  }
+        protected PlayerComboReusableData reusableData { get; }
         protected PlayerComboData playerComboData { get; }
         protected Animator animator { get; }
-        public PlayerComboState(PlayerComboStateMachine comboStateMachine)
-        {
-           this.comboStateMachine = comboStateMachine;
+        private bool animationObserved;
 
-            if (player == null)
-            {
-                player = comboStateMachine.Player;
-            }  
-            if (animator == null)
-            {
-                animator = comboStateMachine.Player.characterAnimator;
-            }
-            if (playerComboData == null)
-            {
-                playerComboData = player.playerSO.ComboData;
-            }
-            if (reusableData == null)
-            {
-                reusableData = this.comboStateMachine.ReusableData;
-            }
-            if (characterCombo == null)
-            {
-                characterCombo = new CharacterCombo(animator, player.transform,player.camera, reusableData, playerComboData.comboData,playerComboData.playerEnemyDetectionData,player);
-            }
-           
+        public PlayerComboState(PlayerComboStateMachine stateMachine)
+        {
+            comboStateMachine = stateMachine;
+            player = stateMachine.Player;
+            animator = player.characterAnimator;
+            reusableData = stateMachine.ReusableData;
+            playerComboData = player.playerSO.ComboData;
+            characterCombo = stateMachine.Combo;
         }
         public virtual void Enter()
         {
-            AddInputActionEvent();
+            animationObserved = false;
+            characterCombo.AddEventAction();
         }
-
-        public virtual void Exit()
-        {
-            RemoveInputActionEvent();
-        }
-
-        public virtual void HandInput()
-        {
-          
-        }
-
-        public virtual void OnAnimationExitEvent()
-        {
-
-        }
-
-        public virtual void OnAnimationTranslateEvent(IState state)
-        {
-
-        }
-
+        public virtual void Exit() { characterCombo.RemoveEventActon(); }
+        public virtual void UpdateAnimationParameters() { }
+        public virtual void OnAnimationExitEvent() { }
+        public virtual void OnAnimationTranslateEvent(IState state) { comboStateMachine.ChangeState(state); }
         public virtual void Update()
         {
             characterCombo.UpdateComboAnimation();
-            characterCombo.UpdateEnemy();
             characterCombo.CheckCanLinkCombo();
         }
-        protected virtual void AddInputActionEvent()
+        protected bool HasAnimationFinished(string tag)
         {
-            CharacterInputSystem.Instance.inputActions.Player.L_AtK.started += OnAttackInput;
-            CharacterInputSystem.Instance.inputActions.Player.FinishSkill.started += OnFinishSkill;
-            CharacterInputSystem.Instance.inputActions.Player.Skill.started += OnSkill;
-            characterCombo.AddEventAction();
+            if (player.IsPlayingAnimationTag(tag)) { animationObserved = true; return false; }
+            return animationObserved;
         }
-
-
-        protected virtual void RemoveInputActionEvent()
-        {
-            CharacterInputSystem.Instance.inputActions.Player.L_AtK.started -= OnAttackInput;
-            CharacterInputSystem.Instance.inputActions.Player.FinishSkill.started -= OnFinishSkill;
-            CharacterInputSystem.Instance.inputActions.Player.Skill.started -= OnSkill;
-            characterCombo.RemoveEventActon();
-        }
-        private void OnAttackInput(InputAction.CallbackContext context)
-        {
-            if (!player.IsLocalPlayer || !player.isActiveAndEnabled) { return; }
-          
-            if (characterCombo.CanBaseComboInput())
-            {
-                if (player.currentMovementState == "PlayerSprintingState" || animator.AnimationAtTag("Dodge"))
-                {
-                    characterCombo.DodgeComboInput();
-                    Debug.Log("闪避攻击");
-                }
-                else
-                {
-                  
-                    characterCombo.LightComboInput();
-                }
-
-            }
-        }
-        private void OnFinishSkill(InputAction.CallbackContext context)
-        {
-            if (!player.IsLocalPlayer || !player.isActiveAndEnabled) { return; }
-            if (characterCombo.CanFinishSkillInput())
-            {
-                characterCombo.FinishSkillInput();
-                comboStateMachine.ChangeState(comboStateMachine.SkillState);
-            }
-        }
-        private void OnSkill(InputAction.CallbackContext context)
-        {
-            if (!player.IsLocalPlayer || !player.isActiveAndEnabled) { return; }
-            if (characterCombo.CanSkillInput())
-            {
-                characterCombo.SkillInput();
-                comboStateMachine.ChangeState(comboStateMachine.SkillState);
-            }
-        }
-
-
     }
 }

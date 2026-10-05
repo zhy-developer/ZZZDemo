@@ -5,13 +5,13 @@ namespace ZZZ
     public interface IState 
     {
         /// <summary>
-        /// 状态机的状态接口，那么每个状态都应该有进入、退出、处理输入、更新、动画事件等方法。
+        /// 状态机的状态接口，那么每个状态都应该有进入、退出、动画参数更新、状态更新、动画事件等方法。
         /// </summary>
         public void Enter();
 
         public void Exit();
 
-        public void HandInput();
+        public void UpdateAnimationParameters();
 
         public void Update();
 
