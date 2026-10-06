@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -12,7 +12,7 @@ public class RoleBase : MonoBehaviour {
 	private float positionSmoothTime = 0.08f;
 	private Vector3 currentMoveVelocity;
 	[SerializeField, Min(0.01f), Tooltip("转向平滑时间（秒），越小转向越快")]
-	private float rotationTime = 0.1f;
+	private float rotationSmoothTime = 0.1f;
 	private float currentRotationVelocity;
 
 	private Transform modleParent;
@@ -57,10 +57,14 @@ public class RoleBase : MonoBehaviour {
 			modleParent.eulerAngles.y,
 			renderDir.eulerAngles.y,
 			ref currentRotationVelocity,
-			rotationTime);
+			rotationSmoothTime);
 		modleParent.eulerAngles = Vector3.up * nextAngle;
 	}
 
+	/// <summary>
+	/// 逻辑帧更新角色方向
+	/// </summary>
+	/// <param name="_dir"></param>
 	public virtual void Logic_UpdateMoveDir(int _dir){
 		player?.ApplyNetworkMovement(_dir);
 		if (_dir > 120) { 
@@ -76,7 +80,7 @@ public class RoleBase : MonoBehaviour {
 
 
 	/// <summary>
-	/// 逻辑帧位移
+	/// 逻辑帧更新角色位移
 	/// </summary>
 	public virtual void Logic_Move(){
 
@@ -88,8 +92,14 @@ public class RoleBase : MonoBehaviour {
 		}
 	}
 
-	public void Logic_Tick() { player?.LogicTick(); }
+	public void Logic_Tick() {
+		player?.LogicTick(); 
+	}
 
+	/// <summary>
+	/// 逻辑帧应用角色动作
+	/// </summary>
+	/// <param name="operation"></param>
 	public void Logic_ApplyAction(GameProtocol.PlayerOperation operation)
 	{
 		if (player != null && player.ApplyNetworkAction(operation))
