@@ -18,5 +18,6 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 8579d1164b67cd7439dd77f4146fcd5c, type: 2}
   - {fileID: 11400000, guid: 327735ee4e0e41042833fb639b2b68f9, type: 2}
   - {fileID: 11400000, guid: 085b138412fcbab4cbc766472f398fb3, type: 2}
+  - {fileID: 11400000, guid: 243240f743bfc3c449d31a0a81d0370d, type: 2}
   DodgeATKData: {fileID: 11400000, guid: d10d21c0b763de54ca81d0141fe331f2, type: 2}
   BackDodgeATKData: {fileID: 0}

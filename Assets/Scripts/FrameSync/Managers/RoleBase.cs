@@ -2,9 +2,11 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using FrameSync.RootMotion;
 
 [RequireComponent(typeof(ShapeCircle))]
 public class RoleBase : MonoBehaviour {
+	private const int DirectionTableScale = 100; // Desktopspeed.txt basis-vector precision.
 
 	public int moveSpeed;
 
@@ -22,6 +24,12 @@ public class RoleBase : MonoBehaviour {
 	private Quaternion renderDir;
 	private GameVector2 logicSpeed;
 	private int roleDirection;//角色朝向
+	private int inputDirection = 121;
+	private int? actionDirection;
+	private readonly RootMotionPlayback rootMotion = new RootMotionPlayback();
+	private int rootMotionHandle;
+	private System.Action rootMotionCompleted;
+	public bool IsPlayingRootMotion => rootMotion.IsPlaying;
 	[HideInInspector]
 	public ShapeBase objShape; // 角色的shapeBase
 	public void InitData(GameObject _ui,GameObject _modle,int _roleID,GameVector2 _logicPos){
@@ -32,6 +40,9 @@ public class RoleBase : MonoBehaviour {
 		_modle.transform.SetParent (modleParent);
 		_modle.transform.localPosition = new Vector3(0,0,0);
 		player = _modle.GetComponentInChildren<ZZZ.Player>(true);
+		player?.BindMotionRole(this);
+		CancelRootMotion();
+		inputDirection = 121;
 
 		objShape.InitSelf (ObjectType.role,_roleID);
 		objShape.SetPosition (_logicPos);
@@ -67,14 +78,14 @@ public class RoleBase : MonoBehaviour {
 	/// <param name="_dir"></param>
 	public virtual void Logic_UpdateMoveDir(int _dir){
 		player?.ApplyNetworkMovement(_dir);
-		if (_dir > 120) { 
+		inputDirection = _dir;
+		if (_dir < 0 || _dir > 120) {
 			logicSpeed = GameVector2.zero;
 		} else
 		{			
-			roleDirection = _dir * 3;
-			logicSpeed = moveSpeed * BattleData.Instance.GetSpeed (roleDirection);
-			Vector3 _renderDir = ToolGameVector.ChangeGameVectorToVector3 (logicSpeed);																																																																		//ani.speed *= !!ReplayCon.Instance ? ReplayCon.Instance.narmalSpeed : 1;
-			renderDir = Quaternion.LookRotation (_renderDir);
+			int direction = (_dir % 120) * 3;
+			logicSpeed = moveSpeed * BattleData.Instance.GetSpeed(direction);
+			if (!rootMotion.IsPlaying) SetLogicalFacing(direction);
 		}
 	}
 
@@ -83,12 +94,20 @@ public class RoleBase : MonoBehaviour {
 	/// 逻辑帧更新角色位移
 	/// </summary>
 	public virtual void Logic_Move(){
-
-      //  Debug.Log("Logic_Move  "  + Time.realtimeSinceStartup);
+		if (rootMotion.TryAdvance(out int deltaX, out int deltaZ))
+		{
+			ApplyLogicDisplacement(new GameVector2(deltaX, deltaZ));
+			if (!rootMotion.IsPlaying)
+			{
+				var completed = rootMotionCompleted;
+				rootMotionCompleted = null;
+				RestoreInputFacing();
+				completed?.Invoke();
+			}
+			return; // Including the final sample: never add ordinary movement on this tick.
+		}
 		if (logicSpeed != GameVector2.zero) { // 如果逻辑速度不等于0
-			GameVector2 _targetPos = objShape.GetPosition () + logicSpeed; // 计算目标位置
-			UpdateLogicPosition (_targetPos); //更新逻辑位置， 
-			renderPosition = objShape.GetPositionVec3 (); // 更新渲染位置。 使用算法平滑处理。
+			ApplyLogicDisplacement(logicSpeed);
 		}
 	}
 
@@ -102,23 +121,74 @@ public class RoleBase : MonoBehaviour {
 	/// <param name="operation"></param>
 	public void Logic_ApplyAction(GameProtocol.PlayerOperation operation)
 	{
-		if (player != null && player.ApplyNetworkAction(operation))
+		int direction = operation.operationValue1;
+		actionDirection = direction >= 0 && direction <= 120 ? (int?)((direction % 120) * 3) : null;
+		try
 		{
-			int direction = operation.operationValue1;
-			if (direction >= 0 && direction < 120)
-			{
-				roleDirection = direction * 3;
-				Vector3 facing = ToolGameVector.ChangeGameVectorToVector3(BattleData.Instance.GetSpeed(roleDirection));
-				renderDir = Quaternion.LookRotation(facing);
-			}
+			if (player != null && player.ApplyNetworkAction(operation) && actionDirection.HasValue)
+				SetLogicalFacing(actionDirection.Value);
 		}
+		finally { actionDirection = null; }
+	}
+
+	/// <summary>Call from a confirmed logical action. Returns an ownership handle, or 0 on failure.</summary>
+	public int TryPlayRootMotion(RootMotionSettings settings, System.Action completed = null)
+	{
+		if (settings == null || !settings.TryGetClip(out var clip)) return 0;
+		int facingDirection = actionDirection ?? roleDirection;
+		GameVector2 facing = BattleData.Instance.GetSpeed(facingDirection);
+		// Desktopspeed.txt stores a unit direction with magnitude approximately 100.
+		if (!rootMotion.TryStart(clip, settings.endFrameExclusive, settings.distancePermille,
+			facing.x, facing.y, DirectionTableScale))
+		{
+			Debug.LogError("Invalid root motion range, scale or facing for " + settings.json.name, this);
+			return 0;
+		}
+		rootMotionCompleted = completed;
+		rootMotionHandle = rootMotionHandle == int.MaxValue ? 1 : rootMotionHandle + 1;
+		SetLogicalFacing(facingDirection);
+		return rootMotionHandle;
+	}
+
+	/// <summary>Stale action exits cannot cancel newer playback. Cancellation never invokes completion.</summary>
+	public void StopRootMotion(int handle)
+	{
+		if (handle == 0 || handle != rootMotionHandle) return;
+		CancelRootMotion();
+		RestoreInputFacing();
+	}
+
+	public void CancelRootMotion()
+	{
+		rootMotion.Stop();
+		rootMotionCompleted = null;
+	}
+
+	private void SetLogicalFacing(int direction)
+	{
+		roleDirection = direction;
+		renderDir = Quaternion.LookRotation(ToolGameVector.ChangeGameVectorToVector3(BattleData.Instance.GetSpeed(direction)));
+	}
+
+	private void RestoreInputFacing()
+	{
+		if (inputDirection >= 0 && inputDirection <= 120) SetLogicalFacing((inputDirection % 120) * 3);
+	}
+
+	private void OnDisable() { CancelRootMotion(); }
+
+	private void ApplyLogicDisplacement(GameVector2 delta)
+	{
+		UpdateLogicPosition(objShape.GetPosition() + delta);
+		renderPosition = objShape.GetPositionVec3();
 	}
 
 	/// <summary>
 	/// 更新逻辑位置
 	/// </summary>
 	/// <param name="_logicPos"></param>
-	void UpdateLogicPosition(GameVector2 _logicPos){
+	// Shared position resolver for normal and baked motion. Override to add swept obstacle collision.
+	protected virtual void UpdateLogicPosition(GameVector2 _logicPos){
 		 
 		objShape.SetPosition (BattleData.Instance.GetMapLogicPosition(_logicPos));
 	}

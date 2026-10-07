@@ -24,6 +24,29 @@ namespace ZZZ
         //现在的连招状态
         [SerializeField] public string currentComboState;
 
+        [SerializeField, Tooltip("输出 [ComboTrace] 连招输入、网络指令和动画窗口诊断。排查完成后关闭。")]
+        private bool enableComboDiagnostics = true;
+        private int diagnosticOperationId;
+
+        public void TraceCombo(string stage, string detail = "")
+        {
+            if (!enableComboDiagnostics || !Debug.isDebugBuild) return;
+            var data = comboStateMachine?.ReusableData;
+            string animation = "animator=unavailable";
+            if (characterAnimator != null && characterAnimator.isActiveAndEnabled)
+            {
+                var current = characterAnimator.GetCurrentAnimatorStateInfo(0);
+                var next = characterAnimator.GetNextAnimatorStateInfo(0);
+                animation = $"animHash={current.shortNameHash} t={current.normalizedTime:F4} "
+                    + $"transition={characterAnimator.IsInTransition(0)} nextHash={next.shortNameHash} nextT={next.normalizedTime:F4}";
+            }
+            Debug.Log($"[ComboTrace] {stage} player={name} battle={BattleID} local={IsLocalPlayer} "
+                + $"frame={Time.frameCount} time={Time.unscaledTime:F3} lastOp={diagnosticOperationId} {detail} "
+                + $"state={currentComboState} currentIndex={data?.currentIndex.Value} nextIndex={data?.comboIndex} "
+                + $"canInput={data?.canInput} canATK={data?.canATK} canLink={data?.canLink} "
+                + $"moving={HasNetworkMovement} {animation}", this);
+        }
+
         [SerializeField, Header("大招演出")]
         private PlayableDirector finishSkillTimeline;
 
@@ -48,6 +71,16 @@ namespace ZZZ
         public bool HasNetworkMovement { get; private set; }
         private PlayerNetworkInput networkInput;
         private PlayerActionController actions;
+        private RoleBase motionRole;
+
+        public void BindMotionRole(RoleBase role) { motionRole = role; }
+
+        public int TryPlayRootMotion(FrameSync.RootMotion.RootMotionSettings settings, System.Action completed = null)
+        {
+            return motionRole != null ? motionRole.TryPlayRootMotion(settings, completed) : 0;
+        }
+
+        public void StopRootMotion(int handle) { motionRole?.StopRootMotion(handle); }
 
         // RoleManager 在创建后、Start 之前明确指定归属；未初始化角色不接收本地输入。
         public void InitializeNetworkRole(int battleID, bool isLocalPlayer)
@@ -100,8 +133,16 @@ namespace ZZZ
 
         public bool ApplyNetworkAction(PlayerOperation operation)
         {
-            if (!statesStarted || !isActiveAndEnabled) return false;
-            return actions.Execute(operation.rightOperation, operation.operationValue2);
+            diagnosticOperationId = operation.operationID;
+            TraceCombo("RECEIVE", $"op={operation.operationID} type={operation.rightOperation} payload={operation.operationValue2} index={operation.operationValue2 >> 2}");
+            if (!statesStarted || !isActiveAndEnabled)
+            {
+                TraceCombo("REJECT", "states not started or player inactive");
+                return false;
+            }
+            bool applied = actions.Execute(operation.rightOperation, operation.operationValue2);
+            TraceCombo("APPLY_RESULT", $"op={operation.operationID} result={applied}");
+            return applied;
         }
 
         public ActionPreparation PrepareNetworkAction(RightOpType type, int moving, out int payload)
@@ -180,6 +221,7 @@ namespace ZZZ
 
         public void OnDisable()
         {
+            motionRole?.CancelRootMotion();
             networkInput?.Clear();
             if (IsLocalPlayer && networkRoleInitialized) BattleData.Instance.StopMove();
             if (statesStarted)
@@ -229,6 +271,7 @@ namespace ZZZ
         {
             string previousComboState = currentComboState;
             currentComboState = state != null ? state.GetType().Name : string.Empty;
+            TraceCombo("STATE", $"{previousComboState} -> {currentComboState}");
             //Debug.Log($"[ComboState] {characterName} ({gameObject.name}) | Frame {Time.frameCount} | {previousComboState} -> {currentComboState}", this);
         }
         private void EnemyChanged(Transform transform)
@@ -241,35 +284,71 @@ namespace ZZZ
         /// <summary>
         /// 启动预输入
         /// </summary>
-        public void EnablePreInput()
+        public void EnablePreInput(AnimationEvent animationEvent = null)
         {
-            if (!statesStarted || comboStateMachine.currentState.Value != comboStateMachine.ATKIngState) return;
+            TraceComboEventEntry(nameof(EnablePreInput), animationEvent);
+            if (!statesStarted || comboStateMachine.currentState.Value != comboStateMachine.ATKIngState)
+            {
+                TraceCombo("EVENT_IGNORED", $"event={nameof(EnablePreInput)} statesStarted={statesStarted} reason=not_in_attack_state");
+                return;
+            }
             comboStateMachine.ATKIngState.EnablePreInput();
         }
         /// <summary>
         /// 取消攻击冷却
         /// </summary>
-        public void CancelAttackColdTime()
+        public void CancelAttackColdTime(AnimationEvent animationEvent = null)
         { 
-            if (!statesStarted || comboStateMachine.currentState.Value != comboStateMachine.ATKIngState) return;
+            TraceComboEventEntry(nameof(CancelAttackColdTime), animationEvent);
+            if (!statesStarted || comboStateMachine.currentState.Value != comboStateMachine.ATKIngState)
+            {
+                TraceCombo("EVENT_IGNORED", $"event={nameof(CancelAttackColdTime)} statesStarted={statesStarted} reason=not_in_attack_state");
+                return;
+            }
             comboStateMachine.ATKIngState.CancelAttackColdTime();
         }
 
         /// <summary>
         /// 取消连招
         /// </summary>
-        public void DisableLinkCombo()
+        public void DisableLinkCombo(AnimationEvent animationEvent = null)
         { 
-            if (!statesStarted || comboStateMachine.currentState.Value != comboStateMachine.ATKIngState) return;
+            TraceComboEventEntry(nameof(DisableLinkCombo), animationEvent);
+            if (!statesStarted || comboStateMachine.currentState.Value != comboStateMachine.ATKIngState)
+            {
+                TraceCombo("EVENT_IGNORED", $"event={nameof(DisableLinkCombo)} statesStarted={statesStarted} reason=not_in_attack_state");
+                return;
+            }
             comboStateMachine.ATKIngState.DisableLinkCombo();
         }
         /// <summary>
         /// 打断移动
         /// </summary>
-        public void EnableMoveInterrupt()
+        public void EnableMoveInterrupt(AnimationEvent animationEvent = null)
         {
-            if (!statesStarted || comboStateMachine.currentState.Value != comboStateMachine.ATKIngState) return;
+            TraceComboEventEntry(nameof(EnableMoveInterrupt), animationEvent);
+            if (!statesStarted || comboStateMachine.currentState.Value != comboStateMachine.ATKIngState)
+            {
+                TraceCombo("EVENT_IGNORED", $"event={nameof(EnableMoveInterrupt)} statesStarted={statesStarted} reason=not_in_attack_state");
+                return;
+            }
             comboStateMachine.ATKIngState.EnableMoveInterrupt();
+        }
+
+        private void TraceComboEventEntry(string eventName, AnimationEvent animationEvent)
+        {
+            if (!enableComboDiagnostics || !Debug.isDebugBuild) return;
+            if (animationEvent == null || !animationEvent.isFiredByAnimator)
+            {
+                TraceCombo("EVENT_ENTRY", $"event={eventName} statesStarted={statesStarted} source=direct_or_non_animator");
+                return;
+            }
+            var source = animationEvent.animatorStateInfo;
+            var clipInfo = animationEvent.animatorClipInfo;
+            TraceCombo("EVENT_ENTRY", $"event={eventName} statesStarted={statesStarted} "
+                + $"clip={(clipInfo.clip != null ? clipInfo.clip.name : "null")} eventTimeSeconds={animationEvent.time:F4} weight={clipInfo.weight:F4} "
+                + $"sourceHash={source.shortNameHash} sourceT={source.normalizedTime:F4} "
+                + $"normal4={source.IsName("Unagi_Normal_4")} normal5={source.IsName("Unagi_Normal_5")}");
         }
     
         /// <summary>

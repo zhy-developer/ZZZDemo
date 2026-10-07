@@ -1,185 +1,428 @@
-﻿using UnityEditor;
+﻿using System;
+using System.IO;
+using System.Text;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.Animations;
 using UnityEngine.Playables;
 
 public class RootMotionBakerWindow : EditorWindow
 {
+    // ============================================================
+    // 输入
+    // ============================================================
+
+    /// <summary>
+    /// 实际角色 Prefab。
+    ///
+    /// 使用真实角色，可以保证：
+    /// Avatar
+    /// 模型层级
+    /// 模型缩放
+    ///
+    /// 与游戏中的角色一致。
+    /// </summary>
     private GameObject characterPrefab;
+
+
+    /// <summary>
+    /// 要烘焙的 AnimationClip。
+    /// </summary>
     private AnimationClip animationClip;
 
-    // 采样帧率
-    private int sampleRate = 30;
 
-    // 例如项目中 1 米 = 10000 整数单位
+    // ============================================================
+    // 帧同步参数
+    // ============================================================
+
+    /// <summary>
+    /// 游戏逻辑更新间隔。
+    ///
+    /// 你的项目：
+    /// 每 33ms 更新一次。
+    /// </summary>
+    private int logicFrameIntervalMs = 33;
+
+
+    /// <summary>
+    /// 浮点位置转整数位置倍率。
+    ///
+    /// 例如：
+    ///
+    /// 1 Unity Unit
+    /// =
+    /// 10000 Logic Unit
+    /// </summary>
     private int precision = 10000;
 
 
-    [MenuItem("编辑器/FrameSync/Root Motion Baker")]
+    // ============================================================
+    // RootMotion 范围
+    // ============================================================
+
+    /// <summary>
+    /// RootMotion 在动画第几帧结束。
+    ///
+    /// -1：
+    /// 烘焙整个 AnimationClip。
+    ///
+    /// 例如：
+    ///
+    /// 你的闪避动画：
+    /// 60FPS
+    /// 前45动画帧有位移
+    ///
+    /// 填：
+    /// 45
+    ///
+    /// 就会转换成：
+    ///
+    /// 45 / 60
+    /// =
+    /// 0.75秒
+    /// </summary>
+    private int rootMotionEndAnimationFrame = -1;
+
+
+    // ============================================================
+    // Window
+    // ============================================================
+
+    [MenuItem("Tools/FrameSync/Root Motion JSON Baker")]
     public static void OpenWindow()
     {
-        GetWindow<RootMotionBakerWindow>("Root Motion Baker");
+        GetWindow<RootMotionBakerWindow>(
+            "Root Motion Baker");
     }
 
 
     private void OnGUI()
     {
-        EditorGUILayout.Space();
+        EditorGUILayout.Space(10);
 
         EditorGUILayout.LabelField(
-            "Root Motion 离线烘焙",
+            "Root Motion JSON 烘焙工具",
             EditorStyles.boldLabel);
 
-        EditorGUILayout.Space();
+        EditorGUILayout.Space(10);
 
-        characterPrefab = (GameObject)EditorGUILayout.ObjectField(
-            "角色 Prefab",
-            characterPrefab,
-            typeof(GameObject),
-            true);
 
-        animationClip = (AnimationClip)EditorGUILayout.ObjectField(
-            "Animation Clip",
-            animationClip,
-            typeof(AnimationClip),
-            false);
+        // ========================================================
+        // 基础配置
+        // ========================================================
 
-        sampleRate = EditorGUILayout.IntField(
-            "采样帧率",
-            sampleRate);
+        characterPrefab =
+            (GameObject)EditorGUILayout.ObjectField(
+                "角色 Prefab",
+                characterPrefab,
+                typeof(GameObject),
+                true);
 
-        precision = EditorGUILayout.IntField(
-            "整数精度",
-            precision);
 
-        EditorGUILayout.Space();
+        animationClip =
+            (AnimationClip)EditorGUILayout.ObjectField(
+                "Animation Clip",
+                animationClip,
+                typeof(AnimationClip),
+                false);
+
+
+        EditorGUILayout.Space(10);
+
+
+        // ========================================================
+        // 逻辑帧配置
+        // ========================================================
+
+        EditorGUILayout.LabelField(
+            "帧同步配置",
+            EditorStyles.boldLabel);
+
+
+        logicFrameIntervalMs =
+            EditorGUILayout.IntField(
+                "逻辑帧间隔(ms)",
+                logicFrameIntervalMs);
+
+
+        precision =
+            EditorGUILayout.IntField(
+                "整数精度",
+                precision);
+
+
+        EditorGUILayout.Space(10);
+
+
+        // ========================================================
+        // RootMotion范围
+        // ========================================================
+
+        EditorGUILayout.LabelField(
+            "Root Motion 范围",
+            EditorStyles.boldLabel);
+
+
+        rootMotionEndAnimationFrame =
+            EditorGUILayout.IntField(
+                "结束动画帧(-1=全部)",
+                rootMotionEndAnimationFrame);
+
+
+        EditorGUILayout.Space(10);
+
+
+        // ========================================================
+        // AnimationClip 信息
+        // ========================================================
+
+        if (animationClip != null)
+        {
+            DrawClipInfo();
+        }
+
+
+        EditorGUILayout.Space(15);
+
+
+        // ========================================================
+        // Bake
+        // ========================================================
+
+        GUI.enabled =
+            characterPrefab != null &&
+            animationClip != null;
+
 
         if (GUILayout.Button(
-                "开始烘焙",
-                GUILayout.Height(40)))
+                "开始烘焙 Root Motion JSON",
+                GUILayout.Height(45)))
         {
             Bake();
         }
+
+
+        GUI.enabled = true;
     }
 
 
+    /// <summary>
+    /// 显示 AnimationClip 和最终采样信息。
+    /// </summary>
+    private void DrawClipInfo()
+    {
+        float animationFrameRate =
+            animationClip.frameRate;
+
+
+        float clipLength =
+            animationClip.length;
+
+
+        int totalAnimationFrames =
+            Mathf.RoundToInt(
+                clipLength *
+                animationFrameRate);
+
+
+        double rootMotionEndTime =
+            GetRootMotionEndTime();
+
+
+        int expectedLogicFrames =
+            Mathf.CeilToInt(
+                (float)(
+                    rootMotionEndTime /
+                    (logicFrameIntervalMs / 1000.0)
+                ));
+
+
+        string endDescription;
+
+
+        if (rootMotionEndAnimationFrame < 0)
+        {
+            endDescription =
+                "整个 AnimationClip";
+        }
+        else
+        {
+            endDescription =
+                $"{rootMotionEndAnimationFrame}帧 " +
+                $"≈ {rootMotionEndTime:F3}s";
+        }
+
+
+        EditorGUILayout.HelpBox(
+            $"Animation FPS：{animationFrameRate}\n" +
+            $"Animation Length：{clipLength:F3}s\n" +
+            $"Animation Frames：约 {totalAnimationFrames}\n\n" +
+
+            $"逻辑采样间隔：{logicFrameIntervalMs}ms\n" +
+            $"RootMotion结束：{endDescription}\n" +
+            $"预计生成逻辑帧：{expectedLogicFrames}",
+            MessageType.Info);
+    }
+
+
+    // ============================================================
+    // Bake
+    // ============================================================
+
     private void Bake()
     {
-        if (characterPrefab == null)
+        if (!ValidateInput())
         {
-            Debug.LogError("没有指定角色 Prefab");
             return;
         }
 
-        if (animationClip == null)
-        {
-            Debug.LogError("没有指定 AnimationClip");
-            return;
-        }
-
-        if (sampleRate <= 0)
-        {
-            Debug.LogError("SampleRate 必须 > 0");
-            return;
-        }
 
         GameObject tempCharacter = null;
+
         PlayableGraph graph = default;
+
 
         try
         {
-            // =========================================================
+            // ====================================================
             // 1. 创建临时角色
-            // =========================================================
+            // ====================================================
 
-            tempCharacter = Instantiate(characterPrefab);
+            tempCharacter =
+                Instantiate(characterPrefab);
+
 
             tempCharacter.name =
-                characterPrefab.name + "_RootMotionBakeTemp";
+                characterPrefab.name +
+                "_RootMotionBakeTemp";
+
 
             tempCharacter.hideFlags =
                 HideFlags.HideAndDontSave;
 
+
             /*
-             * 如果 characterPrefab 是场景中的对象，
-             * 它可能存在父节点缩放。
+             * 临时角色放到世界原点。
+             */
+            tempCharacter.transform.position =
+                Vector3.zero;
+
+
+            /*
+             * 保持实际角色朝向。
+             */
+            tempCharacter.transform.rotation =
+                characterPrefab.transform.rotation;
+
+
+            /*
+             * 如果传入的是场景角色，
+             * 它可能受到父节点 Scale 影响。
              *
-             * clone 到根节点后，父节点缩放会丢失。
-             *
-             * 所以这里使用 lossyScale 保证模型最终缩放一致。
+             * 使用 lossyScale 尽可能保持
+             * 最终模型缩放一致。
              */
             tempCharacter.transform.localScale =
                 characterPrefab.transform.lossyScale;
 
-            tempCharacter.transform.position =
-                Vector3.zero;
-
-            tempCharacter.transform.rotation =
-                characterPrefab.transform.rotation;
 
             tempCharacter.SetActive(true);
 
 
-            // =========================================================
-            // 2. 找到 Animator
-            // =========================================================
+            // ====================================================
+            // 2. Animator
+            // ====================================================
 
             Animator animator =
-                tempCharacter.GetComponentInChildren<Animator>(true);
+                tempCharacter.GetComponentInChildren
+                <Animator>(true);
+
 
             if (animator == null)
             {
-                Debug.LogError("角色上没有 Animator");
+                Debug.LogError(
+                    "角色上没有找到 Animator。");
+
                 return;
             }
 
 
-            // =========================================================
-            // 3. 禁掉游戏逻辑
-            // =========================================================
+            if (animator.avatar == null)
+            {
+                Debug.LogWarning(
+                    "Animator 没有 Avatar。" +
+                    "如果这是 Humanoid 动画，请检查 Avatar 配置。");
+            }
+
+
+            // ====================================================
+            // 3. 禁止游戏逻辑 / 物理干扰
+            // ====================================================
 
             DisableOtherComponents(
                 tempCharacter,
                 animator);
 
 
-            // =========================================================
-            // 4. Animator 初始化
-            // =========================================================
+            // ====================================================
+            // 4. 初始化 Animator
+            // ====================================================
 
             animator.enabled = true;
 
-            /*
-             * 不需要原来的 AnimatorController。
-             *
-             * 动画完全交给 PlayableGraph 驱动。
-             */
-            animator.runtimeAnimatorController = null;
 
             /*
-             * 必须启用 RootMotion。
+             * 不使用 AnimatorController。
              *
-             * 临时角色本身移动没关系，
-             * 因为我们就是想获得真实 deltaPosition。
+             * 我们直接使用 AnimationClipPlayable
+             * 驱动动画。
              */
-            animator.applyRootMotion = true;
+            animator.runtimeAnimatorController =
+                null;
 
+
+            /*
+             * 开启 RootMotion，
+             * 才能正确读取 animator.deltaPosition。
+             */
+            animator.applyRootMotion =
+                true;
+
+
+            /*
+             * 即使角色不可见，
+             * Animator 也继续更新。
+             */
             animator.cullingMode =
                 AnimatorCullingMode.AlwaysAnimate;
+
 
             animator.updateMode =
                 AnimatorUpdateMode.Normal;
 
+
             animator.Rebind();
 
 
-            // =========================================================
-            // 5. 创建手动 PlayableGraph
-            // =========================================================
+            // ====================================================
+            // 5. PlayableGraph
+            // ====================================================
 
-            graph = PlayableGraph.Create(
-                "RootMotionBakeGraph");
+            graph =
+                PlayableGraph.Create(
+                    "RootMotionBakeGraph");
 
+
+            /*
+             * 非常关键：
+             *
+             * 使用 Manual。
+             *
+             * AnimationClip 是 60FPS
+             * 并不意味着这里按照 60FPS 更新。
+             *
+             * 我们自己决定每次推进多少时间。
+             */
             graph.SetTimeUpdateMode(
                 DirectorUpdateMode.Manual);
 
@@ -189,20 +432,26 @@ public class RootMotionBakerWindow : EditorWindow
                     graph,
                     animationClip);
 
+
             clipPlayable.SetApplyFootIK(false);
 
             clipPlayable.SetApplyPlayableIK(false);
 
-            clipPlayable.SetSpeed(1);
+            clipPlayable.SetSpeed(1.0);
 
-            clipPlayable.SetTime(0);
+
+            /*
+             * 明确从动画起点开始。
+             */
+            clipPlayable.SetTime(0.0);
 
 
             AnimationPlayableOutput output =
                 AnimationPlayableOutput.Create(
                     graph,
-                    "AnimationOutput",
+                    "RootMotionOutput",
                     animator);
+
 
             output.SetSourcePlayable(
                 clipPlayable);
@@ -211,253 +460,445 @@ public class RootMotionBakerWindow : EditorWindow
             graph.Play();
 
 
-            // =========================================================
-            // 6. 初始化到动画 0 秒
-            // =========================================================
+            // ====================================================
+            // 6. 初始化动画第0秒
+            // ====================================================
 
             /*
-             * 这里非常重要。
+             * Evaluate(0) 不推进动画时间。
              *
-             * 不要一创建 Graph 就直接采第一帧。
+             * 它的作用只是：
              *
-             * 先 Evaluate(0)，
-             * 让 Animator 进入动画起始状态。
+             * 让 Animator
+             * Playable
+             * Avatar
+             *
+             * 全部进入动画0秒的正确状态。
              */
             graph.Evaluate(0f);
 
 
-            /*
-             * 动画初始化后的朝向，
-             * 作为整个动画的“初始坐标系”。
-             */
+            // ====================================================
+            // 7. 保存角色初始朝向
+            // ====================================================
+
             Quaternion initialRotation =
                 animator.transform.rotation;
 
+
+            /*
+             * 世界空间位移
+             * ↓
+             * 转换为动画开始时角色的局部坐标。
+             */
             Quaternion worldToInitialLocal =
-                Quaternion.Inverse(initialRotation);
+                Quaternion.Inverse(
+                    initialRotation);
 
 
-            // =========================================================
-            // 7. 创建数据
-            // =========================================================
+            // ====================================================
+            // 8. 烘焙时间范围
+            // ====================================================
 
-            RootMotionBakeData bakeData =
-                CreateInstance<RootMotionBakeData>();
-
-            bakeData.clip = animationClip;
-            bakeData.sampleRate = sampleRate;
-            bakeData.precision = precision;
+            double rootMotionEndTime =
+                GetRootMotionEndTime();
 
 
-            float frameDeltaTime =
-                1f / sampleRate;
+            /*
+             * 注意：
+             *
+             * 这里完全按照逻辑时间采样。
+             *
+             * 33ms
+             * =
+             * 0.033秒
+             *
+             * 与 AnimationClip 是
+             * 30FPS / 60FPS / 120FPS
+             *
+             * 没有直接关系。
+             */
+            double logicDeltaTime =
+                logicFrameIntervalMs /
+                1000.0;
 
-            float currentTime = 0;
 
+            // ====================================================
+            // 9. JSON对象
+            // ====================================================
+
+            RootMotionJsonData jsonData =
+                new RootMotionJsonData();
+
+
+            jsonData.clipName =
+                animationClip.name;
+
+
+            jsonData.sourceAnimationFrameRate =
+                Mathf.RoundToInt(
+                    animationClip.frameRate);
+
+
+            jsonData.logicFrameIntervalMs =
+                logicFrameIntervalMs;
+
+
+            jsonData.precision =
+                precision;
+
+
+            jsonData.clipLengthMs =
+                Mathf.RoundToInt(
+                    animationClip.length *
+                    1000f);
+
+
+            jsonData.rootMotionEndAnimationFrame =
+                rootMotionEndAnimationFrame;
+
+
+            jsonData.rootMotionEndTimeMs =
+                Mathf.RoundToInt(
+                    (float)(
+                        rootMotionEndTime *
+                        1000.0
+                    ));
+
+
+            // ====================================================
+            // 10. 烘焙变量
+            // ====================================================
+
+            /*
+             * 使用 double 保存时间，
+             * 减少长动画累计的时间误差。
+             */
+            double currentTime =
+                0.0;
+
+
+            int logicFrameIndex =
+                0;
+
+
+            /*
+             * RootMotion 浮点累计位置。
+             */
             Vector3 accumulatedPosition =
                 Vector3.zero;
 
 
             /*
-             * 整数累计位置。
-             *
-             * 后面不是：
-             *
-             * Round(delta) -> 累加
-             *
-             * 而是：
-             *
-             * 浮点位置累加
-             * -> Round(累计位置)
-             * -> 当前整数位置 - 上一帧整数位置
-             *
-             * 这样可以显著减少累计误差。
+             * 上一逻辑帧整数累计位置。
              */
             Vector3Int previousIntPosition =
                 Vector3Int.zero;
 
 
-            // =========================================================
-            // 8. 手动逐帧推进
-            // =========================================================
+            // ====================================================
+            // 11. 按逻辑时间逐段采样
+            // ====================================================
 
-            while (currentTime < animationClip.length)
+            while (
+                currentTime <
+                rootMotionEndTime - 0.0000001)
             {
-                float remain =
-                    animationClip.length - currentTime;
-
-                float dt =
-                    Mathf.Min(
-                        frameDeltaTime,
-                        remain);
-
-
-                // -----------------------------
-                // 真正让动画向前走 dt
-                // -----------------------------
-
-                graph.Evaluate(dt);
-
-
-                currentTime += dt;
-
-
-                // =====================================================
-                // 9. 获取 Animator RootMotion
-                // =====================================================
-
                 /*
-                 * Animator.deltaPosition：
+                 * 不使用：
                  *
-                 * 表示从“上一次 Animator Evaluate”
-                 * 到“这一次 Evaluate”
+                 * currentTime += 0.033
                  *
-                 * Root Motion 根节点移动了多少。
+                 * 一直累加。
+                 *
+                 * 而是直接根据：
+                 *
+                 * logicFrameIndex
+                 *
+                 * 算出这一帧的目标时间。
+                 *
+                 * 这样可以进一步减少时间累计误差。
                  */
+                double targetTime =
+                    Math.Min(
+                        (logicFrameIndex + 1) *
+                        logicDeltaTime,
+
+                        rootMotionEndTime);
+
+
+                double sampleDuration =
+                    targetTime -
+                    currentTime;
+
+
+                // ================================================
+                // 真正推进动画
+                // ================================================
+
+                graph.Evaluate(
+                    (float)sampleDuration);
+
+
+                currentTime =
+                    targetTime;
+
+
+                // ================================================
+                // 读取 Animator RootMotion
+                // ================================================
+
                 Vector3 worldDelta =
                     animator.deltaPosition;
 
 
-                // =====================================================
-                // 10. 转换到初始朝向坐标系
-                // =====================================================
+                // ================================================
+                // 转换到角色初始朝向局部空间
+                // ================================================
 
-                /*
-                 * 举例：
-                 *
-                 * 角色初始朝向是世界 X 方向。
-                 *
-                 * 世界位移：
-                 *
-                 * (1,0,0)
-                 *
-                 * 转到角色初始局部空间后可能就是：
-                 *
-                 * (0,0,1)
-                 *
-                 * 也就是说：
-                 *
-                 * Z 永远代表动画开始时的“前方”。
-                 */
                 Vector3 localDelta =
                     worldToInitialLocal *
                     worldDelta;
 
 
-                // =====================================================
-                // 11. 累加位置
-                // =====================================================
+                // ================================================
+                // 浮点累计位置
+                // ================================================
 
                 accumulatedPosition +=
                     localDelta;
 
 
-                // =====================================================
-                // 12. 浮点 -> 整数
-                // =====================================================
+                // ================================================
+                // 累计位置整数化
+                // ================================================
 
                 Vector3Int currentIntPosition =
                     new Vector3Int(
-                        Mathf.RoundToInt(
-                            accumulatedPosition.x * precision),
 
                         Mathf.RoundToInt(
-                            accumulatedPosition.y * precision),
+                            accumulatedPosition.x *
+                            precision),
 
                         Mathf.RoundToInt(
-                            accumulatedPosition.z * precision)
+                            accumulatedPosition.y *
+                            precision),
+
+                        Mathf.RoundToInt(
+                            accumulatedPosition.z *
+                            precision)
                     );
 
 
                 /*
-                 * 用整数位置之差得到整数位移。
+                 * 当前逻辑帧整数位移：
                  *
-                 * 不要直接：
+                 * 当前累计整数位置
+                 * -
+                 * 上一帧累计整数位置
                  *
-                 * Round(localDelta * precision)
+                 * 而不是直接：
                  *
-                 * 否则每一帧都产生独立舍入误差，
-                 * 最终可能累计出明显偏差。
+                 * Round(localDelta)
+                 *
+                 * 这样可以明显降低累计舍入误差。
                  */
                 Vector3Int deltaInt =
                     currentIntPosition -
                     previousIntPosition;
 
 
-                // =====================================================
-                // 13. 保存这一逻辑帧
-                // =====================================================
+                // ================================================
+                // 保存这一逻辑帧
+                // ================================================
 
-                RootMotionFrameData frameData =
-                    new RootMotionFrameData();
-
-                frameData.time =
-                    currentTime;
-
-                frameData.deltaPosition =
-                    localDelta;
-
-                frameData.position =
-                    accumulatedPosition;
-
-                frameData.deltaPositionInt =
-                    deltaInt;
-
-                frameData.positionInt =
-                    currentIntPosition;
+                RootMotionJsonFrame frame =
+                    new RootMotionJsonFrame();
 
 
-                bakeData.frames.Add(
-                    frameData);
+                frame.logicFrame =
+                    logicFrameIndex;
 
+
+                frame.sampleEndTimeMs =
+                    Mathf.RoundToInt(
+                        (float)(
+                            currentTime *
+                            1000.0
+                        ));
+
+
+                frame.sampleDurationMs =
+                    Mathf.RoundToInt(
+                        (float)(
+                            sampleDuration *
+                            1000.0
+                        ));
+
+
+                frame.deltaX =
+                    deltaInt.x;
+
+                frame.deltaY =
+                    deltaInt.y;
+
+                frame.deltaZ =
+                    deltaInt.z;
+
+
+                frame.positionX =
+                    currentIntPosition.x;
+
+                frame.positionY =
+                    currentIntPosition.y;
+
+                frame.positionZ =
+                    currentIntPosition.z;
+
+
+                jsonData.frames.Add(
+                    frame);
+
+
+                // ================================================
+                // 下一逻辑帧
+                // ================================================
 
                 previousIntPosition =
                     currentIntPosition;
+
+
+                logicFrameIndex++;
             }
 
 
-            // =========================================================
-            // 14. 保存 Asset
-            // =========================================================
+            // ====================================================
+            // 12. 最终数据
+            // ====================================================
+
+            jsonData.frameCount =
+                jsonData.frames.Count;
+
+
+            jsonData.totalX =
+                previousIntPosition.x;
+
+            jsonData.totalY =
+                previousIntPosition.y;
+
+            jsonData.totalZ =
+                previousIntPosition.z;
+
+
+            // ====================================================
+            // 13. 生成 JSON
+            // ====================================================
+
+            string json =
+                JsonUtility.ToJson(
+                    jsonData,
+                    true);
+
+
+            // ====================================================
+            // 14. 保存
+            // ====================================================
 
             string path =
                 EditorUtility.SaveFilePanelInProject(
-                    "保存 RootMotion 数据",
-                    animationClip.name + "_RootMotion",
-                    "asset",
-                    "请选择保存位置");
+                    "保存 Root Motion JSON",
+                    animationClip.name +
+                    "_RootMotion",
+                    "json",
+                    "请选择 RootMotion JSON 保存位置");
 
-            if (!string.IsNullOrEmpty(path))
+
+            if (string.IsNullOrEmpty(path))
             {
-                AssetDatabase.CreateAsset(
-                    bakeData,
-                    path);
+                Debug.Log(
+                    "取消 RootMotion JSON 保存。");
 
-                AssetDatabase.SaveAssets();
-
-                AssetDatabase.Refresh();
-
-                Selection.activeObject =
-                    bakeData;
+                return;
             }
 
 
+            /*
+             * UTF8，无 BOM。
+             */
+            File.WriteAllText(
+                path,
+                json,
+                new UTF8Encoding(false));
+
+
+            AssetDatabase.Refresh();
+
+
+            TextAsset savedAsset =
+                AssetDatabase.LoadAssetAtPath
+                <TextAsset>(path);
+
+
+            if (savedAsset != null)
+            {
+                Selection.activeObject =
+                    savedAsset;
+            }
+
+
+            // ====================================================
+            // 15. 输出结果
+            // ====================================================
+
             Debug.Log(
-                $"RootMotion 烘焙完成：" +
-                $"Clip={animationClip.name} " +
-                $"Frames={bakeData.frames.Count} " +
-                $"FinalPosition={accumulatedPosition}");
+                "========== Root Motion 烘焙完成 ==========\n" +
+
+                $"AnimationClip：{animationClip.name}\n" +
+
+                $"Animation FPS：{animationClip.frameRate}\n" +
+
+                $"逻辑帧间隔：{logicFrameIntervalMs}ms\n" +
+
+                $"RootMotion结束时间：" +
+                $"{rootMotionEndTime:F3}s\n" +
+
+                $"逻辑帧数量：" +
+                $"{jsonData.frameCount}\n" +
+
+                $"最终整数位移：" +
+                $"({jsonData.totalX}, " +
+                $"{jsonData.totalY}, " +
+                $"{jsonData.totalZ})\n" +
+
+                $"JSON：{path}");
+
+
+            // ====================================================
+            // 16. 如果完全没有位移，给出提示
+            // ====================================================
+
+            if (
+                previousIntPosition ==
+                Vector3Int.zero)
+            {
+                Debug.LogWarning(
+                    "此次烘焙最终位移为 0。\n" +
+                    "如果这个动画本来应该有 Root Motion，" +
+                    "请检查 Animation Import Settings 中 " +
+                    "Root Transform Position (XZ) 是否被 Bake Into Pose。");
+            }
         }
         finally
         {
-            // =========================================================
+            // ====================================================
             // 清理
-            // =========================================================
+            // ====================================================
 
             if (graph.IsValid())
             {
                 graph.Destroy();
             }
+
 
             if (tempCharacter != null)
             {
@@ -468,98 +909,261 @@ public class RootMotionBakerWindow : EditorWindow
     }
 
 
+    // ============================================================
+    // 时间计算
+    // ============================================================
+
     /// <summary>
-    /// 禁止所有可能干扰 RootMotion 的组件
+    /// 得到 RootMotion 实际结束时间。
+    ///
+    /// AnimationClip.frameRate
+    /// 只在这里参与计算：
+    ///
+    /// “动画帧”
+    /// ↓
+    /// “秒”
+    ///
+    /// 它不参与逻辑采样频率。
+    /// </summary>
+    private double GetRootMotionEndTime()
+    {
+        if (animationClip == null)
+        {
+            return 0.0;
+        }
+
+
+        /*
+         * -1：
+         * 整个 AnimationClip。
+         */
+        if (rootMotionEndAnimationFrame < 0)
+        {
+            return animationClip.length;
+        }
+
+
+        /*
+         * 例如：
+         *
+         * animationFrameRate = 60
+         * endFrame = 45
+         *
+         * 45 / 60
+         * =
+         * 0.75秒
+         */
+        double endTime =
+            rootMotionEndAnimationFrame /
+            (double)animationClip.frameRate;
+
+
+        /*
+         * 不允许超过 AnimationClip 实际长度。
+         */
+        endTime =
+            Math.Min(
+                endTime,
+                animationClip.length);
+
+
+        return Math.Max(
+            0.0,
+            endTime);
+    }
+
+
+    // ============================================================
+    // 输入检查
+    // ============================================================
+
+    private bool ValidateInput()
+    {
+        if (characterPrefab == null)
+        {
+            Debug.LogError(
+                "没有指定角色 Prefab。");
+
+            return false;
+        }
+
+
+        if (animationClip == null)
+        {
+            Debug.LogError(
+                "没有指定 AnimationClip。");
+
+            return false;
+        }
+
+
+        if (logicFrameIntervalMs <= 0)
+        {
+            Debug.LogError(
+                "逻辑帧间隔必须 > 0。");
+
+            return false;
+        }
+
+
+        if (precision <= 0)
+        {
+            Debug.LogError(
+                "整数精度必须 > 0。");
+
+            return false;
+        }
+
+
+        if (animationClip.frameRate <= 0)
+        {
+            Debug.LogError(
+                "AnimationClip.frameRate 无效。");
+
+            return false;
+        }
+
+
+        if (rootMotionEndAnimationFrame == 0)
+        {
+            Debug.LogError(
+                "RootMotion结束动画帧不能为0。\n" +
+                "如果需要烘焙整个动画，请填写 -1。");
+
+            return false;
+        }
+
+
+        return true;
+    }
+
+
+    // ============================================================
+    // 禁止干扰组件
+    // ============================================================
+
+    /// <summary>
+    /// 禁止可能修改角色 Transform 的逻辑组件和物理组件。
     /// </summary>
     private void DisableOtherComponents(
         GameObject character,
         Animator targetAnimator)
     {
-        // ----------------------------------
+        // ========================================================
+        // Behaviour
+        //
+        // 包括：
+        //
         // MonoBehaviour
-        // ----------------------------------
-
-        MonoBehaviour[] scripts =
-            character.GetComponentsInChildren
-            <MonoBehaviour>(true);
-
-        foreach (MonoBehaviour script in scripts)
-        {
-            script.enabled = false;
-        }
-
-
-        // ----------------------------------
-        // 其他 Behaviour
-        // ----------------------------------
+        // NavMeshAgent 等
+        //
+        // Animator 本身除外。
+        // ========================================================
 
         Behaviour[] behaviours =
             character.GetComponentsInChildren
             <Behaviour>(true);
 
+
         foreach (Behaviour behaviour in behaviours)
         {
-            if (behaviour == targetAnimator)
+            if (behaviour == null)
+            {
                 continue;
+            }
 
-            behaviour.enabled = false;
+
+            if (behaviour ==
+                targetAnimator)
+            {
+                continue;
+            }
+
+
+            behaviour.enabled =
+                false;
         }
 
 
-        // ----------------------------------
-        // 3D Rigidbody
-        // ----------------------------------
+        // ========================================================
+        // Rigidbody
+        //
+        // Unity 2022.3 使用 velocity。
+        // ========================================================
 
         Rigidbody[] rigidbodies =
             character.GetComponentsInChildren
             <Rigidbody>(true);
 
+
         foreach (Rigidbody rb in rigidbodies)
         {
-            rb.isKinematic = true;
-            rb.useGravity = false;
-            rb.detectCollisions = false;
+            rb.isKinematic =
+                true;
 
-            rb.velocity = Vector3.zero;
-            rb.angularVelocity = Vector3.zero;
+
+            rb.useGravity =
+                false;
+
+
+            rb.detectCollisions =
+                false;
+
+
+            rb.velocity =
+                Vector3.zero;
+
+
+            rb.angularVelocity =
+                Vector3.zero;
         }
 
 
-        // ----------------------------------
+        // ========================================================
         // Collider
-        // ----------------------------------
+        // ========================================================
 
         Collider[] colliders =
             character.GetComponentsInChildren
             <Collider>(true);
 
+
         foreach (Collider collider in colliders)
         {
-            collider.enabled = false;
+            collider.enabled =
+                false;
         }
 
 
-        // ----------------------------------
+        // ========================================================
         // Rigidbody2D
-        // ----------------------------------
+        // ========================================================
 
         Rigidbody2D[] rigidbody2Ds =
             character.GetComponentsInChildren
             <Rigidbody2D>(true);
 
+
         foreach (Rigidbody2D rb in rigidbody2Ds)
         {
-            rb.simulated = false;
+            rb.simulated =
+                false;
         }
 
+
+        // ========================================================
+        // Collider2D
+        // ========================================================
 
         Collider2D[] collider2Ds =
             character.GetComponentsInChildren
             <Collider2D>(true);
 
+
         foreach (Collider2D collider in collider2Ds)
         {
-            collider.enabled = false;
+            collider.enabled =
+                false;
         }
     }
 }

@@ -37,7 +37,16 @@ namespace ZZZ
         }
         protected bool HasAnimationFinished(string tag)
         {
-            if (player.IsPlayingAnimationTag(tag)) { animationObserved = true; return false; }
+            // The outgoing clip still delivers events during its blend-out. Looking only
+            // at the destination state would discard its remaining combo input window.
+            var current = animator.GetCurrentAnimatorStateInfo(0);
+            bool playing = current.IsTag(tag) || current.IsName(tag);
+            if (animator.IsInTransition(0))
+            {
+                var next = animator.GetNextAnimatorStateInfo(0);
+                playing |= next.IsTag(tag) || next.IsName(tag);
+            }
+            if (playing) { animationObserved = true; return false; }
             return animationObserved;
         }
     }

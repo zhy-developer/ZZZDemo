@@ -7,6 +7,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Program.cs" />
+    <Compile Include="ComboAnimationTestDoubles.cs" />
+    <Compile Include="../../Assets/Scripts/Game/Fsm/Player/State Machine/Combo/States/PlayerComboState.cs" Link="PlayerComboState.cs" />
     <Compile Include="../../Assets/Scripts/Tool/Tool_Data/BindableProperty.cs" Link="BindableProperty.cs" />
     <Compile Include="../../Assets/Scripts/Game/Fsm/StateMachine/IState.cs" Link="IState.cs" />
     <Compile Include="../../Assets/Scripts/Game/Fsm/StateMachine/StateMachine.cs" Link="StateMachine.cs" />

@@ -3,7 +3,6 @@ using UnityEngine;
 
 namespace ZZZ
 {
-    public enum ActionPreparation { Discard, Wait, Ready }
     // Both local and remote players enter here only when an ordered server frame is consumed.
     public sealed class PlayerActionController
     {
@@ -27,13 +26,13 @@ namespace ZZZ
                 case RightOpType.rop1:
                 case RightOpType.rop6:
                     if (!executor.CanBaseComboInput()) return ActionPreparation.Discard;
-                    if (!combo.ReusableData.canATK) return ActionPreparation.Wait;
                     bool dodge = action == RightOpType.rop1 && player.movementStateMachine.IsDodgeOrSprint;
                     if (!executor.TryGetAttackIndex(action == RightOpType.rop6, dodge, out int index))
                         return ActionPreparation.Discard;
                     // bit 0: moving; bit 1: dodge attack; remaining bits: exact combo step.
                     payload |= (dodge ? 2 : 0) | (index << 2);
-                    return ActionPreparation.Ready;
+                    // Lock the selected step as soon as pre-input is accepted, before waiting.
+                    return combo.ReusableData.canATK ? ActionPreparation.Ready : ActionPreparation.Wait;
                 case RightOpType.rop2:
                     return executor.CanSkillInput() ? ActionPreparation.Ready : ActionPreparation.Discard;
                 case RightOpType.rop3:

@@ -12,6 +12,7 @@ namespace ZZZ
             if (HasAnimationFinished("ATK") && !reusableData.hasATKCommand
                 && comboStateMachine.currentState.Value == this)
             {
+                player.TraceCombo("ATTACK_FINISHED", "Neither current nor incoming Animator state reports ATK");
                 comboStateMachine.ChangeState(comboStateMachine.NullState);
                 player.movementStateMachine.ReturnToLocomotion();
             }

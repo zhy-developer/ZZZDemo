@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
-using UnityEditor;
 using UnityEngine;
+using FrameSync.RootMotion;
 
 namespace ZZZ
 {
@@ -14,5 +14,8 @@ namespace ZZZ
         [field: SerializeField] public float rotationTime { get; private set; } = 0.09f;
         [field: SerializeField] public bool dodgeBackApplyRotation{ get; private set; } = false;    
         [field: SerializeField] public float coldTime { get; private set; } = 0.5f;
+        [Header("逻辑帧位移（不配置则保留原行为）")]
+        public RootMotionSettings frontRootMotion = new RootMotionSettings();
+        public RootMotionSettings backRootMotion = new RootMotionSettings();
     }
 }

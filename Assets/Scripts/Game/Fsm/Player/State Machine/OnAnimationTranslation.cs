@@ -45,6 +45,8 @@ public class OnAnimationTranslation : StateMachineBehaviour
    [SerializeField] public OnEnterAnimationPlayerState onEnterAnimationState;
       override public void OnStateEnter(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
     {
+        if (animator.TryGetComponent<Player>(out player))
+            player.TraceCombo("ANIM_ENTER", $"sourceHash={stateInfo.shortNameHash} sourceT={stateInfo.normalizedTime:F4} layer={layerIndex} atk={stateInfo.IsTag("ATK")} normal4={stateInfo.IsName("Unagi_Normal_4")} normal5={stateInfo.IsName("Unagi_Normal_5")}");
         if (onEnterAnimationState == OnEnterAnimationPlayerState.Null)
         {
             return;
@@ -60,6 +62,7 @@ public class OnAnimationTranslation : StateMachineBehaviour
     {
         if (animator.TryGetComponent<Player>(out player))
         {
+            player.TraceCombo("ANIM_EXIT", $"sourceHash={stateInfo.shortNameHash} sourceT={stateInfo.normalizedTime:F4} layer={layerIndex} atk={stateInfo.IsTag("ATK")} normal4={stateInfo.IsName("Unagi_Normal_4")} normal5={stateInfo.IsName("Unagi_Normal_5")}");
             player.OnAnimationExitEvent();
         }
     }

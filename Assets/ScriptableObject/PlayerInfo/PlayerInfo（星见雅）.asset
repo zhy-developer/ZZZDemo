@@ -44,6 +44,14 @@ MonoBehaviour:
       <rotationTime>k__BackingField: 0.09
       <dodgeBackApplyRotation>k__BackingField: 0
       <coldTime>k__BackingField: 0.5
+      frontRootMotion:
+        json: {fileID: 4900000, guid: 1c8fd3a81aac212488cd71b96bfdcbca, type: 3}
+        endFrameExclusive: 0
+        distancePermille: 1000
+      backRootMotion:
+        json: {fileID: 0}
+        endFrameExclusive: 0
+        distancePermille: 1000
     <runData>k__BackingField:
       <speedMult>k__BackingField: 1
       <inputMult>k__BackingField: 2

@@ -80,7 +80,9 @@ namespace ZZZ
             sprinting = false;
             player.characterAnimator.SetBool(AnimatorID.TurnBackID, false);
             var data = player.playerSO.movementData.dashData;
-            ChangeState(forward ? (IState)dashingState : dashBackingState);
+            PlayerDodgingState state = forward ? (PlayerDodgingState)dashingState : dashBackingState;
+            ChangeState(state);
+            state.StartMotion(forward ? data.frontRootMotion : data.backRootMotion);
             player.characterAnimator.CrossFadeInFixedTime(forward ? data.frontDushAnimationName : data.backDushAnimationName, data.fadeTime);
         }
 

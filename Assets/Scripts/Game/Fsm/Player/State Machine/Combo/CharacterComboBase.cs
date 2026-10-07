@@ -61,7 +61,12 @@ namespace ZZZ
         public bool PlayNetworkAttack(bool heavy, bool dodge, int index)
         {
             var container = heavy ? heavyCombo : lightCombo;
-            if (container == null || index < 0 || index >= container.GetComboMaxCount()) return false;
+            if (container == null || index < 0 || index >= container.GetComboMaxCount())
+            {
+                player.TraceCombo("ATTACK_REJECT", $"index={index} count={(container == null ? 0 : container.GetComboMaxCount())}");
+                return false;
+            }
+            player.TraceCombo("ATTACK_SELECTED", $"index={index} heavy={heavy} dodge={dodge} count={container.GetComboMaxCount()}");
             if (dodge) container.SwitchDodgeATK();
             else container.ResetComboDatas();
             ReSetComboInfo();
@@ -123,6 +128,7 @@ namespace ZZZ
             // 每一段新攻击都重新等待动画事件开放移动打断。
             comboResuableData.canMoveInterrupt = false;
             animator.CrossFadeInFixedTime(comboName, 0.111f, 0, 0f);
+            player.TraceCombo("PLAY_REQUEST", $"index={comboResuableData.currentIndex.Value} animation={comboName} hash={Animator.StringToHash(comboName)}");
             //播放语音
             PlayCharacterVoice(comboResuableData.currentCombo.comboDatas[comboResuableData.currentIndex.Value]);
             StartPlayWeapon();
@@ -153,19 +159,23 @@ namespace ZZZ
         public void DisConnectCombo()//事件调用
         {
             comboResuableData.canLink = false;
+            player.TraceCombo("EVENT_DisableLinkCombo");
         }
         public void CanMoveInterrupt()
         {
             comboResuableData.canMoveInterrupt = true;
+            player.TraceCombo("EVENT_EnableMoveInterrupt");
         }
 
         public void CanInput()
         {
             comboResuableData.canInput = true;
+            player.TraceCombo("EVENT_EnablePreInput");
         }
         public void CanATK()
         {
             comboResuableData.canATK = true;
+            player.TraceCombo("EVENT_CancelAttackColdTime");
         }
         public void PlayComboFX()
         {
@@ -296,6 +306,7 @@ namespace ZZZ
             if (!player.IsPlayingAnimationTag("ATK") || animator.IsInTransition(0)) { return; }
             if (player.HasNetworkMovement)
             {
+                player.TraceCombo("MOVE_INTERRUPT");
                 animator.CrossFadeInFixedTime("Locomotion", 0.155f, 0);
                 comboResuableData.canMoveInterrupt = false;
                 player.comboStateMachine.ChangeState(player.comboStateMachine.NullState);
@@ -306,6 +317,7 @@ namespace ZZZ
         {
             if (!comboResuableData.canLink)
             {
+                player.TraceCombo("COMBO_TIMEOUT_RESET");
                 // 连招超时只重置连段，当前攻击的后摇打断窗口仍然有效。
                 bool canMoveInterrupt = comboResuableData.canMoveInterrupt;
                 bool pendingAttack = comboResuableData.hasATKCommand;

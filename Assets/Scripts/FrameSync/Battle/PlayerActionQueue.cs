@@ -2,18 +2,54 @@ using System.Collections.Generic;
 
 namespace ZZZ
 {
+    public enum ActionPreparation { Discard, Wait, Ready }
+    public delegate ActionPreparation PreparePlayerAction(PlayerActionCommand command, out int payload);
     // Local, not-yet-sent inputs. Kept separate from the reliable outbound queue.
     public sealed class PlayerActionBuffer
     {
         private readonly Queue<PlayerActionCommand> commands = new Queue<PlayerActionCommand>();
+        private PlayerActionCommand? preparedAttack;
         public int Count => commands.Count;
         public PlayerActionCommand Peek() => commands.Peek();
-        public PlayerActionCommand Dequeue() => commands.Dequeue();
-        public void Clear() => commands.Clear();
+        public PlayerActionCommand Dequeue()
+        {
+            preparedAttack = null;
+            return commands.Dequeue();
+        }
+        public void Clear()
+        {
+            preparedAttack = null;
+            commands.Clear();
+        }
+        public bool TryPrepareHead(PreparePlayerAction prepare, bool canAttack, bool attackAllowed,
+            out PlayerActionCommand command)
+        {
+            command = default;
+            if (commands.Count == 0) return false;
+            if (preparedAttack.HasValue)
+            {
+                if (!attackAllowed) { Dequeue(); return false; }
+                if (!canAttack) return false;
+                command = preparedAttack.Value;
+                return true;
+            }
+            var head = commands.Peek();
+            var result = prepare(head, out int payload);
+            if (result == ActionPreparation.Discard) { Dequeue(); return false; }
+            command = new PlayerActionCommand(head.Id, head.Type, head.Value1, payload);
+            if (result == ActionPreparation.Wait)
+            {
+                // Wait means input was accepted; payload already contains the chosen step.
+                preparedAttack = command;
+                return false;
+            }
+            return true;
+        }
         public void Enqueue(PlayerActionCommand command)
         {
             if (command.Type == 4) // rop4: dodge cancels only unsent attack pre-input.
             {
+                preparedAttack = null;
                 int count = commands.Count;
                 for (int i = 0; i < count; i++)
                 {

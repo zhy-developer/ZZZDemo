@@ -8,6 +8,10 @@ dotnet run --project Tests/ActionSync/ActionSync.Tests.csproj
 
 测试引用生产队列、状态机和 BindableProperty，不依赖 Unity 或 NuGet 测试框架。覆盖连续输入、重发、确认顺序、重复确认、相同动作保留独立序号、对局清理、重复状态不重新进入、角色停用时状态清空。
 
+预输入回归还覆盖：接受后锁定连招段数与朝向，等待攻击窗口期间不重新选段；攻击资格失效、闪避或清理输入时取消已锁定的待发攻击。该测试不运行 Unity Animator，实际动画事件及服务器字段转发仍需以下双客户端验收。
+
+动画结束回归引用生产 `PlayerComboState`，使用最小 Animator 状态快照替身：第四段向收尾状态淡出期间仍保持攻击状态，实际退出后才结束，淡入下一段也不会提前结束。替身不模拟 Unity 事件触发；在 Unity 中还需确认 Normal4 的 `EVENT_ENTRY` 后出现 `EVENT_EnablePreInput` 和 `EVENT_CancelAttackColdTime`，并最终出现 Normal5 的 `ANIM_ENTER`。
+
 ## 两客户端验收（需要运行游戏）
 
 1. A 按移动键、松开，B 观察 A 的起跑与停步。反向再测 B。
