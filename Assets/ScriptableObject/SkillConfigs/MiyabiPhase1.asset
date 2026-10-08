@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 65dcbe5cfa1e87c478d5cf1bddbb46a0, type: 3}
+  m_Name: MiyabiPhase1
+  m_EditorClassIdentifier: 
+  characterId: miyabi
+  completeness: 0
+  migrationNotes: 'Phase 1 data pilot: only Normal1/Normal2. Other skills and all
+    combat integration are not migrated.'
+  animatorController: {fileID: 9100000, guid: c36c63ee783b10942a52a9b3fb87c705, type: 2}
+  hurtBoxConfigured: 0
+  hurtBox:
+    offset:
+      x: 0
+      y: 0
+      z: 0
+    radius: 0
+    height: 0
+  skills:
+  - {fileID: 11400000, guid: 3608c4587e7146d4b8b9f78174009635, type: 2}
+  - {fileID: 11400000, guid: e79851970ca93f64f9a3ebb0c13b8c3e, type: 2}
+  resources: []

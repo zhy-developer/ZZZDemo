@@ -1,0 +1,94 @@
+Phase 1 test evidence
+Standalone command: dotnet run --project Tests/SkillConfig/SkillConfig.Tests.csproj
+Unity: 2022.3.62f2c1; isolated project, actual engine serialization and AssetDatabase.
+Original project remains open in user instance; interactive Inspector and full project tests not executed.
+
+PASS: empty document rejected
+PASS: valid partial read-only config
+PASS: unsupported version 0
+PASS: unsupported version 2
+PASS: unsupported version -1
+PASS: duplicate ID rejected
+PASS: no implicit skill type
+PASS: animation gap rejected
+PASS: zero speed rejected
+PASS: out-of-source trim rejected
+PASS: multi-state binding allowed
+PASS: multi-clip contiguous skill supported
+PASS: animation overlap rejected
+PASS: legitimate static tail accepted
+PASS: missing provenance Warning
+PASS: wrong source Error
+PASS: 2x mapping declared future-only
+PASS: cannot hide remapping requirement
+PASS: verified inconsistent source duration Error
+PASS: coverage beyond source rejected even without provenance
+PASS: base damage resolved
+PASS: base damage change needs no manual sync
+PASS: duplicate base damage rejected
+PASS: Repeat positive interval
+PASS: dangling group rejected
+PASS: shape parameters Box
+PASS: shape parameters Sphere
+PASS: shape parameters Capsule
+PASS: shape parameters Sector
+PASS: shape parameters Cylinder
+PASS: invalid shape rejected
+PASS: typed registered event valid
+PASS: wrong typed payload rejected
+PASS: unknown event rejected
+PASS: critical before window end rejected
+PASS: critical at exclusive end accepted
+PASS: missing resource rejected
+PASS: Warning export succeeds
+PASS: export readback succeeds
+PASS: partial cannot become battle config
+PASS: snapshot mutation isolated
+PASS: deterministic serialization
+PASS: ID survives serialization
+PASS: old JSON protected on write
+PASS: temporary cleanup write
+PASS: old JSON protected on readback
+PASS: temporary cleanup readback
+PASS: old JSON protected on replace
+PASS: temporary cleanup replace
+PASS: invalid export preserves bytes
+PASS: successful atomic replacement
+PASS: malformed/versionless input: 
+PASS: malformed/versionless input: garbage
+PASS: malformed/versionless input: []
+PASS: malformed/versionless input: {}
+PASS: malformed/versionless input: {broken
+RESULT: 56 standalone checks passed. Unity serialization/Inspector/Resources NOT covered by adapters.
+
+PHASE1_PASS pilot real asset validation
+PHASE1_PASS partial catalog guard
+PHASE1_PASS legacy provenance Warning
+PHASE1_PASS Resources load real export
+PHASE1_PASS battle configuration rejected
+PHASE1_PASS IDs survive Unity JsonUtility roundtrip
+PHASE1_PASS fresh export status
+PHASE1_PASS Unity JSON unknown schema rejected
+PHASE1_PASS Unity JSON malformed input rejected
+PHASE1_PASS optional no-motion segment survives Unity serialization
+PHASE1_PASS typed event parameters survive Unity serialization
+PHASE1_PASS missing actual Clip reference rejected
+PHASE1_PASS missing actual Root Motion reference rejected
+PHASE1_PASS legacy damage marks export stale
+PHASE1_PASS float damage int-overflow rejected
+PHASE1_PASS legacy entry marks export stale
+PHASE1_PASS root settings mark export stale
+PHASE1_PASS new authoring fields mark export stale
+PHASE1_PASS case-folded CharacterID export collision rejected
+PHASE1_PASS illegal pilot blocks export
+PHASE1_PASS blocked export preserves old JSON
+PHASE1_PASS real asset duplicate ID rejected
+PHASE1_PASS rename pilot asset
+PHASE1_PASS ID survives rename/save/reimport
+PHASE1_PASS restored pilot exported
+PHASE1_RESULT 25 Unity checks passed. Run VerifyReopen in a NEW Editor process next.
+PHASE1_REOPEN_PASS actual separate Editor process: both SOs, IDs, catalog, export, Resources load and typed-event/no-motion SO fixture.
+
+Protected gameplay/network/Animator/RootMotion/container/meta paths: git diff --exit-code returned 0.
+git diff --check returned 0 (line-ending notices only).
+Harness instances reached batch shutdown but remained alive; only task-owned harness processes were stopped. Reopen used a new process.

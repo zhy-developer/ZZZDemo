@@ -1,0 +1,157 @@
+{
+    "schemaVersion": 1,
+    "characterId": "miyabi",
+    "sourceFingerprint": "8df484c734a1260ee0e3c3f25b0efc69da7ddf30197a9ebd1e9f38900ec824c9",
+    "logicFrameIntervalMs": 33,
+    "precision": 10000,
+    "completeness": 0,
+    "battleReady": false,
+    "migrationNotes": "Phase 1 data pilot: only Normal1/Normal2. Other skills and all combat integration are not migrated.",
+    "hurtBoxConfigured": false,
+    "hurtBox": {
+        "offset": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+        },
+        "radius": 0,
+        "height": 0
+    },
+    "resources": [],
+    "skills": [
+        {
+            "skillId": "miyabi-normal-1",
+            "displayName": "Unagi_Normal_1",
+            "category": "Normal",
+            "legacyEntryState": "Unagi_Normal_1",
+            "skillType": 1,
+            "baseDamage": 20,
+            "durationFrames": 20,
+            "animations": [
+                {
+                    "id": "animation-1",
+                    "clipName": "Avatar_Female_Size02_Unagi_Ani_Attack_01",
+                    "clipGuid": "3d9757a43f4c1d14ebf43cbec50dcda5",
+                    "clipLocalId": 572028686729525778,
+                    "sourceLengthUs": 657253,
+                    "trimStartUs": 0,
+                    "trimEndUs": 657253,
+                    "startFrame": 0,
+                    "endFrame": 20,
+                    "speedPermille": 1000,
+                    "statePaths": [
+                        "Base Layer.Combo.Normal Attack.Unagi_Normal_1"
+                    ],
+                    "rootMotionBound": true,
+                    "rootMotion": {
+                        "resourcesPath": "RootMotion/Avatar_Female_Size02_Unagi_Ani_Attack_01_RootMotion",
+                        "contentHash": "b82d0fa1585eecb80f6ad55f550f9aa74257331d96ac75ce47f57a1048663917",
+                        "clipName": "Avatar_Female_Size02_Unagi_Ani_Attack_01",
+                        "endFrameExclusive": 0,
+                        "distancePermille": 1000,
+                        "sampleCount": 20,
+                        "sourceClipLengthMs": 657,
+                        "coverageEndMs": 657,
+                        "requiresTimeRemap": false,
+                        "provenanceVerified": false,
+                        "tailPolicy": 0
+                    }
+                }
+            ],
+            "tracks": [],
+            "hitGroups": [],
+            "hitBoxes": [],
+            "invincibility": [],
+            "interrupts": [],
+            "events": [],
+            "vfx": [],
+            "sfx": []
+        },
+        {
+            "skillId": "miyabi-normal-2",
+            "displayName": "Unagi_Normal_2",
+            "category": "Normal",
+            "legacyEntryState": "Unagi_Normal_2",
+            "skillType": 1,
+            "baseDamage": 20,
+            "durationFrames": 18,
+            "animations": [
+                {
+                    "id": "animation-1",
+                    "clipName": "Avatar_Female_Size02_Unagi_Ani_Attack_02",
+                    "clipGuid": "3d9757a43f4c1d14ebf43cbec50dcda5",
+                    "clipLocalId": -3972385943832332197,
+                    "sourceLengthUs": 583333,
+                    "trimStartUs": 0,
+                    "trimEndUs": 583333,
+                    "startFrame": 0,
+                    "endFrame": 18,
+                    "speedPermille": 1000,
+                    "statePaths": [
+                        "Base Layer.Combo.Normal Attack.Unagi_Normal_2"
+                    ],
+                    "rootMotionBound": true,
+                    "rootMotion": {
+                        "resourcesPath": "RootMotion/Avatar_Female_Size02_Unagi_Ani_Attack_02_RootMotion",
+                        "contentHash": "4651e41c4d41c1c214053f11b966997f4869b9291c8c6fe09dae00c5b86d5bb3",
+                        "clipName": "Avatar_Female_Size02_Unagi_Ani_Attack_02",
+                        "endFrameExclusive": 0,
+                        "distancePermille": 1000,
+                        "sampleCount": 18,
+                        "sourceClipLengthMs": 583,
+                        "coverageEndMs": 583,
+                        "requiresTimeRemap": false,
+                        "provenanceVerified": false,
+                        "tailPolicy": 0
+                    }
+                }
+            ],
+            "tracks": [],
+            "hitGroups": [],
+            "hitBoxes": [],
+            "invincibility": [],
+            "interrupts": [],
+            "events": [],
+            "vfx": [],
+            "sfx": []
+        }
+    ],
+    "diagnostics": [
+        {
+            "severity": 0,
+            "code": "HURTBOX_UNCONFIGURED",
+            "location": "catalog",
+            "message": "Pilot has no authoritative HurtBox yet."
+        },
+        {
+            "severity": 0,
+            "code": "PARTIAL_CATALOG",
+            "location": "catalog",
+            "message": "Partial migration; not a complete combat configuration."
+        },
+        {
+            "severity": 0,
+            "code": "NO_HITBOX",
+            "location": "miyabi-normal-1",
+            "message": "Data pilot only: no hit boxes configured, no battle behavior enabled."
+        },
+        {
+            "severity": 0,
+            "code": "MOTION_METADATA",
+            "location": "miyabi-normal-1/animation/animation-1",
+            "message": "Legacy bake lacks source GUID/version/scale provenance; association is not proof of bake equivalence."
+        },
+        {
+            "severity": 0,
+            "code": "NO_HITBOX",
+            "location": "miyabi-normal-2",
+            "message": "Data pilot only: no hit boxes configured, no battle behavior enabled."
+        },
+        {
+            "severity": 0,
+            "code": "MOTION_METADATA",
+            "location": "miyabi-normal-2/animation/animation-1",
+            "message": "Legacy bake lacks source GUID/version/scale provenance; association is not proof of bake equivalence."
+        }
+    ]
+}

@@ -12,6 +12,35 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f13413444ffc8b243bed7dc2a8fc7155, type: 3}
   m_Name: Unagi_Normal_2
   m_EditorClassIdentifier: 
+  skill:
+    registered: 1
+    skillId: miyabi-normal-2
+    displayName: Unagi_Normal_2
+    category: Normal
+    skillType: 1
+    animations:
+    - id: animation-1
+      startFrame: 0
+      endFrame: 18
+      clip: {fileID: -3972385943832332197, guid: 3d9757a43f4c1d14ebf43cbec50dcda5, type: 3}
+      statePaths:
+      - Base Layer.Combo.Normal Attack.Unagi_Normal_2
+      trimStartUs: 0
+      trimEndUs: 583333
+      speedPermille: 1000
+      rootSource: 1
+      additionalRootMotion: {fileID: 0}
+      additionalEndFrameExclusive: 0
+      additionalDistancePermille: 1000
+      tailPolicy: 0
+    tracks: []
+    hitGroups: []
+    hitBoxes: []
+    invincibility: []
+    interrupts: []
+    events: []
+    vfx: []
+    sfx: []
   characterName: 1
   _attackStyle: 0
   _comboName: Unagi_Normal_2
@@ -24,6 +53,10 @@ MonoBehaviour:
   _parryName:
   - Hit_1
   - Hit_2
+  rootMotion:
+    json: {fileID: 4900000, guid: 3cd07edeb3b770a459a80511451ed102, type: 3}
+    endFrameExclusive: 0
+    distancePermille: 1000
   appAudioPrefab: 0
   _weaponSound: []
   _characterVoice: []
@@ -33,7 +66,3 @@ MonoBehaviour:
   _shakeForceList:
   - 0.15
   _pauseFrameTimeList: []
-  rootMotion:
-    json: {fileID: 4900000, guid: 3cd07edeb3b770a459a80511451ed102, type: 3}
-    endFrameExclusive: 0
-    distancePermille: 1000

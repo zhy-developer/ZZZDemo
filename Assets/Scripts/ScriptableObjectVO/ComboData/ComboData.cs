@@ -13,6 +13,8 @@ public enum AttackStyle
 [CreateAssetMenu(fileName ="ComboData",menuName ="Create/Asset/ComboData")]
 public class ComboData : ScriptableObject
 {
+    // Optional Phase 1 authoring only. Existing gameplay does not consume this data.
+    [SerializeField] public SkillConfig.SkillAuthoringData skill;
     [SerializeField,Header("仅用来创建文件夹使用")] public CharacterNameList characterName;
     [SerializeField,Header("连招数据")] private AttackStyle _attackStyle;
     [SerializeField] private string _comboName;

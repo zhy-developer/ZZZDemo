@@ -1,0 +1,162 @@
+Phase 1 acceptance revision evidence - 2026-10-09
+Independent .NET checks are not Unity or combat tests.
+Unity checks ran only in Temp/SkillConfigAcceptanceRevision, not the original Play-mode project.
+
+PASS: empty document rejected
+PASS: valid partial read-only config
+PASS: unsupported version 0
+PASS: unsupported version 2
+PASS: unsupported version -1
+PASS: duplicate ID rejected
+PASS: no implicit skill type
+PASS: animation gap rejected
+PASS: zero speed rejected
+PASS: out-of-source trim rejected
+PASS: multi-state binding allowed
+PASS: multi-clip contiguous skill supported
+PASS: animation overlap rejected
+PASS: legitimate static tail accepted
+PASS: missing provenance Warning
+PASS: wrong source Error
+PASS: 2x mapping declared future-only
+PASS: cannot hide remapping requirement
+PASS: verified inconsistent source duration Error
+PASS: coverage beyond source rejected even without provenance
+PASS: base damage resolved
+PASS: base damage change needs no manual sync
+PASS: duplicate base damage rejected
+PASS: Repeat positive interval
+PASS: dangling group rejected
+PASS: shape parameters Box
+PASS: shape parameters Sphere
+PASS: shape parameters Capsule
+PASS: shape parameters Sector
+PASS: shape parameters Cylinder
+PASS: invalid shape rejected
+PASS: typed registered event valid
+PASS: wrong typed payload rejected
+PASS: unknown event rejected
+PASS: critical before window end rejected
+PASS: critical at exclusive end accepted
+PASS: missing resource rejected
+PASS: Warning export succeeds
+PASS: export readback succeeds
+PASS: partial cannot become battle config
+PASS: snapshot mutation isolated
+PASS: deterministic serialization
+PASS: ID survives serialization
+PASS: old JSON protected on write
+PASS: temporary cleanup write
+PASS: old JSON protected on readback
+PASS: temporary cleanup readback
+PASS: old JSON protected on replace
+PASS: temporary cleanup replace
+PASS: invalid export preserves bytes
+PASS: successful atomic replacement
+PASS: malformed/versionless input: 
+PASS: malformed/versionless input: garbage
+PASS: malformed/versionless input: []
+PASS: malformed/versionless input: {}
+PASS: malformed/versionless input: {broken
+RESULT: 56 standalone checks passed. Unity serialization/Inspector/Resources NOT covered by adapters.
+
+PHASE1_PASS pilot real asset validation
+PHASE1_PASS partial catalog guard
+PHASE1_PASS legacy provenance Warning
+PHASE1_PASS Resources load real export
+PHASE1_PASS battle configuration rejected
+PHASE1_PASS IDs survive Unity JsonUtility roundtrip
+PHASE1_PASS fresh export status
+PHASE1_PASS Unity JSON unknown schema rejected
+PHASE1_PASS Unity JSON malformed input rejected
+PHASE1_PASS optional no-motion segment survives Unity serialization
+PHASE1_PASS typed event parameters survive Unity serialization
+PHASE1_PASS missing actual Clip reference rejected
+PHASE1_PASS missing actual Root Motion reference rejected
+PHASE1_PASS legacy damage marks export stale
+PHASE1_PASS float damage int-overflow rejected
+PHASE1_PASS legacy entry marks export stale
+PHASE1_PASS root settings mark export stale
+PHASE1_PASS new authoring fields mark export stale
+PHASE1_PASS case-folded CharacterID export collision rejected
+PHASE1_PASS illegal pilot blocks export
+PHASE1_PASS blocked export preserves old JSON
+PHASE1_PASS real asset duplicate ID rejected
+PHASE1_PASS rename pilot asset
+PHASE1_PASS ID survives rename/save/reimport
+PHASE1_PASS restored pilot exported
+PHASE1_RESULT 25 Unity checks passed. Run VerifyReopen in a NEW Editor process next.
+REVISION_PASS start-equals-end expected Error WINDOW
+REVISION_PASS start-equals-end preserves previous JSON bytes
+REVISION_PASS start-equals-end preserves export GUID/meta
+REVISION_PROTECTION start-equals-end before=72c0e07135eb9a9e023858276cc371beb7863d1f4b5e9c0b9ee8975893c8725b after=72c0e07135eb9a9e023858276cc371beb7863d1f4b5e9c0b9ee8975893c8725b
+REVISION_PASS start-after-end expected Error WINDOW
+REVISION_PASS start-after-end preserves previous JSON bytes
+REVISION_PASS start-after-end preserves export GUID/meta
+REVISION_PROTECTION start-after-end before=72c0e07135eb9a9e023858276cc371beb7863d1f4b5e9c0b9ee8975893c8725b after=72c0e07135eb9a9e023858276cc371beb7863d1f4b5e9c0b9ee8975893c8725b
+REVISION_PASS zero-speed expected Error ANIMATION_TIME
+REVISION_PASS zero-speed preserves previous JSON bytes
+REVISION_PASS zero-speed preserves export GUID/meta
+REVISION_PROTECTION zero-speed before=72c0e07135eb9a9e023858276cc371beb7863d1f4b5e9c0b9ee8975893c8725b after=72c0e07135eb9a9e023858276cc371beb7863d1f4b5e9c0b9ee8975893c8725b
+REVISION_PASS duplicate-ID-inside-catalog expected Error SKILL_ID
+REVISION_PASS duplicate-ID-inside-catalog preserves previous JSON bytes
+REVISION_PASS duplicate-ID-inside-catalog preserves export GUID/meta
+REVISION_PROTECTION duplicate-ID-inside-catalog before=72c0e07135eb9a9e023858276cc371beb7863d1f4b5e9c0b9ee8975893c8725b after=72c0e07135eb9a9e023858276cc371beb7863d1f4b5e9c0b9ee8975893c8725b
+REVISION_PASS unknown-HitGroup expected Error GROUP_REF
+REVISION_PASS unknown-HitGroup preserves previous JSON bytes
+REVISION_PASS unknown-HitGroup preserves export GUID/meta
+REVISION_PROTECTION unknown-HitGroup before=72c0e07135eb9a9e023858276cc371beb7863d1f4b5e9c0b9ee8975893c8725b after=72c0e07135eb9a9e023858276cc371beb7863d1f4b5e9c0b9ee8975893c8725b
+REVISION_PASS missing-required-motion expected Error ROOT_MISSING
+REVISION_PASS missing-required-motion preserves previous JSON bytes
+REVISION_PASS missing-required-motion preserves export GUID/meta
+REVISION_PROTECTION missing-required-motion before=72c0e07135eb9a9e023858276cc371beb7863d1f4b5e9c0b9ee8975893c8725b after=72c0e07135eb9a9e023858276cc371beb7863d1f4b5e9c0b9ee8975893c8725b
+REVISION_PASS missing-required-VFX expected Error RESOURCE_REF
+REVISION_PASS missing-required-VFX preserves previous JSON bytes
+REVISION_PASS missing-required-VFX preserves export GUID/meta
+REVISION_PROTECTION missing-required-VFX before=72c0e07135eb9a9e023858276cc371beb7863d1f4b5e9c0b9ee8975893c8725b after=72c0e07135eb9a9e023858276cc371beb7863d1f4b5e9c0b9ee8975893c8725b
+REVISION_PASS invalid-required-resource-asset expected Error RESOURCE_TYPE
+REVISION_PASS invalid-required-resource-asset preserves previous JSON bytes
+REVISION_PASS invalid-required-resource-asset preserves export GUID/meta
+REVISION_PROTECTION invalid-required-resource-asset before=72c0e07135eb9a9e023858276cc371beb7863d1f4b5e9c0b9ee8975893c8725b after=72c0e07135eb9a9e023858276cc371beb7863d1f4b5e9c0b9ee8975893c8725b
+REVISION_PASS real-resource baseline is valid
+REVISION_MAPPING Normal1 clipLengthUs=657253 trim=0..657253 speed=1000 calculatedFrames=20
+REVISION_PASS actual Normal1 full-trim 1x maps to 20 frames
+REVISION_PASS Normal1-20-to-19-resource-specific expected Error ANIMATION_DURATION
+REVISION_PASS Normal1-20-to-19-resource-specific preserves previous JSON bytes
+REVISION_PASS Normal1-20-to-19-resource-specific preserves export GUID/meta
+REVISION_PROTECTION Normal1-20-to-19-resource-specific before=72c0e07135eb9a9e023858276cc371beb7863d1f4b5e9c0b9ee8975893c8725b after=72c0e07135eb9a9e023858276cc371beb7863d1f4b5e9c0b9ee8975893c8725b
+REVISION_PASS legacy-base-damage baseline fresh
+REVISION_PASS legacy-base-damage marks stale
+REVISION_PASS legacy-base-damage still valid (not stale merely from Error)
+REVISION_PASS legacy-base-damage restored fresh
+REVISION_PASS legacy-entry-full-state-path baseline fresh
+REVISION_PASS legacy-entry-full-state-path marks stale
+REVISION_PASS legacy-entry-full-state-path still valid (not stale merely from Error)
+REVISION_PASS legacy-entry-full-state-path restored fresh
+REVISION_PASS legacy-root-distance baseline fresh
+REVISION_PASS legacy-root-distance marks stale
+REVISION_PASS legacy-root-distance still valid (not stale merely from Error)
+REVISION_PASS legacy-root-distance restored fresh
+REVISION_PASS legacy-root-reference baseline fresh
+REVISION_PASS legacy-root-reference marks stale
+REVISION_PASS legacy-root-reference restored fresh
+REVISION_PASS catalog-reference-list baseline fresh
+REVISION_PASS catalog-reference-list marks stale
+REVISION_PASS catalog-reference-list still valid (not stale merely from Error)
+REVISION_PASS catalog-reference-list restored fresh
+REVISION_PASS new-animation-endpoint baseline fresh
+REVISION_PASS new-animation-endpoint marks stale
+REVISION_PASS new-animation-endpoint restored fresh
+REVISION_PASS registered duplicate outside catalog found by AssetDatabase scan
+REVISION_PASS duplicate-asset-added-to-catalog expected Error SKILL_ID
+REVISION_PASS duplicate-asset-added-to-catalog preserves previous JSON bytes
+REVISION_PASS duplicate-asset-added-to-catalog preserves export GUID/meta
+REVISION_PROTECTION duplicate-asset-added-to-catalog before=72c0e07135eb9a9e023858276cc371beb7863d1f4b5e9c0b9ee8975893c8725b after=72c0e07135eb9a9e023858276cc371beb7863d1f4b5e9c0b9ee8975893c8725b
+REVISION_PASS unregistered external asset intentionally outside ID scan
+REVISION_PASS restored catalog and original export remain consistent
+REVISION_MANUAL_REQUIRED Inspector copy button/new stable ID and full-project Play-mode combat regression were NOT executed.
+REVISION_RESULT 57 additional actual Unity checks passed; original 25 checks also rerun. Full combat acceptance remains pending.
+PHASE1_REOPEN_PASS actual separate Editor process: both SOs, IDs, catalog, export, Resources load and typed-event/no-motion SO fixture.
+
+MANUAL_PENDING: original-project compile/Inspector/copy-button/new-ID persistence/UI dirty-state and B01-B06 Play-mode regression.
+Phase 1 overall acceptance remains pending; no Phase 2 authorization requested.
