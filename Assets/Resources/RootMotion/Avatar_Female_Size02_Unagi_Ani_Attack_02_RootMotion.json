@@ -1,0 +1,213 @@
+{
+    "clipName": "Avatar_Female_Size02_Unagi_Ani_Attack_02",
+    "sourceAnimationFrameRate": 60,
+    "logicFrameIntervalMs": 33,
+    "precision": 10000,
+    "clipLengthMs": 583,
+    "rootMotionEndAnimationFrame": -1,
+    "rootMotionEndTimeMs": 583,
+    "frameCount": 18,
+    "totalX": 3063,
+    "totalY": 0,
+    "totalZ": 16744,
+    "frames": [
+        {
+            "logicFrame": 0,
+            "sampleEndTimeMs": 33,
+            "sampleDurationMs": 33,
+            "deltaX": 309,
+            "deltaY": 0,
+            "deltaZ": 5037,
+            "positionX": 309,
+            "positionY": 0,
+            "positionZ": 5037
+        },
+        {
+            "logicFrame": 1,
+            "sampleEndTimeMs": 66,
+            "sampleDurationMs": 33,
+            "deltaX": 639,
+            "deltaY": 0,
+            "deltaZ": 4182,
+            "positionX": 948,
+            "positionY": 0,
+            "positionZ": 9219
+        },
+        {
+            "logicFrame": 2,
+            "sampleEndTimeMs": 99,
+            "sampleDurationMs": 33,
+            "deltaX": 959,
+            "deltaY": 0,
+            "deltaZ": 3359,
+            "positionX": 1907,
+            "positionY": 0,
+            "positionZ": 12578
+        },
+        {
+            "logicFrame": 3,
+            "sampleEndTimeMs": 132,
+            "sampleDurationMs": 33,
+            "deltaX": 261,
+            "deltaY": 0,
+            "deltaZ": 2711,
+            "positionX": 2168,
+            "positionY": 0,
+            "positionZ": 15289
+        },
+        {
+            "logicFrame": 4,
+            "sampleEndTimeMs": 165,
+            "sampleDurationMs": 33,
+            "deltaX": 5,
+            "deltaY": 0,
+            "deltaZ": 1262,
+            "positionX": 2173,
+            "positionY": 0,
+            "positionZ": 16551
+        },
+        {
+            "logicFrame": 5,
+            "sampleEndTimeMs": 198,
+            "sampleDurationMs": 33,
+            "deltaX": 846,
+            "deltaY": 0,
+            "deltaZ": 471,
+            "positionX": 3019,
+            "positionY": 0,
+            "positionZ": 17022
+        },
+        {
+            "logicFrame": 6,
+            "sampleEndTimeMs": 231,
+            "sampleDurationMs": 33,
+            "deltaX": 323,
+            "deltaY": 0,
+            "deltaZ": -387,
+            "positionX": 3342,
+            "positionY": 0,
+            "positionZ": 16635
+        },
+        {
+            "logicFrame": 7,
+            "sampleEndTimeMs": 264,
+            "sampleDurationMs": 33,
+            "deltaX": 108,
+            "deltaY": 0,
+            "deltaZ": -324,
+            "positionX": 3450,
+            "positionY": 0,
+            "positionZ": 16311
+        },
+        {
+            "logicFrame": 8,
+            "sampleEndTimeMs": 297,
+            "sampleDurationMs": 33,
+            "deltaX": -20,
+            "deltaY": 0,
+            "deltaZ": -109,
+            "positionX": 3430,
+            "positionY": 0,
+            "positionZ": 16202
+        },
+        {
+            "logicFrame": 9,
+            "sampleEndTimeMs": 330,
+            "sampleDurationMs": 33,
+            "deltaX": -68,
+            "deltaY": 0,
+            "deltaZ": 36,
+            "positionX": 3362,
+            "positionY": 0,
+            "positionZ": 16238
+        },
+        {
+            "logicFrame": 10,
+            "sampleEndTimeMs": 363,
+            "sampleDurationMs": 33,
+            "deltaX": -79,
+            "deltaY": 0,
+            "deltaZ": 111,
+            "positionX": 3283,
+            "positionY": 0,
+            "positionZ": 16349
+        },
+        {
+            "logicFrame": 11,
+            "sampleEndTimeMs": 396,
+            "sampleDurationMs": 33,
+            "deltaX": -70,
+            "deltaY": 0,
+            "deltaZ": 119,
+            "positionX": 3213,
+            "positionY": 0,
+            "positionZ": 16468
+        },
+        {
+            "logicFrame": 12,
+            "sampleEndTimeMs": 429,
+            "sampleDurationMs": 33,
+            "deltaX": -40,
+            "deltaY": 0,
+            "deltaZ": 66,
+            "positionX": 3173,
+            "positionY": 0,
+            "positionZ": 16534
+        },
+        {
+            "logicFrame": 13,
+            "sampleEndTimeMs": 462,
+            "sampleDurationMs": 33,
+            "deltaX": -25,
+            "deltaY": 0,
+            "deltaZ": 58,
+            "positionX": 3148,
+            "positionY": 0,
+            "positionZ": 16592
+        },
+        {
+            "logicFrame": 14,
+            "sampleEndTimeMs": 495,
+            "sampleDurationMs": 33,
+            "deltaX": -21,
+            "deltaY": 0,
+            "deltaZ": 59,
+            "positionX": 3127,
+            "positionY": 0,
+            "positionZ": 16651
+        },
+        {
+            "logicFrame": 15,
+            "sampleEndTimeMs": 528,
+            "sampleDurationMs": 33,
+            "deltaX": -24,
+            "deltaY": 0,
+            "deltaZ": 52,
+            "positionX": 3103,
+            "positionY": 0,
+            "positionZ": 16703
+        },
+        {
+            "logicFrame": 16,
+            "sampleEndTimeMs": 561,
+            "sampleDurationMs": 33,
+            "deltaX": -31,
+            "deltaY": 0,
+            "deltaZ": 34,
+            "positionX": 3072,
+            "positionY": 0,
+            "positionZ": 16737
+        },
+        {
+            "logicFrame": 17,
+            "sampleEndTimeMs": 583,
+            "sampleDurationMs": 22,
+            "deltaX": -9,
+            "deltaY": 0,
+            "deltaZ": 7,
+            "positionX": 3063,
+            "positionY": 0,
+            "positionZ": 16744
+        }
+    ]
+}
