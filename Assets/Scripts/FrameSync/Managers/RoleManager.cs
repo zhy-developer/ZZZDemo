@@ -16,7 +16,7 @@ public class RoleManager : MonoBehaviour
     private Transform roleParent;
     private Dictionary<int, RoleBase> dic_role;
 
-    public void InitData(Transform _roleParent, out GameVector2[] roleGrid)
+    public void InitData(Transform _roleParent)
     {
         initFinish = false;
         roleParent = _roleParent;
@@ -26,17 +26,10 @@ public class RoleManager : MonoBehaviour
         pre_roleBase = Resources.Load<GameObject>("BattleScene/Role/RoleBase");
         pre_roleUI = Resources.Load<GameObject>("BattleScene/Role/RoleUI");
 
-        int _roleNum = BattleData.Instance.list_battleUser.Count;
-        roleGrid = new GameVector2[_roleNum];
-        for (int i = 0; i < roleGrid.Length; i++)
-        {
-            roleGrid[i] = BattleData.Instance.GetMapGridFromRand(ToolRandom.rand_10000()); // 确定一个随机位置
-        }
-
-        StartCoroutine(CreatRole(roleGrid));
+        StartCoroutine(CreatRole());
     }
 
-    IEnumerator CreatRole(GameVector2[] _roleGrid)
+    IEnumerator CreatRole()
     {
 
         Dictionary<string, GameObject> pre_roleModle = new Dictionary<string, GameObject>();
@@ -68,8 +61,7 @@ public class RoleManager : MonoBehaviour
                 cameras.Initialize(isLocalPlayer);
             }
 
-            GameVector2 _grid = _roleGrid[_info.battleID - 1];
-            GameVector2 _pos = BattleData.Instance.GetMapGridCenterPosition(_grid.x, _grid.y);
+            GameVector2 _pos = BattleData.Instance.GetPvpSpawnPosition(_info.battleID);
 
             RoleBase _roleCon = _base.GetComponent<RoleBase>();
             _roleCon.InitData(_ui, _modle, _info.battleID, _pos); // 初始化

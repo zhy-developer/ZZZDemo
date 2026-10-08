@@ -27,6 +27,8 @@ public static class RootMotionPlaybackChecks
             // Isolate only the map/direction services RoleBase uses; do not start networking or loading coroutines.
             var battle = (BattleData)FormatterServices.GetUninitializedObject(typeof(BattleData));
             battle.mapWidth = battle.mapHeigh = 1000000;
+            battle.mapMinX = battle.mapMinY = 0;
+            battle.mapMaxX = battle.mapMaxY = 1000000;
             var directions = new Dictionary<int, GameVector2>();
             foreach (string line in File.ReadAllLines(Path.Combine(Application.streamingAssetsPath, "Desktopspeed.txt")))
             {
@@ -92,6 +94,28 @@ public static class RootMotionPlaybackChecks
             role.TryPlayRootMotion(settings);
             for (int i = 0; i < 23; i++) role.Logic_Move();
             check(role.objShape.GetPosition().y <= battle.mapHeigh, "Baked displacement uses map resolver");
+
+            var combo = playerInfo.ComboData.comboData.lightCombo;
+            check(combo.comboDatas.Count == 6, "Miyabi has six normal attack steps");
+            for (int step = 1; step <= 6; step++)
+            {
+                var attack = combo.comboDatas[step - 1];
+                var json = AssetDatabase.LoadAssetAtPath<TextAsset>(
+                    $"Assets/Resources/RootMotion/Avatar_Female_Size02_Unagi_Ani_Attack_{step:D2}_RootMotion.json");
+                check(attack.comboName == $"Unagi_Normal_{step}" && json != null
+                    && attack.rootMotion != null && attack.rootMotion.json == json,
+                    $"Attack {step} binds its matching JSON");
+                check(attack.rootMotion.TryGetClip(out _), $"Attack {step} data validates");
+                var data = JsonUtility.FromJson<RootMotionJsonData>(json.text);
+                role.CancelRootMotion();
+                role.objShape.SetPosition(start);
+                role.Logic_UpdateMoveDir(30);
+                check(role.TryPlayRootMotion(attack.rootMotion) != 0, $"Attack {step} starts playback");
+                for (int frame = 0; frame < data.frameCount; frame++) role.Logic_Move();
+                check(!role.IsPlayingRootMotion
+                    && role.objShape.GetPosition().Equals(start + new GameVector2(data.totalX, data.totalZ)),
+                    $"Attack {step} applies exported displacement without input movement");
+            }
 
             Debug.Log("PASS: " + checks + " root motion Unity integration checks");
         }

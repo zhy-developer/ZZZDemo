@@ -186,12 +186,23 @@ public class BattleData{
 	/// <returns></returns>
 	//坐标不超出地图
 	public GameVector2 GetMapLogicPosition(GameVector2 _pos){
-		return new GameVector2 (Mathf.Clamp(_pos.x,0,mapWidth),Mathf.Clamp(_pos.y,0,mapHeigh));
+		return new GameVector2(Mathf.Clamp(_pos.x, mapMinX, mapMaxX), Mathf.Clamp(_pos.y, mapMinY, mapMaxY));
 	}
+
+    // Two-player PvP: fixed offsets from the map center, assigned by server battleID.
+    public GameVector2 GetPvpSpawnPosition(int playerBattleId)
+    {
+        if (playerBattleId != 1 && playerBattleId != 2)
+            throw new System.ArgumentOutOfRangeException(nameof(playerBattleId), "PvP spawn requires battleID 1 or 2.");
+        int centerX = mapMinX + (mapMaxX - mapMinX) / 2;
+        int centerZ = mapMinY + (mapMaxY - mapMinY) / 2;
+        int offset = 3 * ToolMethod.Render2LogicScale; // Each player starts 3 world units from center.
+        return GetMapLogicPosition(new GameVector2(centerX + (playerBattleId == 1 ? -offset : offset), centerZ));
+    }
 
 	public GameVector2 GetMapGridCenterPosition(int _row, int _column)
 	{
-		return new GameVector2(_column * gridLenth + gridHalfLenth, _row * gridLenth + gridHalfLenth);
+		return new GameVector2(mapMinX + _column * gridLenth + gridHalfLenth, mapMinY + _row * gridLenth + gridHalfLenth);
 	}
 
 	public GameVector2 GetMapGridFromRand(int _randNum)

@@ -4,7 +4,22 @@ namespace ZZZ
 {
     public class PlayerATKIngState : PlayerComboState
     {
+        private int motionHandle;
         public PlayerATKIngState(PlayerComboStateMachine stateMachine) : base(stateMachine) { }
+
+        // Consecutive combo steps reuse this state, so each step explicitly replaces its motion.
+        public void StartMotion(FrameSync.RootMotion.RootMotionSettings settings)
+        {
+            player.StopRootMotion(motionHandle);
+            motionHandle = player.TryPlayRootMotion(settings);
+        }
+
+        public override void Exit()
+        {
+            player.StopRootMotion(motionHandle);
+            motionHandle = 0;
+            base.Exit();
+        }
         public override void Update()
         {
             base.Update();

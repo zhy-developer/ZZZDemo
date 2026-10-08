@@ -36,3 +36,7 @@ MonoBehaviour:
   _pauseFrameTimeList:
   - 0.1
   - 0
+  rootMotion:
+    json: {fileID: 4900000, guid: 8fc5b31f8377d984ba40d4b445e7da99, type: 3}
+    endFrameExclusive: 0
+    distancePermille: 1000

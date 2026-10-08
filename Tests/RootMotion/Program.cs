@@ -87,4 +87,16 @@ playback.TryStart(bakedClip, 0, 1000, 0, 100, 100);
 totalZ = 0; count = 0;
 while (playback.TryAdvance(out dx, out dz)) { totalZ += dz; count++; }
 Check(count == 23 && totalZ == 59191, "Full real clip including short final interval");
+for (int step = 1; step <= 6; step++)
+{
+    var attack = JsonSerializer.Deserialize<RootMotionJsonData>(File.ReadAllText(
+        Path.Combine(AppContext.BaseDirectory, $"Avatar_Female_Size02_Unagi_Ani_Attack_{step:D2}_RootMotion.json")),
+        new JsonSerializerOptions { IncludeFields = true });
+    var attackClip = Clip(attack);
+    Check(playback.TryStart(attackClip, 0, 1000, 0, 100, 100), $"Attack {step} starts");
+    totalX = totalZ = count = 0;
+    while (playback.TryAdvance(out dx, out dz)) { totalX += dx; totalZ += dz; count++; }
+    Check(count == attack.frameCount && totalX == attack.totalX && totalZ == attack.totalZ,
+        $"Attack {step} reproduces exported displacement and duration");
+}
 Console.WriteLine($"PASS: {passed} root motion checks");

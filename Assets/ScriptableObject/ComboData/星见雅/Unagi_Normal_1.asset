@@ -33,3 +33,7 @@ MonoBehaviour:
   _shakeForceList:
   - 0
   _pauseFrameTimeList: []
+  rootMotion:
+    json: {fileID: 4900000, guid: e01b382748b39154580dfff8466b6701, type: 3}
+    endFrameExclusive: 0
+    distancePermille: 1000

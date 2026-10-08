@@ -11,5 +11,6 @@
     <Compile Include="../../Assets/Scripts/FrameSync/RootMotionBake/RootMotionClip.cs" />
     <Compile Include="../../Assets/Scripts/FrameSync/RootMotionBake/RootMotionPlayback.cs" />
     <None Include="../../Assets/Resources/RootMotion/Avatar_Female_Size02_Unagi_Ani_Evade_Front_RootMotion.json" Link="dodge.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../../Assets/Resources/RootMotion/*_Attack_*_RootMotion.json" Link="%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

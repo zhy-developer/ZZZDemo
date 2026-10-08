@@ -35,3 +35,7 @@ MonoBehaviour:
   - 0
   - 0.12
   - 0.15
+  rootMotion:
+    json: {fileID: 4900000, guid: 48b6b296f8b48b84db8d588593ddd726, type: 3}
+    endFrameExclusive: 0
+    distancePermille: 1000

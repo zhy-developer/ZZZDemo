@@ -23,6 +23,9 @@ public class ComboData : ScriptableObject
     [SerializeField] private string[] _hitName;
     [SerializeField] private string[] _parryName;
 
+    [Header("根位移（留空保持原行为）")]
+    public FrameSync.RootMotion.RootMotionSettings rootMotion = new FrameSync.RootMotion.RootMotionSettings();
+
     [SerializeField, Header("音效管理")] bool appAudioPrefab=false;
     [SerializeField] private AudioClip[] _weaponSound;
     [SerializeField] private AudioClip[] _characterVoice;

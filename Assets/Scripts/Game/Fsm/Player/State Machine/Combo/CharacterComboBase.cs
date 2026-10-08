@@ -128,6 +128,8 @@ namespace ZZZ
             // 每一段新攻击都重新等待动画事件开放移动打断。
             comboResuableData.canMoveInterrupt = false;
             animator.CrossFadeInFixedTime(comboName, 0.111f, 0, 0f);
+            player.comboStateMachine.ATKIngState.StartMotion(
+                comboResuableData.currentCombo.comboDatas[comboResuableData.currentIndex.Value].rootMotion);
             player.TraceCombo("PLAY_REQUEST", $"index={comboResuableData.currentIndex.Value} animation={comboName} hash={Animator.StringToHash(comboName)}");
             //播放语音
             PlayCharacterVoice(comboResuableData.currentCombo.comboDatas[comboResuableData.currentIndex.Value]);

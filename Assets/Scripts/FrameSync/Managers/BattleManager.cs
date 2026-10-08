@@ -46,8 +46,7 @@ public class BattleManager : MonoSingleton<BattleManager>
         ToolRandom.srand((ulong)BattleData.Instance.randSeed); // 设置随机数种子。
         roleManage = gameObject.AddComponent<RoleManager>();  //角色管理器 生成角色
 
-        GameVector2[] roleGrid;// 角色 坐标
-        roleManage.InitData(_map.Find("Role"), out roleGrid); // 初始化角色
+        roleManage.InitData(_map.Find("Role")); // 按 battleID 分配固定的对称出生点
     }
 
     void Send_BattleReady()
