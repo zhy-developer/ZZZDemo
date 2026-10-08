@@ -19,6 +19,10 @@ public class RoleBase : MonoBehaviour {
 
 	private Transform modleParent;
 	private ZZZ.Player player;
+	// Keep input buffered, but do not let it move or turn an active attack/skill.
+	private bool IsInputMovementBlocked => player != null
+		&& (player.comboStateMachine.currentState.Value == player.comboStateMachine.ATKIngState
+			|| player.comboStateMachine.currentState.Value == player.comboStateMachine.SkillState);
 
 	private Vector3 renderPosition;  // 渲染位置
 	private Quaternion renderDir;
@@ -85,7 +89,7 @@ public class RoleBase : MonoBehaviour {
 		{			
 			int direction = (_dir % 120) * 3;
 			logicSpeed = moveSpeed * BattleData.Instance.GetSpeed(direction);
-			if (!rootMotion.IsPlaying) SetLogicalFacing(direction);
+			if (!rootMotion.IsPlaying && !IsInputMovementBlocked) SetLogicalFacing(direction);
 		}
 	}
 
@@ -106,7 +110,10 @@ public class RoleBase : MonoBehaviour {
 			}
 			return; // Including the final sample: never add ordinary movement on this tick.
 		}
+		// Check after actions have been applied: movement input is processed first in a frame.
+		if (IsInputMovementBlocked) return;
 		if (logicSpeed != GameVector2.zero) { // 如果逻辑速度不等于0
+			RestoreInputFacing();
 			ApplyLogicDisplacement(logicSpeed);
 		}
 	}
@@ -172,7 +179,8 @@ public class RoleBase : MonoBehaviour {
 
 	private void RestoreInputFacing()
 	{
-		if (inputDirection >= 0 && inputDirection <= 120) SetLogicalFacing((inputDirection % 120) * 3);
+		if (!IsInputMovementBlocked && inputDirection >= 0 && inputDirection <= 120)
+			SetLogicalFacing((inputDirection % 120) * 3);
 	}
 
 	private void OnDisable() { CancelRootMotion(); }
