@@ -1,0 +1,169 @@
+Phase 2B verification evidence - 2026-10-09
+Unity 2022.3.62f2c1; isolated Temp/SkillEditorPhase2B; real Unity API/resources with unrelated dependency stubs.
+PASS: 35 Phase2B command/data assertions; Phase1 25 + 57 regression assertions; Unity exit 0.
+PASS: 4 new-process reopen assertions; Unity exit 0.
+PASS: graphics IMGUI Layout/Repaint smoke for every inspector type; Unity exit 0.
+PASS: independent SkillConfig 56, RootMotion 47, ActionSync 31 checks; all exit 0.
+NOT EXECUTED: real mouse drag/trim/Escape UX, original Inspector UX, full original project compilation and Play-mode combat regression.
+Expected environment messages: no-graphics lifecycle test has No graphic device warnings; separate graphics smoke completed.
+Initial RED logs document intentionally failing missing-service and invalid-tail checks; final runs have no test failures.
+
+Final Unity assertion evidence:
+PHASE2B_PASS tail still requires a positive interval
+PHASE2B_PASS command applies edit
+PHASE2B_PASS Undo restores before mutation
+PHASE2B_PASS Redo restores edit
+PHASE2B_PASS create HitBox
+PHASE2B_PASS delete Undo HitBox
+PHASE2B_PASS create Invincibility
+PHASE2B_PASS delete Undo Invincibility
+PHASE2B_PASS create Interrupt
+PHASE2B_PASS delete Undo Interrupt
+PHASE2B_PASS create Event
+PHASE2B_PASS delete Undo Event
+PHASE2B_PASS create Vfx
+PHASE2B_PASS delete Undo Vfx
+PHASE2B_PASS create Sfx
+PHASE2B_PASS delete Undo Sfx
+PHASE1_PASS pilot real asset validation
+PHASE1_PASS partial catalog guard
+PHASE1_PASS legacy provenance Warning
+PHASE1_PASS Resources load real export
+PHASE1_PASS battle configuration rejected
+PHASE1_PASS IDs survive Unity JsonUtility roundtrip
+PHASE1_PASS fresh export status
+PHASE1_PASS Unity JSON unknown schema rejected
+PHASE1_PASS Unity JSON malformed input rejected
+PHASE1_PASS optional no-motion segment survives Unity serialization
+PHASE1_PASS typed event parameters survive Unity serialization
+PHASE1_PASS missing actual Clip reference rejected
+PHASE1_PASS missing actual Root Motion reference rejected
+PHASE1_PASS legacy damage marks export stale
+PHASE1_PASS float damage int-overflow rejected
+PHASE1_PASS legacy entry marks export stale
+PHASE1_PASS root settings mark export stale
+PHASE1_PASS new authoring fields mark export stale
+PHASE1_PASS case-folded CharacterID export collision rejected
+PHASE1_PASS illegal pilot blocks export
+PHASE1_PASS blocked export preserves old JSON
+PHASE1_PASS real asset duplicate ID rejected
+PHASE1_PASS rename pilot asset
+PHASE1_PASS ID survives rename/save/reimport
+PHASE1_PASS restored pilot exported
+REVISION_PASS start-equals-end expected Error WINDOW
+REVISION_PASS start-equals-end preserves previous JSON bytes
+REVISION_PASS start-equals-end preserves export GUID/meta
+REVISION_PASS start-after-end expected Error WINDOW
+REVISION_PASS start-after-end preserves previous JSON bytes
+REVISION_PASS start-after-end preserves export GUID/meta
+REVISION_PASS zero-speed expected Error ANIMATION_TIME
+REVISION_PASS zero-speed preserves previous JSON bytes
+REVISION_PASS zero-speed preserves export GUID/meta
+REVISION_PASS duplicate-ID-inside-catalog expected Error SKILL_ID
+REVISION_PASS duplicate-ID-inside-catalog preserves previous JSON bytes
+REVISION_PASS duplicate-ID-inside-catalog preserves export GUID/meta
+REVISION_PASS unknown-HitGroup expected Error GROUP_REF
+REVISION_PASS unknown-HitGroup preserves previous JSON bytes
+REVISION_PASS unknown-HitGroup preserves export GUID/meta
+REVISION_PASS missing-required-motion expected Error ROOT_MISSING
+REVISION_PASS missing-required-motion preserves previous JSON bytes
+REVISION_PASS missing-required-motion preserves export GUID/meta
+REVISION_PASS missing-required-VFX expected Error RESOURCE_REF
+REVISION_PASS missing-required-VFX preserves previous JSON bytes
+REVISION_PASS missing-required-VFX preserves export GUID/meta
+REVISION_PASS invalid-required-resource-asset expected Error RESOURCE_TYPE
+REVISION_PASS invalid-required-resource-asset preserves previous JSON bytes
+REVISION_PASS invalid-required-resource-asset preserves export GUID/meta
+REVISION_PASS real-resource baseline is valid
+REVISION_PASS actual Normal1 full-trim 1x maps to 20 frames
+REVISION_PASS Normal1-20-to-19-resource-specific expected Error ANIMATION_DURATION
+REVISION_PASS Normal1-20-to-19-resource-specific preserves previous JSON bytes
+REVISION_PASS Normal1-20-to-19-resource-specific preserves export GUID/meta
+REVISION_PASS legacy-base-damage baseline fresh
+REVISION_PASS legacy-base-damage marks stale
+REVISION_PASS legacy-base-damage still valid (not stale merely from Error)
+REVISION_PASS legacy-base-damage restored fresh
+REVISION_PASS legacy-entry-full-state-path baseline fresh
+REVISION_PASS legacy-entry-full-state-path marks stale
+REVISION_PASS legacy-entry-full-state-path still valid (not stale merely from Error)
+REVISION_PASS legacy-entry-full-state-path restored fresh
+REVISION_PASS legacy-root-distance baseline fresh
+REVISION_PASS legacy-root-distance marks stale
+REVISION_PASS legacy-root-distance still valid (not stale merely from Error)
+REVISION_PASS legacy-root-distance restored fresh
+REVISION_PASS legacy-root-reference baseline fresh
+REVISION_PASS legacy-root-reference marks stale
+REVISION_PASS legacy-root-reference restored fresh
+REVISION_PASS catalog-reference-list baseline fresh
+REVISION_PASS catalog-reference-list marks stale
+REVISION_PASS catalog-reference-list still valid (not stale merely from Error)
+REVISION_PASS catalog-reference-list restored fresh
+REVISION_PASS new-animation-endpoint baseline fresh
+REVISION_PASS new-animation-endpoint marks stale
+REVISION_PASS new-animation-endpoint restored fresh
+REVISION_PASS registered duplicate outside catalog found by AssetDatabase scan
+REVISION_PASS duplicate-asset-added-to-catalog expected Error SKILL_ID
+REVISION_PASS duplicate-asset-added-to-catalog preserves previous JSON bytes
+REVISION_PASS duplicate-asset-added-to-catalog preserves export GUID/meta
+REVISION_PASS unregistered external asset intentionally outside ID scan
+REVISION_PASS restored catalog and original export remain consistent
+REVISION_RESULT 57 additional actual Unity checks passed; original 25 checks also rerun. Full combat acceptance remains pending.
+PHASE2B_PASS animation contiguous after insert
+PHASE2B_PASS animation insert Undo
+PHASE2B_PASS range edit persists
+PHASE2B_PASS range Undo
+PHASE2B_PASS speed reflows animation only
+PHASE2B_PASS shortening invalidates late event
+PHASE2B_PASS all types valid including AutoComplete and sound tails
+PHASE2B_PASS AutoComplete tail beyond cast is not range error
+PHASE2B_PASS Warning export succeeds
+PHASE2B_PASS export clean
+PHASE2B_PASS Resources loader roundtrip
+PHASE2B_PASS legacy damage stale
+PHASE2B_PASS Undo restores export consistency
+PHASE2B_PASS invalid export preserves old bytes
+PHASE2B_PASS track delete removes owned items
+PHASE2B_PASS track delete Undo restores references
+PHASE2B_PASS group cascade delete
+PHASE2B_PASS group Undo restores references
+PHASE2B_PASS window close keeps authoring values
+PHASE2B_INTEGRATION_COMPLETE
+PHASE2B_PASS new Unity process stable ID and saved fields
+PHASE2B_PASS all saved list references survive reopen
+PHASE2B_PASS reopen Resources load
+PHASE2B_PASS reopen export consistency
+PHASE2B_PASS graphics IMGUI layout/repaint every item inspector: 
+
+Logs:
+D:/GitHub/ARPGDEMO/Logs/SkillEditor-Phase2B-Red.log
+D:/GitHub/ARPGDEMO/Logs/SkillEditor-Phase2B-Tail-Red.log
+D:/GitHub/ARPGDEMO/Logs/SkillEditor-Phase2B-Final.log
+D:/GitHub/ARPGDEMO/Logs/SkillEditor-Phase2B-Final-Reopen.log
+D:/GitHub/ARPGDEMO/Logs/SkillEditor-Phase2B-Final-GUI.log
+D:/GitHub/ARPGDEMO/Logs/SkillEditor-Phase2B-DotNet.log
+D:/GitHub/ARPGDEMO/Logs/SkillEditor-Phase2B-RootMotion.log
+D:/GitHub/ARPGDEMO/Logs/SkillEditor-Phase2B-ActionSync.log
+
+Actual added files:
+D:/GitHub/ARPGDEMO/Assets/Editor/SkillEditor.meta
+D:\GitHub\ARPGDEMO\Assets\Editor\SkillEditor\SkillEditCommands.cs
+D:\GitHub\ARPGDEMO\Assets\Editor\SkillEditor\SkillEditCommands.cs.meta
+D:\GitHub\ARPGDEMO\Assets\Editor\SkillEditor\SkillEditorWindow.cs
+D:\GitHub\ARPGDEMO\Assets\Editor\SkillEditor\SkillEditorWindow.cs.meta
+D:\GitHub\ARPGDEMO\Assets\Editor\SkillEditor\SkillEditorWorkspaceState.cs
+D:\GitHub\ARPGDEMO\Assets\Editor\SkillEditor\SkillEditorWorkspaceState.cs.meta
+D:\GitHub\ARPGDEMO\Assets\Editor\SkillEditor\SkillInspectorPanel.cs
+D:\GitHub\ARPGDEMO\Assets\Editor\SkillEditor\SkillInspectorPanel.cs.meta
+D:\GitHub\ARPGDEMO\Assets\Editor\SkillEditor\SkillTimelineAdapters.cs
+D:\GitHub\ARPGDEMO\Assets\Editor\SkillEditor\SkillTimelineAdapters.cs.meta
+D:\GitHub\ARPGDEMO\Assets\Editor\SkillEditor\SkillTimelineView.cs
+D:\GitHub\ARPGDEMO\Assets\Editor\SkillEditor\SkillTimelineView.cs.meta
+D:\GitHub\ARPGDEMO\Assets\Editor\SkillEditor\Tests.meta
+D:\GitHub\ARPGDEMO\Assets\Editor\SkillEditor\Tests\SkillEditorPhase2BChecks.cs
+D:\GitHub\ARPGDEMO\Assets\Editor\SkillEditor\Tests\SkillEditorPhase2BChecks.cs.meta
+D:/GitHub/ARPGDEMO/Tests/SkillEditor/RunUnityChecks.ps1
+D:/GitHub/ARPGDEMO/docs/SkillEditor_Phase2B_Acceptance.md
+D:/GitHub/ARPGDEMO/docs/SkillEditor_Phase2B_Ledger.md
+D:/GitHub/ARPGDEMO/docs/SkillEditor_Phase2B_Results.txt
+
+Modified: D:/GitHub/ARPGDEMO/Assets/Editor/SkillConfig/ComboDataSkillInspector.cs: 1 added button line.

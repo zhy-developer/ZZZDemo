@@ -33,12 +33,78 @@ MonoBehaviour:
       additionalEndFrameExclusive: 0
       additionalDistancePermille: 1000
       tailPolicy: 0
-    tracks: []
-    hitGroups: []
-    hitBoxes: []
+    - id: c1d15a612ccd45f98f3b394cc12ad344
+      startFrame: 18
+      endFrame: 19
+      clip: {fileID: 0}
+      statePaths: []
+      trimStartUs: 0
+      trimEndUs: 33000
+      speedPermille: 1000
+      rootSource: 0
+      additionalRootMotion: {fileID: 0}
+      additionalEndFrameExclusive: 0
+      additionalDistancePermille: 1000
+      tailPolicy: 0
+    tracks:
+    - id: f53d6fa6169b4d1b8814fb8df4767282
+      name: HitBox
+      group: 
+      kind: 0
+      displayOrder: 0
+    - id: 8f3a21b662c84eb0b8eab15f8be66ad5
+      name: Event
+      group: 
+      kind: 3
+      displayOrder: 1
+    hitGroups:
+    - id: 517d10c1642e4495b1dfcfde612a0448
+      mode: 0
+      repeatIntervalFrames: 1
+      damageSource: 0
+      explicitDamage: 0
+      hitStunFrames: 0
+      knockback:
+        x: 0
+        y: 0
+        z: 0
+      knockbackFrames: 0
+      hitVfxResourceId: 
+      hitSfxResourceId: 
+    hitBoxes:
+    - id: c576d6c4e1f64fde9ec322243ae99f1a
+      trackId: f53d6fa6169b4d1b8814fb8df4767282
+      hitGroupId: 517d10c1642e4495b1dfcfde612a0448
+      startFrame: 0
+      endFrame: 7
+      shape: 0
+      offset:
+        x: 0
+        y: 0
+        z: 0
+      size:
+        x: 10000
+        y: 10000
+        z: 10000
+      yawMilliDegrees: 0
+      radius: 5000
+      height: 10000
+      sectorAngleMilliDegrees: 90000
     invincibility: []
     interrupts: []
-    events: []
+    events:
+    - id: deaa60201f304835b3e178cae0b955f6
+      trackId: 8f3a21b662c84eb0b8eab15f8be66ad5
+      eventId: presentation.marker
+      frame: 7
+      order: 0
+      version: 1
+      execution: 0
+      parameterKind: 1
+      marker:
+        text: 
+      comboGate:
+        enabled: 0
     vfx: []
     sfx: []
   characterName: 1

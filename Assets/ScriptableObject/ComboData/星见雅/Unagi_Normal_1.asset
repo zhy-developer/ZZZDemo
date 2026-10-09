@@ -33,9 +33,45 @@ MonoBehaviour:
       additionalEndFrameExclusive: 0
       additionalDistancePermille: 1000
       tailPolicy: 0
-    tracks: []
-    hitGroups: []
-    hitBoxes: []
+    tracks:
+    - id: cf61d4fcd5f546f8ae56823eb8343d30
+      name: HitBox
+      group: 
+      kind: 0
+      displayOrder: 0
+    hitGroups:
+    - id: 548b99b38d5846d5bb05e0ccd084c3bb
+      mode: 0
+      repeatIntervalFrames: 1
+      damageSource: 0
+      explicitDamage: 0
+      hitStunFrames: 0
+      knockback:
+        x: 0
+        y: 0
+        z: 0
+      knockbackFrames: 0
+      hitVfxResourceId: 
+      hitSfxResourceId: 
+    hitBoxes:
+    - id: 96994c8c844c4ba98475f84c6c91c6f3
+      trackId: cf61d4fcd5f546f8ae56823eb8343d30
+      hitGroupId: 548b99b38d5846d5bb05e0ccd084c3bb
+      startFrame: 6
+      endFrame: 11
+      shape: 2
+      offset:
+        x: 0
+        y: 0
+        z: 20000
+      size:
+        x: 10000
+        y: 10000
+        z: 10000
+      yawMilliDegrees: 0
+      radius: 5000
+      height: 10000
+      sectorAngleMilliDegrees: 90000
     invincibility: []
     interrupts: []
     events: []

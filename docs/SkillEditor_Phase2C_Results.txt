@@ -1,0 +1,260 @@
+Phase 2C evidence snapshot 2026-10-09
+Unity 2022.3.62f2c1; isolated projects; formal gameplay/manual mouse acceptance NOT executed.
+Logs/SkillEditor-Phase2C-Integration.log | PASS assertions: 121
+[Licensing::Module] LicensingClient has failed validation; ignoring
+[Licensing::Module] Error: Failed to handshake to channel: "LicenseClient-zhy22"
+[Licensing::Module] LicensingClient has failed validation; ignoring
+[Licensing::Module] Error: Access token is unavailable; failed to update
+Starting: C:\Program Files\Unity\Hub\Editor\2022.3.62f2c1\Editor\Data\bee_backend.exe --ipc --defer-dag-verification --dagfile="Library/Bee/1900b0aEDbg.dag" --continue-on-failure --profile="Library/Bee/backend1.traceevents" ScriptAssemblies
+PHASE2C_PASS visual-only builder exists
+PHASE2C_PASS real Miyabi visual source loaded
+PHASE2C_PASS independent preview Stage opened
+PHASE2C_PASS no managed gameplay components in visual proxy
+PHASE2C_PASS real model meshes are visible components
+PHASE2C_PASS Animator has no controller/events/root motion application
+PHASE2C_PASS visual proxy disposal is idempotent
+PHASE2C_PASS Stage destruction closes preview Scene
+PHASE2C_PASS main Scene and source unchanged
+PHASE2C_PASS stateless animation sampler exists
+PHASE2C_PASS Normal1 repeated random Seek pose identical
+PHASE2C_PASS Normal1 actually animates bones
+PHASE2C_PASS Normal1 correct Clip and source time
+PHASE2C_PASS original Clip untouched
+PHASE2C_PASS Normal2 repeated random Seek pose identical
+PHASE2C_PASS Normal2 actually animates bones
+PHASE2C_PASS Normal2 correct Clip and source time
+PHASE2C_PASS original Clip untouched
+PHASE2C_PASS Trim and PlaybackSpeed map to source time
+PHASE2C_PASS endpoint clamps to trim end
+PHASE2C_PASS temporary animation clones released
+PHASE2C_PASS integer motion preview exists
+PHASE2C_PASS Normal1 identity mapping supported
+PHASE2C_PASS Normal1 exact legacy delta / random prefix at 0
+PHASE2C_PASS Normal1 exact legacy delta / random prefix at 1
+PHASE2C_PASS Normal1 exact legacy delta / random prefix at 2
+PHASE2C_PASS Normal1 exact legacy delta / random prefix at 3
+PHASE2C_PASS Normal1 exact legacy delta / random prefix at 4
+PHASE2C_PASS Normal1 exact legacy delta / random prefix at 5
+PHASE2C_PASS Normal1 exact legacy delta / random prefix at 6
+PHASE2C_PASS Normal1 exact legacy delta / random prefix at 7
+PHASE2C_PASS Normal1 exact legacy delta / random prefix at 8
+PHASE2C_PASS Normal1 exact legacy delta / random prefix at 9
+PHASE2C_PASS Normal1 exact legacy delta / random prefix at 10
+PHASE2C_PASS Normal1 exact legacy delta / random prefix at 11
+PHASE2C_PASS Normal1 exact legacy delta / random prefix at 12
+PHASE2C_PASS Normal1 exact legacy delta / random prefix at 13
+PHASE2C_PASS Normal1 exact legacy delta / random prefix at 14
+PHASE2C_PASS Normal1 exact legacy delta / random prefix at 15
+PHASE2C_PASS Normal1 exact legacy delta / random prefix at 16
+PHASE2C_PASS Normal1 exact legacy delta / random prefix at 17
+PHASE2C_PASS Normal1 exact legacy delta / random prefix at 18
+PHASE2C_PASS Normal1 exact legacy delta / random prefix at 19
+PHASE2C_PASS missing provenance warns
+PHASE2C_PASS valid static tail holds last position
+PHASE2C_PASS unsupported speed mapping disables trajectory
+PHASE2C_PASS Normal2 identity mapping supported
+PHASE2C_PASS Normal2 exact legacy delta / random prefix at 0
+PHASE2C_PASS Normal2 exact legacy delta / random prefix at 1
+PHASE2C_PASS Normal2 exact legacy delta / random prefix at 2
+PHASE2C_PASS Normal2 exact legacy delta / random prefix at 3
+PHASE2C_PASS Normal2 exact legacy delta / random prefix at 4
+PHASE2C_PASS Normal2 exact legacy delta / random prefix at 5
+PHASE2C_PASS Normal2 exact legacy delta / random prefix at 6
+PHASE2C_PASS Normal2 exact legacy delta / random prefix at 7
+PHASE2C_PASS Normal2 exact legacy delta / random prefix at 8
+PHASE2C_PASS Normal2 exact legacy delta / random prefix at 9
+PHASE2C_PASS Normal2 exact legacy delta / random prefix at 10
+PHASE2C_PASS Normal2 exact legacy delta / random prefix at 11
+PHASE2C_PASS Normal2 exact legacy delta / random prefix at 12
+PHASE2C_PASS Normal2 exact legacy delta / random prefix at 13
+PHASE2C_PASS Normal2 exact legacy delta / random prefix at 14
+PHASE2C_PASS Normal2 exact legacy delta / random prefix at 15
+PHASE2C_PASS Normal2 exact legacy delta / random prefix at 16
+PHASE2C_PASS Normal2 exact legacy delta / random prefix at 17
+PHASE2C_PASS Normal2 exact legacy delta / random prefix at 18
+PHASE2C_PASS missing provenance warns
+PHASE2C_PASS valid static tail holds last position
+PHASE2C_PASS unsupported speed mapping disables trajectory
+PHASE2C_PASS owned preview session exists
+PHASE2C_PASS session initial sample works
+PHASE2C_PASS multi Clip switches exactly at half-open boundary
+PHASE2C_PASS preview speed leaves skill speed and 33ms step unchanged
+PHASE2C_PASS sequential and random Seek root positions equal
+PHASE2C_PASS interruption freezes position and disables attack visual intervals
+PHASE2C_PASS loop resets to origin frame
+PHASE2C_PASS invalid segment hides stale pose
+PHASE2C_PASS valid Seek after error restores exact pose
+PHASE2C_PASS session closes Stage and unregisters ownership
+PHASE2C_PASS session leaves no visual roots/lights
+PHASE2C_PASS session leaves no clip clones
+PHASE2C_PASS session does not dirty original Scene
+PHASE2C_PASS temporary shape transaction exists
+PHASE2C_PASS Box drag draft does not mutate SO
+PHASE2C_PASS Box commits quantized geometry without timing changes
+PHASE2C_PASS Box Undo
+PHASE2C_PASS Box Redo
+PHASE2C_PASS Box cancel discards draft
+PHASE2C_PASS Sphere drag draft does not mutate SO
+PHASE2C_PASS Sphere commits quantized geometry without timing changes
+PHASE2C_PASS Sphere Undo
+PHASE2C_PASS Sphere Redo
+PHASE2C_PASS Sphere cancel discards draft
+PHASE2C_PASS Capsule drag draft does not mutate SO
+PHASE2C_PASS Capsule commits quantized geometry without timing changes
+PHASE2C_PASS Capsule Undo
+PHASE2C_PASS Capsule Redo
+PHASE2C_PASS Capsule cancel discards draft
+PHASE2C_PASS Sector drag draft does not mutate SO
+PHASE2C_PASS Sector commits quantized geometry without timing changes
+PHASE2C_PASS Sector Undo
+PHASE2C_PASS Sector Redo
+PHASE2C_PASS Sector cancel discards draft
+PHASE2C_PASS Cylinder drag draft does not mutate SO
+PHASE2C_PASS Cylinder commits quantized geometry without timing changes
+PHASE2C_PASS Cylinder Undo
+PHASE2C_PASS Cylinder Redo
+PHASE2C_PASS Cylinder cancel discards draft
+PHASE2C_PASS HurtBox commit
+PHASE2C_PASS HurtBox Undo
+PHASE2C_PASS building source with ExecuteAlways never instantiates its scripts
+PHASE2C_PASS attack AnimationEvent never executed during forward sampling
+PHASE2C_PASS temporary clips contain zero AnimationEvents
+PHASE2C_PASS source AnimationEvent is preserved
+PHASE2C_PASS geometry edits save/export through unchanged Phase1 pipeline
+PHASE2C_PASS five shapes survive JSON readback
+PHASE2C_PASS persisted geometry fixture loads
+PHASE2C_PASS opening replacement preview disposes previous session
+PHASE2C_PASS closing window disposes active preview
+PHASE2C_PASS Scene/Inspector five Handles and HurtBox GUI smoke: 
+PHASE2C_PASS window close leaves no session/Stage
+Exiting without the bug reporter. Application will terminate with return code 0
+SHA256 C6C71834B6519505DC6EB922FF45E4D6B5E87F3084808E1271911C508CF6D3FD
+Logs/SkillEditor-Phase2C-Reopen.log | PASS assertions: 5
+[Licensing::Module] LicensingClient has failed validation; ignoring
+[Licensing::Module] Error: Failed to handshake to channel: "LicenseClient-zhy22"
+[Licensing::Module] LicensingClient has failed validation; ignoring
+[Licensing::Module] Error: Access token is unavailable; failed to update
+Starting: C:\Program Files\Unity\Hub\Editor\2022.3.62f2c1\Editor\Data\bee_backend.exe --ipc --defer-dag-verification --dagfile="Library/Bee/1900b0aEDbg.dag" --continue-on-failure --profile="Library/Bee/backend1.traceevents" ScriptAssemblies
+PHASE2C_PASS persisted geometry fixture loads
+PHASE2C_PASS opening replacement preview disposes previous session
+PHASE2C_PASS closing window disposes active preview
+PHASE2C_PASS Scene/Inspector five Handles and HurtBox GUI smoke: 
+PHASE2C_PASS window close leaves no session/Stage
+Exiting without the bug reporter. Application will terminate with return code 0
+SHA256 7F416943C3F62EE98393975CE092DD26F2ADB12D8DF8F1F5311674CCEBCCC12D
+Logs/SkillEditor-Phase2C-Lifecycle.log | PASS assertions: 4
+[Licensing::Module] LicensingClient has failed validation; ignoring
+[Licensing::Module] Error: Failed to handshake to channel: "LicenseClient-zhy22"
+[Licensing::Module] LicensingClient has failed validation; ignoring
+[Licensing::Module] Error: Access token is unavailable; failed to update
+Starting: C:\Program Files\Unity\Hub\Editor\2022.3.62f2c1\Editor\Data\bee_backend.exe --ipc --defer-dag-verification --dagfile="Library/Bee/1900b0aEDbg.dag" --continue-on-failure --profile="Library/Bee/backend1.traceevents" ScriptAssemblies
+PHASE2C_PASS leaving preview Stage releases owned resources
+PHASE2C_PASS script reload releases Stage, proxy and Clip copies
+PHASE2C_PASS entering Play Mode releases preview resources
+PHASE2C_PASS returning to Edit Mode leaves no preview resources
+SHA256 46D4AE6B1098297DB53C90CC33C5497F1E15F9483D6B889C1122B44F8C300B92
+Logs/SkillEditor-Phase2B-Phase2CRegression.log | PASS assertions: 35
+[Licensing::Module] LicensingClient has failed validation; ignoring
+[Licensing::Module] Error: Failed to handshake to channel: "LicenseClient-zhy22"
+[Licensing::Module] LicensingClient has failed validation; ignoring
+[Licensing::Module] Error: Access token is unavailable; failed to update
+Starting: C:\Program Files\Unity\Hub\Editor\2022.3.62f2c1\Editor\Data\bee_backend.exe --ipc --defer-dag-verification --dagfile="Library/Bee/1900b0aEDbg.dag" --continue-on-failure --profile="Library/Bee/backend1.traceevents" ScriptAssemblies
+Starting: C:\Program Files\Unity\Hub\Editor\2022.3.62f2c1\Editor\Data\bee_backend.exe --ipc --defer-dag-verification --dagfile="Library/Bee/1900b0aEDbg.dag" --continue-on-failure --dagfilejson="Library\Bee\1900b0aEDbg.dag.json" --profile="Library/Bee/backend2.traceevents" ScriptAssemblies
+PHASE2B_PASS tail still requires a positive interval
+PHASE2B_PASS command applies edit
+PHASE2B_PASS Undo restores before mutation
+PHASE2B_PASS Redo restores edit
+PHASE2B_PASS create HitBox
+PHASE2B_PASS delete Undo HitBox
+PHASE2B_PASS create Invincibility
+PHASE2B_PASS delete Undo Invincibility
+PHASE2B_PASS create Interrupt
+PHASE2B_PASS delete Undo Interrupt
+PHASE2B_PASS create Event
+PHASE2B_PASS delete Undo Event
+PHASE2B_PASS create Vfx
+PHASE2B_PASS delete Undo Vfx
+PHASE2B_PASS create Sfx
+PHASE2B_PASS delete Undo Sfx
+PHASE2B_PASS animation contiguous after insert
+PHASE2B_PASS animation insert Undo
+PHASE2B_PASS range edit persists
+PHASE2B_PASS range Undo
+PHASE2B_PASS speed reflows animation only
+PHASE2B_PASS shortening invalidates late event
+PHASE2B_PASS all types valid including AutoComplete and sound tails
+PHASE2B_PASS AutoComplete tail beyond cast is not range error
+PHASE2B_PASS Warning export succeeds
+PHASE2B_PASS export clean
+PHASE2B_PASS Resources loader roundtrip
+PHASE2B_PASS legacy damage stale
+PHASE2B_PASS Undo restores export consistency
+PHASE2B_PASS invalid export preserves old bytes
+PHASE2B_PASS track delete removes owned items
+PHASE2B_PASS track delete Undo restores references
+PHASE2B_PASS group cascade delete
+PHASE2B_PASS group Undo restores references
+PHASE2B_PASS window close keeps authoring values
+Exiting without the bug reporter. Application will terminate with return code 0
+SHA256 4F3BB58A4C62E5979933DD5114E761FF0A0961821E045AA6B33C39DE2CE22E3F
+Logs/SkillEditor-Phase2B-Phase2CReopen.log | PASS assertions: 4
+[Licensing::Module] LicensingClient has failed validation; ignoring
+[Licensing::Module] Error: Failed to handshake to channel: "LicenseClient-zhy22"
+[Licensing::Module] LicensingClient has failed validation; ignoring
+[Licensing::Module] Error: Access token is unavailable; failed to update
+Starting: C:\Program Files\Unity\Hub\Editor\2022.3.62f2c1\Editor\Data\bee_backend.exe --ipc --defer-dag-verification --dagfile="Library/Bee/1900b0aEDbg.dag" --continue-on-failure --profile="Library/Bee/backend1.traceevents" ScriptAssemblies
+PHASE2B_PASS new Unity process stable ID and saved fields
+PHASE2B_PASS all saved list references survive reopen
+PHASE2B_PASS reopen Resources load
+PHASE2B_PASS reopen export consistency
+Exiting without the bug reporter. Application will terminate with return code 0
+SHA256 090D411EF92678607F566CDAAEBFA65D6FE474AEE0A0CB5A6574F97E1681C211
+Logs/SkillEditor-Phase2B-Phase2CGui.log | PASS assertions: 1
+[Licensing::Module] LicensingClient has failed validation; ignoring
+[Licensing::Module] Error: Failed to handshake to channel: "LicenseClient-zhy22"
+[Licensing::Module] LicensingClient has failed validation; ignoring
+[Licensing::Module] Error: Access token is unavailable; failed to update
+Starting: C:\Program Files\Unity\Hub\Editor\2022.3.62f2c1\Editor\Data\bee_backend.exe --ipc --defer-dag-verification --dagfile="Library/Bee/1900b0aEDbg.dag" --continue-on-failure --profile="Library/Bee/backend1.traceevents" ScriptAssemblies
+PHASE2B_PASS graphics IMGUI layout/repaint every item inspector: 
+Exiting without the bug reporter. Application will terminate with return code 0
+SHA256 6414CE40BE41CE10D47B4350114B689C9F01C6B5C045E0E8D4295C31A42DE0ED
+Standalone .NET: SkillConfig 56 passed (Logs/SkillEditor-Phase2C-DotNetSkillConfig.log); RootMotion 47 passed; ActionSync 31 passed.
+Commands: dotnet run --project Tests/SkillConfig/SkillConfig.Tests.csproj; dotnet run --project Tests/RootMotion/RootMotion.Tests.csproj; dotnet run --project Tests/ActionSync/ActionSync.Tests.csproj
+Phase2C runner methods: SkillEditorPhase2CChecks.Integration; SkillEditorPhase2CChecks.Gui; SkillPreviewLifecycleChecks.Run (-NoQuit).
+Phase2B runner methods: SkillEditorPhase2BChecks.Run; VerifyReopen; GuiSmoke (-Graphics).
+All methods prefixed SkillConfig.Editor.Tests.
+RootMotion player, battle runtime, asset JSON and schema unchanged.
+Existing user Normal2 SHA256 preserved: E7D96C2FFAE83C7857F2D486FCC0296C4EF9A787603EB8BEDC21A72F40D1EE2B
+Diff below excludes user pre-existing asset/Inspector changes and includes only tracked Phase2C changes; new files enumerated separately.
+ Assets/Editor/SkillEditor/SkillEditorWindow.cs         | 12 ++++++++++--
+ Assets/Editor/SkillEditor/SkillEditorWorkspaceState.cs |  2 ++
+ Assets/Editor/SkillEditor/SkillTimelineView.cs         | 12 +++++++-----
+ Tests/SkillEditor/RunUnityChecks.ps1                   |  1 +
+ 4 files changed, 20 insertions(+), 7 deletions(-)
+Assets/Editor/SkillEditor/Preview.meta
+Assets/Editor/SkillEditor/Preview/SkillAnimationPreview.cs
+Assets/Editor/SkillEditor/Preview/SkillAnimationPreview.cs.meta
+Assets/Editor/SkillEditor/Preview/SkillPreviewPanel.cs
+Assets/Editor/SkillEditor/Preview/SkillPreviewPanel.cs.meta
+Assets/Editor/SkillEditor/Preview/SkillPreviewSession.cs
+Assets/Editor/SkillEditor/Preview/SkillPreviewSession.cs.meta
+Assets/Editor/SkillEditor/Preview/SkillPreviewStage.cs
+Assets/Editor/SkillEditor/Preview/SkillPreviewStage.cs.meta
+Assets/Editor/SkillEditor/Preview/SkillRootMotionPreview.cs
+Assets/Editor/SkillEditor/Preview/SkillRootMotionPreview.cs.meta
+Assets/Editor/SkillEditor/Preview/SkillVisualProxyBuilder.cs
+Assets/Editor/SkillEditor/Preview/SkillVisualProxyBuilder.cs.meta
+Assets/Editor/SkillEditor/Scene.meta
+Assets/Editor/SkillEditor/Scene/SkillShapeEdit.cs
+Assets/Editor/SkillEditor/Scene/SkillShapeEdit.cs.meta
+Assets/Editor/SkillEditor/Scene/SkillShapeHandles.cs
+Assets/Editor/SkillEditor/Scene/SkillShapeHandles.cs.meta
+Assets/Editor/SkillEditor/Tests/SkillEditorPhase2CChecks.cs
+Assets/Editor/SkillEditor/Tests/SkillEditorPhase2CChecks.cs.meta
+Assets/Editor/SkillEditor/Tests/SkillPreviewLifecycleChecks.cs
+Assets/Editor/SkillEditor/Tests/SkillPreviewLifecycleChecks.cs.meta
+Assets/Editor/SkillEditor/Tests/SkillPreviewSideEffectProbe.cs
+Assets/Editor/SkillEditor/Tests/SkillPreviewSideEffectProbe.cs.meta
+Tests/SkillEditor/RunPhase2CChecks.ps1
+docs/SkillEditor_Phase2C_Acceptance.md
+docs/SkillEditor_Phase2C_Ledger.md

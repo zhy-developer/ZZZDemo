@@ -39,6 +39,7 @@ namespace SkillConfig.Editor
                 }
             }
             serializedObject.ApplyModifiedProperties();
+            if (targets.Length == 1 && GUILayout.Button("打开 Skill Editor（Phase 2B）")) SkillEditorWindow.OpenSkill(data);
             if (GUILayout.Button("保存 SO（不导出）")) foreach (var selected in targets) AssetDatabase.SaveAssetIfDirty(selected);
             if (targets.Length == 1 && data.skill != null && data.skill.registered && GUILayout.Button("复制为新技能（新 SkillID）"))
             {
