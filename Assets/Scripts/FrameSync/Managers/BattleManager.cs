@@ -114,8 +114,7 @@ public class BattleManager : MonoSingleton<BattleManager>
         AllPlayerOperation _op;
         if (BattleData.Instance.TryGetNextPlayerOp(out _op))
         {
-            roleManage.Logic_Operation(_op);
-            roleManage.Logic_Move();
+            if (!roleManage.ConsumeFrame(BattleData.Instance.NextFrameID, _op)) return;
             //roleManage.Logic_Move_Correction();
             BattleData.Instance.RunOpSucces();
         }
@@ -139,6 +138,8 @@ public class BattleManager : MonoSingleton<BattleManager>
 
     void BeginGameOver()
     {
+        if (roleManage != null && roleManage.AuthorityMode == SkillRuntime.Integration.BattleAuthorityMode.DeterministicPilot)
+        { Debug.LogWarning("Pilot result retained locally; Phase4C server result submission is not connected."); return; }
         this.CancelInvoke("Send_operation");
         this.InvokeRepeating("SendGameOver", 0f, 0.5f);
     }
@@ -150,6 +151,7 @@ public class BattleManager : MonoSingleton<BattleManager>
 
     void Message_Down_Game_Over(UdpDownGameOver _mes)
     {
+        if (roleManage != null && roleManage.AuthorityMode == SkillRuntime.Integration.BattleAuthorityMode.DeterministicPilot) return;
         this.CancelInvoke("SendGameOver");
         Debug.Log("游戏结束咯～～～～～～");
         if (delegate_gameOver != null)

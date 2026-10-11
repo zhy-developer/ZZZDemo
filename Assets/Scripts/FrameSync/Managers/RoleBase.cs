@@ -19,6 +19,10 @@ public class RoleBase : MonoBehaviour {
 
 	private Transform modleParent;
 	private ZZZ.Player player;
+    public ZZZ.Player Player => player;
+    public int LogicalFacing => roleDirection;
+    public GameVector2 LogicalPosition => objShape.GetPosition();
+    private SkillRuntime.CastKey? pilotMotionOwner;
 	// Keep input buffered, but do not let it move or turn an active attack/skill.
 	private bool IsInputMovementBlocked => player != null
 		&& (player.comboStateMachine.currentState.Value == player.comboStateMachine.ATKIngState
@@ -98,6 +102,7 @@ public class RoleBase : MonoBehaviour {
 	/// 逻辑帧更新角色位移
 	/// </summary>
 	public virtual void Logic_Move(){
+        if (player != null && player.IsDeterministicPilot) return;
 		if (rootMotion.TryAdvance(out int deltaX, out int deltaZ))
 		{
 			ApplyLogicDisplacement(new GameVector2(deltaX, deltaZ));
@@ -141,6 +146,7 @@ public class RoleBase : MonoBehaviour {
 	/// <summary>Call from a confirmed logical action. Returns an ownership handle, or 0 on failure.</summary>
 	public int TryPlayRootMotion(RootMotionSettings settings, System.Action completed = null)
 	{
+        if (player != null && player.IsDeterministicPilot) return 0;
 		if (settings == null || !settings.TryGetClip(out var clip)) return 0;
 		int facingDirection = actionDirection ?? roleDirection;
 		GameVector2 facing = BattleData.Instance.GetSpeed(facingDirection);
@@ -160,6 +166,7 @@ public class RoleBase : MonoBehaviour {
 	/// <summary>Stale action exits cannot cancel newer playback. Cancellation never invokes completion.</summary>
 	public void StopRootMotion(int handle)
 	{
+        if (player != null && player.IsDeterministicPilot) return;
 		if (handle == 0 || handle != rootMotionHandle) return;
 		CancelRootMotion();
 		RestoreInputFacing();
@@ -184,6 +191,51 @@ public class RoleBase : MonoBehaviour {
 	}
 
 	private void OnDisable() { CancelRootMotion(); }
+
+    public void PilotInput(int direction)
+    {
+        inputDirection = direction;
+        logicSpeed = direction >= 0 && direction < 120 ? moveSpeed * BattleData.Instance.GetSpeed(direction * 3) : GameVector2.zero;
+        player.ApplyNetworkMovement(direction);
+    }
+    public void PilotFace(int encodedDirection)
+    {
+        if (encodedDirection < 0 || encodedDirection >= 120) throw new System.ArgumentOutOfRangeException(nameof(encodedDirection));
+        SetLogicalFacing(encodedDirection * 3);
+    }
+    public void PilotStartMotion(SkillRuntime.CastKey cast, RootMotionClip clip, int end, int scale)
+    {
+        if (!player.IsDeterministicPilot) throw new System.InvalidOperationException("Pilot match required.");
+        var facing = BattleData.Instance.GetSpeed(roleDirection);
+        if (!rootMotion.TryStart(clip, end, scale, facing.x, facing.y, DirectionTableScale)) throw new System.InvalidOperationException("Validated pilot motion rejected.");
+        pilotMotionOwner = cast; rootMotionCompleted = null;
+    }
+    public void PilotStopMotion(SkillRuntime.CastKey cast)
+    {
+        if (!pilotMotionOwner.HasValue || !pilotMotionOwner.Value.Equals(cast)) return;
+        rootMotion.Stop(); pilotMotionOwner = null;
+    }
+    public void PilotMove(long frame, bool ordinaryMovement, SkillRuntime.KnockbackPlan knockback)
+    {
+        if (!player.IsDeterministicPilot) throw new System.InvalidOperationException("Pilot match required.");
+        if (knockback != null && frame >= knockback.StartFrame && frame < knockback.EndFrame)
+        {
+            if (rootMotion.IsPlaying) throw new System.InvalidOperationException("Two authoritative motion owners.");
+            var d = knockback.DeltaAt(frame); PilotDisplace(d.X, d.Z); return;
+        }
+        if (rootMotion.TryAdvance(out int x, out int z)) { PilotDisplace(x, z); return; }
+        if (ordinaryMovement && inputDirection >= 0 && inputDirection < 120)
+        { SetLogicalFacing(inputDirection * 3); PilotDisplace(logicSpeed.x, logicSpeed.y); }
+    }
+    private void PilotDisplace(long x, long z)
+    {
+        var old = LogicalPosition;
+        long nextX = checked(old.x + x), nextZ = checked(old.y + z);
+        var map = BattleData.Instance;
+        UpdateLogicPosition(new GameVector2((int)System.Math.Max(map.mapMinX, System.Math.Min(map.mapMaxX, nextX)),
+            (int)System.Math.Max(map.mapMinY, System.Math.Min(map.mapMaxY, nextZ))));
+        renderPosition = objShape.GetPositionVec3();
+    }
 
 	private void ApplyLogicDisplacement(GameVector2 delta)
 	{

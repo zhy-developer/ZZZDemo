@@ -104,18 +104,23 @@ public class ClassForUpdate : MonoBehaviour
 
 	private void GetFileString (string _path, Action<string> _action)
 	{
-		if (File.Exists (_path)) {
-			try {  
-				//实例化文件流，参数1 路径，参数2文件操作方式  
-				FileStream file = new FileStream (_path, FileMode.Open);  
-				StreamReader sr = new StreamReader (file);  
-				_action (sr.ReadToEnd ());
-				sr.Close ();  //关闭流释放空间  
-				file.Close (); 
-				sr.Dispose ();
-			} catch {
-				Debug.Log ("文件出错咯:" + _path);
-			} 
-		} 
+		string text;
+		try {
+			// Multiple clients may read the same installation's immutable tables.
+			using (var file = new FileStream(_path, FileMode.Open, FileAccess.Read, FileShare.Read))
+			using (var reader = new StreamReader(file)) {
+				text = reader.ReadToEnd();
+			}
+		} catch (Exception ex) {
+			// Do not allow initialization to continue with an empty direction table.
+			throw new IOException("Failed to read StreamingAsset: " + _path, ex);
+		}
+
+		// Release the file before invoking a parser, including when parsing throws.
+		try {
+			_action?.Invoke(text);
+		} catch (Exception ex) {
+			throw new InvalidDataException("Failed to process StreamingAsset: " + _path, ex);
+		}
 	}
 }

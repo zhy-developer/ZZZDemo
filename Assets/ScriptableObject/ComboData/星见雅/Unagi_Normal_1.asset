@@ -39,6 +39,11 @@ MonoBehaviour:
       group: 
       kind: 0
       displayOrder: 0
+    - id: pilot-gates
+      name: Imported logic gates (33ms)
+      group: 
+      kind: 3
+      displayOrder: 0
     hitGroups:
     - id: 548b99b38d5846d5bb05e0ccd084c3bb
       mode: 0
@@ -74,7 +79,55 @@ MonoBehaviour:
       sectorAngleMilliDegrees: 90000
     invincibility: []
     interrupts: []
-    events: []
+    events:
+    - id: pilot-gate-0
+      trackId: pilot-gates
+      eventId: combo.preinput
+      frame: 7
+      order: 0
+      version: 1
+      execution: 1
+      parameterKind: 2
+      marker:
+        text: 
+      comboGate:
+        enabled: 1
+    - id: pilot-gate-1
+      trackId: pilot-gates
+      eventId: combo.attack-ready
+      frame: 17
+      order: 1
+      version: 1
+      execution: 1
+      parameterKind: 2
+      marker:
+        text: 
+      comboGate:
+        enabled: 1
+    - id: pilot-gate-2
+      trackId: pilot-gates
+      eventId: combo.link
+      frame: 19
+      order: 2
+      version: 1
+      execution: 1
+      parameterKind: 2
+      marker:
+        text: 
+      comboGate:
+        enabled: 0
+    - id: pilot-gate-3
+      trackId: pilot-gates
+      eventId: combo.move-interrupt
+      frame: 17
+      order: 3
+      version: 1
+      execution: 1
+      parameterKind: 2
+      marker:
+        text: 
+      comboGate:
+        enabled: 1
     vfx: []
     sfx: []
   characterName: 1

@@ -1,0 +1,259 @@
+Phase 3B 实施与验收记录 — 2026-10-11
+工程根目录：D:\GitHub\ARPGDEMO
+基线：Unity_PvP_FrameSync_SkillEditor_Codex_PRD_v1.0.md；Phase 3A；本轮 Phase 3B 补充约束。
+
+一、范围与实际文件
+
+新增运行时源文件：
+Assets/Scripts/SkillRuntime/RuntimeSkillCatalog.cs
+Assets/Scripts/SkillRuntime/SkillIdentity.cs
+Assets/Scripts/SkillRuntime/SkillFrameRuntime.cs
+Assets/Scripts/SkillRuntime/XzGeometry.cs
+以及上述四个 .meta、Assets/Scripts/SkillRuntime.meta。
+
+新增检查文件：
+Tests/SkillRuntime/SkillRuntime.Checks.csproj
+Tests/SkillRuntime/Program.cs
+Tests/SkillRuntime/Phase3BChecks.cs
+Tests/SkillRuntime/RunUnityChecks.ps1
+新增本文档 docs/SkillRuntime_Phase3B_Report.txt。
+
+没有修改已有生产文件、数据、JSON Schema、SO、Prefab、Animator、协议或旧 RootMotionPlayback。
+新增运行时代码没有 MonoBehaviour/Update、物理查询、Player/Health/网络/对象池依赖。
+没有新建技能 SO、第二套可编辑配置或伤害解释器。
+没有实现伤害聚合、无敌/霸体解析、击退/硬直、HP、死亡、Draw 或实际表现分发。
+
+二、主要接口与调用示例
+
+1. RuntimeSkillCatalog.TryCreateIsolated(snapshot, frameIntervalMs, precision, out catalog, out error)
+   输入现有 SkillConfigSnapshot；重新使用现有 Schema Validator；通过 CopyData 获取独立副本。
+   构建不可变 RuntimeSkill / RuntimeSegment / RuntimeGroup / AttackShape / RuntimeEvent 索引。
+   所有暴露集合为只读包装，成员只有 getter 或 readonly 值；不保留可变 DTO 对象引用。
+   Groups 仅投影资格所需的 ID/Single/Repeat/Interval；未将伤害等后续规则另设默认值。
+   RuntimeSkill.Group/SegmentAt/目录 Skill 用于稳定索引；Animation 顺序沿用原已验证连续列表。
+   错误形状给出 SkillID/HitBoxID；单位不匹配、超几何范围明确拒绝。
+   正式就绪始终 false；ISOLATED_ONLY、PARTIAL_CATALOG、HURTBOX_REQUIRED 明确报告。
+   需要重映射的 Root Motion 报运行能力缺口；缺少来源元数据保持 Warning。
+   旧 Loader(requireBattleReady:true) 完全未改，仍拒绝完整战斗加载。
+   读取索引不等于验证真实 Animator/Prefab；Resources 验证仍由旧 Loader.TryLoad 负责。
+
+2. 生命周期调用顺序（测试适配，不是生产帧循环）：
+   world.TryBeginFrame(F) == Started
+     -> 对已确认接受的动作调用 StartAccepted(entity, runtimeSkill)
+     -> 外部完成模拟/真实逻辑移动（本批仅测试数据）
+     -> CapturePostMove(双方 EntityGeometrySnapshot)
+     -> 读取 Candidates/Events
+     -> CanAccept(candidate)（任意次数，只读）
+     -> 外部策略拒绝：不调用提交
+     -> 外部策略接纳：TryCommitAccepted(candidate)
+     -> CompleteFrame()
+   必须检查 TryBeginFrame 返回值；Duplicate/Gap/PreviousFrameOpen 都不能重派输入。
+   Candidates 是几何及同组去重结果，不自动等于伤害，不自动消耗命中记录。
+   Events 只是有归属、排序的事件描述，没有执行委托；读取集合不执行任何事件。
+   正式世界未来仍由现有网络帧入口驱动；本批没有安装调用者。
+
+3. EntityKey = Session + Round + BattleId + Generation。
+   Session 是宿主显式提供的共同对局上下文，不误用本地 BattleData.battleID。
+   Generation 区分同槽位新生命；CharacterID/SkillID 是配置身份，不是实体身份。
+   CastKey = EntityKey + 单实体递增的 long Sequence。
+   只有 StartAccepted 才递增；空操作、查询、采样、缺帧不会递增。
+   RuntimeSkillCatalog 的 CharacterID/SkillID 留在 CastFrame.Skill；候选保留 SkillID。
+   同角色镜像/相同序号通过 EntityKey 区分；同技能重复施放通过 Sequence 区分。
+   Session/序号不能回绕。该类不实现断线快照恢复；重建同一对局不能靠任意归零序号恢复。
+
+4. 退出/资源所有权
+   StartAccepted 替换旧施放时，仅清理旧 CastKey 记录与 handle。
+   OwnHandle/OwnsHandle 使用不透明测试句柄；不启动或停止真实 Root Motion/特效。
+   Exit(oldCast, reason) 在旧施放已替换时返回 false，不影响新施放。
+   采样前退出即时发生；采样后退出延迟至 CompleteFrame，不能撤销共同快照的候选。
+   不同退出原因同时请求会抛出明确冲突，要求后续解析器先决策；本批不选择死亡/打断优先级。
+   Exits 报告释放句柄；调用方负责未来真实资源释放，本批没有隐式回调。
+   Dispose 幂等清理会话全部施放/记录/handle；关闭后不允许推进。
+
+三、已经落地的时间契约
+
+宿主传入的帧间隔须匹配导出 DTO；本工程当前 NetConfig.frameTime=33ms，精度10000。
+不采用1/30秒，不在几何或施放推进中读 Time.deltaTime。
+SchemaVersion=1 的原校验规则继续限制33ms/10000；本批没有改写该规则。
+long 网络帧必须从宿主声明的 lastCompletedFrame+1 连续交付；默认首帧为1。
+正整数帧缺口返回 Gap；已消费帧或当前重复帧返回 Duplicate；状态不改变。
+连续空操作帧正常 Begin/Capture/Complete，因此已活动施放正常推进。
+
+D 取已经校验的 SkillDto.durationFrames，必须等于最后一个 AnimationDto.endFrame。
+首 Clip 从0开始，相邻 Clip 不允许空档或重叠；校验失败不构建索引。
+StartAccepted 所在帧 skillFrame=0；之后 skillFrame=F-StartFrame。
+窗口和 Clip 均按 [StartFrame,EndFrame)；0..D-1 有效。
+Capture 使用宿主提供的本帧移动后快照，不内部移动、不缓存渲染 Transform。
+D-1 完成候选资格和接纳提交后，在 CompleteFrame 正常退出。
+最后帧 Committed 输出保留到下一帧 Begin，退出清账不丢失已提交结果。
+跨 Clip 仅 SegmentAt 改变，不换 CastKey、不清组记录。
+Clip/Animator视觉结束、位移覆盖结束不控制本模块退出。外部确认的提前退出通过 Exit/替换表达。
+长帧编号和施放序号使用 checked/显式边界，不环绕。
+
+四、数值与形状契约（本批实现，不是 Q32.32 名称假设）
+
+输入：
+- 坐标仍是10000逻辑单位/Unity单位；LogicPose.X/Z 与 shape/hurt 的本地 offset X/Z 同单位。
+- 根X/Z、本地offset X/Z 的合法范围为[-1,000,000,000, +1,000,000,000]，即正负100000世界单位。
+- 有效平面尺寸/半径为[1, 1,000,000,000]。
+- 该运行能力范围通过构建/构造检查；超范围抛 ArgumentOutOfRangeException，目录构建转为错误。
+- 不是将超范围值钳制回地图，也不是溢出后再转换。实际地图约束仍留在原系统。
+- 根Y、受击offsetY作为long保留；HitBox.offset.y仍为原int。它们不进入检测计算或距离过滤。
+- 原作者数据的 Box 高度、Capsule 总高度合法性继续检查，但不据此比较双方垂直位置。
+- 角度输入为int毫度，支持负值/多圈；内部先扩到long再倍乘与规范化。
+
+方向/偏移顺序：
+- LogicPose.FacingMilliDegrees 沿现有roleDirection约定：0朝世界+X，90000朝+Z。
+- 角色正Y yaw = 90000 - FacingMilliDegrees；形状自身正Y yaw 独立采用 yawMilliDegrees。
+- R(yaw)作用为 (x,z) -> (cos*x + sin*z, -sin*x + cos*z)。
+- 攻击中心 = 根XZ + R(角色yaw)*本地offsetXZ。
+- 攻击朝向 = R(角色yaw)*R(形状yaw)。形状自身yaw绝不再次旋转本地offset。
+- 受击圆心 = 目标根XZ + R(目标yaw)*Hurt offsetXZ；圆半径不随方向缩放。
+- 仅给新几何传确定性逻辑角度，不读模型朝向。旧RootMotion方向表精度100及截断完全未修改。
+
+确定性角度构造：
+- 输入刻度为半毫度，完整一圈720000；因此奇数毫度的扇形半角无需截断。
+- 象限先规约到[0,90度)，再以固定Q96整数计算sin/cos的24次Taylor递推。
+- Pi常量来自固定十进制前缀314159265358979323846264338327950288419716939937510/10^50，
+  乘2^96后向下截断。常量解析使用InvariantCulture。运行时不用Math.Sin/Cos/Atan2。
+- 源弧度 x=PiQ96*halfMilliRemainder/360000（正数截断）。x*x/2^96截断。
+- 每个Taylor递推的大整数除法向零截断；次数固定，不按浮点收敛判断。
+- t=tan(theta/2)从sin/(1+cos)估计，量化到Q48：最近舍入，正半值远离零。
+- 令q=2^48、p=量化t：c=(q^2-p^2)/(q^2+p^2)，s=2pq/(q^2+p^2)。
+  这是精确有理数，c^2+s^2严格等于1，避免“近似单位向量”造成隐性缩放。
+- 象限恢复用交换与符号；0/90/180/270度严格精确。360度边界规范化回0。
+- 两个旋转用有理数矩阵复合，不把复合结果再量化一次。
+- 角度构造之外，偏移、半尺寸、变换、距离、点积/叉积和比较全部为精确有理数，不取整。
+
+范围/精度说明：
+- Q96递推在x<pi/2下，截断尾项极小；每次定点截断小于一个Q96单位，有限24步。
+  保守用10000个Q96单位覆盖中间量化误差，远小于最终Q48量化的一半步。
+- Q48量化对应单旋转角度误差小于约4e-15弧度；轴向角无误差。
+  这是与理想连续角度的差异，契约边界始终按上述有理数旋转定义。
+- 本输入范围下，可以用0.001逻辑单位作为角度近似引起的位置偏差的保守量级上界；
+  不把它加到半径上，不用epsilon把未相交强行变成命中。极近理想边界可能与理想实数角度不同。
+- |旋转offset的单轴分量|<=sqrt(2)*1e9；中心单轴绝对值<2.415e9。
+- 加半径/矩形半对角后，形状范围单轴绝对值<3.415e9；不将这些中间量写回int。
+- 双方中心单轴差可达4.829e9，平方距离可超过Int64；旋转有理数分母本身也可达97位。
+  因此不是“换成long就足够”：BigInteger用于分子/分母和所有乘积，先扩位再算。
+- 分数每次以GCD约分、保持分母正数；没有浮点、无随机数、无平台三角函数。
+- 计算树、Taylor步数固定，输入范围受限；没有可由输入无限延长的迭代。
+- 奇数完整宽深以精确 value/2 分数保留，例如13005/2=6502.5，不提前截断。
+- Sector半角以半毫度构建；90.001度的完整角保留45.0005度的半角。
+
+五类形状：
+- Sphere、当前竖直Capsule、竖直Cylinder：平面圆。
+- Capsule仍要求原三维height>=2r，height=2r合法；没有引入横向轴字段。
+- Box：有向矩形。转换目标圆心到盒局部坐标，clamp最近点，用完整受击半径比较。
+- Sector：在角域内检查扩大的径向范围；在角域外检查两条有限侧边的最近点。
+  有限线段距离同时覆盖原点和端点；角域内覆盖内部和圆弧。
+  <=180度采用两边条件交集，>180度采用并集；360度专门按完整圆处理。
+- 相切统一<=，不只检查目标中心，不用PhysX。
+- 首版是每帧离散快照检测；高速跨过目标可能漏检，未实现扫掠或连续碰撞。
+
+五、记录、排序与不在本批固化的规则
+
+记录键：(CastKey, HitGroupID, TargetEntityKey)，组规则来自冻结的RuntimeGroup。
+候选收集与资格查询不写账；外部拒绝时不调用 TryCommitAccepted 即可。
+Single在本次施放有效提交一次；Repeat从上一次提交网络帧T算，T+N可再次提交。
+同帧第二次提交返回false；新帧不能提交旧帧的candidate；另一个world产生的对象也不是本帧候选。
+这不是Damage>0、HitStun>0或无敌判定。本批不决定零伤害是否应被外部接纳。
+同组多个实际相交盒按HitBoxID的Ordinal最小值选代表，不取未相交的最小ID。
+现有Validator保证技能内条目ID唯一、组引用有效；无效配置不产生索引。
+候选排序为Frame、CastKey(EntityKey/Sequence)、GroupID(Ordinal)、TargetEntityKey、代表HitBoxID。
+技能内事件排序为Frame、Order、ItemID(Ordinal)；同帧全局输出先区分实体/施放，再Order/ItemID。
+DescribeState显式稳定排序序号、活动施放、命中账本、资源所有权、候选、事件与提交结果；
+不使用Dictionary枚举顺序或GetHashCode作为摘要。宿主未来需另加入位置、配置版本和HP等自有状态。
+
+六、实际执行结果（不是测试计划）
+
+环境：Windows，.NET SDK 8.0.423 / net8.0 Release；Unity 2022.3.62f2c1。
+Unity使用独立Temp/SkillRuntimePhase3B工程：真实Unity运行时程序集、JsonUtility、Resources、编辑器executeMethod。
+只对ComboData类型使用最小声明以满足目录引用编译；不替代真实Player/Health，也不声称覆盖它们。
+同一份Tests/SkillRuntime/Phase3BChecks.cs分别由.NET和Unity编译执行。
+没有安装NUnit；下列数量为脚本断言数，不是测试框架用例数。
+
+PASS .NET：122条基础断言 + 5条实际星见雅导出JSON检查；进程退出0。
+PASS Unity：相同122+5条断言 + 真实Resources/RootMotion内容哈希/NetConfig/正式加载保护检查；退出0。
+PASS 原Phase1独立.NET回归：56条检查；退出0。此项不证明Unity SO序列化/Inspector。
+PASS 25次x15帧重放、反转实体/HitBox/事件/提交顺序、跨文化状态输出一致。
+PASS .NET/Unity重放摘要相同：
+950fcbd011540ab719c9931a42ddd74706ce86f51e9106f6a8adc09822322cdd
+
+几何包含600个独立double理想三角函数参考用例，并对每例变更双方Y及offsetY复查。
+参考函数在测试文件中独立计算，不调用被测Rational/Rotation/距离函数。
+解析用例另覆盖：圆相切、矩形3-4-5角切、非正方形90度旋转、奇数11779/13005尺寸、
+非零offset与角色/yaw复合、实际349018毫度yaw、扇形有限侧边/圆弧/600-800-1000端点、
+原点、270度/360度、奇数90001毫度半角、负位置、int角度边界、2e9距离及超范围拒绝。
+随机参考用例不单独证明极近量化边界；闭边界的解析测试和上述数值契约共同限定结果。
+
+生命周期/账本包含：连续空帧、缺帧、重复帧、未Complete阻挡下一帧、首帧0、多Clip交界、
+D-1结算、末帧输出保留、后续清账、新旧handle复用、迟到旧退出、幂等清理、会话Dispose、
+代际身份、显式post-move位置、同组去重、被拒绝不记账、资格查询幂等、重复提交拒绝、
+Single、Repeat N=3精确边界、镜像、重放、相交代表来源、无动作不分配施放号。
+
+日志（git忽略；本文件保留结果/哈希）：
+Logs/SkillRuntime-Phase3B-DotNetVerified.log
+ SHA256 53D6B57DA6D71CE5C84E67AB8B5B7272D6151143847C7EAA7E522AABC06018F7
+Logs/SkillRuntime-Phase3B-UnityVerified.log
+ SHA256 E1CB68D70FE9F35F11BF212F6B77D98293F155AA0FB3D9920C5074BBFF7DDF05
+Logs/SkillRuntime-Phase3B-Phase1RegressionFinal.log
+ SHA256 88E6E6C3CB9A5F2EEDB2F6EBFC10DECDC553589EF0554506D1D97E08A7D8BE03
+
+保留的先前失败，不计通过：
+- 首次受限Unity启动退出140063，未产生日志；允许独立编辑器进程后可以启动。
+- Unity.log：测试Random在UnityEngine/System之间歧义；测试改为System.Random后修复。
+- UnityFixed.log：基础断言已通过，但测试工程漏复制当前JSON的slash_1/hit_1根资源；
+  改为按当前资源列表复制至Temp后，真实Loader通过。未修改原资源或旧加载器。
+- 原Phase1首次独立回归在临时目录原子写入被权限阻止，未算通过；放行该临时测试操作后56条通过。
+- UnityFinal.log的分配计数器返回0；增加主动分配探针后证明该Mono计数器不可用，
+  最终UnityVerified日志明确UNAVAILABLE，不将原0解释成零分配。
+
+七、性能观察与限制
+
+同一次最终测量，非轴向Box包含yaw349018、非轴角色朝向、目标offset；shape/pose预构建：
+.NET 4000次：156.431ms，30,528,040分配字节；约39.1微秒/次、7632字节/次。
+Unity 4000次：483.706ms，约120.9微秒/次；分配计数器不可用。
+
+1v1帧事务，双方各3个非轴向Box，包含每帧施放/快照构造、收集、提交、完成：
+.NET 100帧：33.836ms，7,379,736分配字节；约0.338ms/帧、73.8KB/帧。
+Unity 100帧：103.120ms；约1.031ms/帧；分配计数器不可用。
+这些不是完整游戏FPS、生产CPU预算或IL2CPP表现保证。BigInteger/GCD存在实质GC成本，
+正式接入前需Profiler验证；后续可缓存旋转/变换或增加经证明的整数快速路径，不以缩窄类型换错误。
+
+未执行/不作通过声明：
+- 正式场景Play模式、Player/Animator/旧RootMotion兼容、联机一致性、HP/UI/死亡/Draw。
+- IL2CPP、移动设备或其他CPU平台；本次跨.NET/Unity摘要一致不替代这些平台测试。
+- 新SO保存/重开测试：本批没有SO编辑代码；未据本批DTO测试宣称SO序列化验收。
+- VFX材质/音频播放/依赖渲染：Unity只载入根资源验证类型，不实例化或试听。
+- Unity真实分配Profiler采样（当前Mono计数接口无效）。
+- 完整无敌/霸体/零伤害接纳规则、真实输入门控、事件执行及击退接入。
+
+八、复现与人工验收
+
+在工程根目录PowerShell执行：
+dotnet run --project Tests/SkillRuntime/SkillRuntime.Checks.csproj --configuration Release
+& Tests/SkillRuntime/RunUnityChecks.ps1 -LogName MyAcceptance
+dotnet run --project Tests/SkillConfig/SkillConfig.Tests.csproj --no-restore
+
+Unity路径可通过-Unity参数指定。需要编辑器许可证和独立进程启动权限。
+第二条仅创建/更新Temp/SkillRuntimePhase3B，日志在Logs/SkillRuntime-Phase3B-MyAcceptance.log。
+不要把Temp里的最小ComboData、测试脚本或复制资源同步回正式Assets。
+检查命令退出码0、PHASE3B_ASSERTIONS、PHASE3B_UNITY_ALL_PASS和重放SHA256。
+可打开该独立工程查看Console；它不是正式战斗场景，不要求在其中测试普攻。
+正式工程中确认新增Runtime代码无编译错误；Inspector/Timeline配置应保持原样。
+测试不会选择正式HurtBox半径或生成新正式JSON；测试半径5000等仅为明确声明的用例数据。
+
+九、后续未决项与回退
+
+Phase3C仍需决定：多组伤害/硬直/击退合并、击退总位移还是速度、Y击退能力、
+零伤害是否最终接纳/反馈/打断、Idle受击、同帧切换/命中/死亡优先级。
+本批仅接受外部“接纳/拒绝”，没有通过默认实现批准这些规则。
+Phase4仍需决定：正式HurtBox、唯一HP适配、输入门控迁移、RootMotion精确映射、Draw协议。
+
+Git差异：本批全部为新增文件，已有跟踪文件diff为空；没有资产迁移、自动导出或正式调用者。
+回退仅移除上述新增SkillRuntime目录及.meta、Tests/SkillRuntime、本文档即可；
+不恢复旧SO/JSON，不对整个仓库reset，不删除其他阶段代码。
+Temp/SkillRuntimePhase3B、Logs、Tests/bin/obj为可再生成的检查输出，不进入生产资源。
+
+本批完成后停在Phase3B，等待用户验收；没有开始Phase3C。

@@ -28,6 +28,7 @@ public class BattleData{
 	public int PendingActionCount => actionQueue.Count;
 
 	private int curFramID;
+    public int NextFrameID => curFramID + 1;
 	private int maxFrameID;
 	private int maxSendNum;
 

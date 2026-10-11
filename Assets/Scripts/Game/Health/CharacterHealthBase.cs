@@ -14,11 +14,46 @@ public class CharacterHealthBase : MonoBehaviour
     protected CharacterHealthInfo healthInfo;
     // Read the runtime instance, not the shared ScriptableObject asset.
     public bool IsDead => healthInfo != null && healthInfo.onDead.Value;
+    public bool IsDeterministicPilot { get; private set; }
+    public float DisplayHP => healthInfo == null ? 0 : healthInfo.currentHP.Value;
+    public float DisplayMaxHP => healthInfo == null ? 0 : healthInfo.maxHP;
+    public void InitializePilotHealth(int explicitTestHP)
+    {
+        if (explicitTestHP <= 0 || explicitTestHP > 16777216) throw new System.ArgumentOutOfRangeException(nameof(explicitTestHP));
+        if (IsDeterministicPilot) throw new System.InvalidOperationException("Health already bound to a pilot match.");
+        if (healthInfo == null)
+        {
+            healthInfo = ScriptableObject.CreateInstance<CharacterHealthInfo>();
+            healthInfo.currentHP.OnValueChanged += OnUpdatePH;
+        }
+        IsDeterministicPilot = true;
+        healthInfo.maxHP = explicitTestHP;
+        WritePilotHealth(explicitTestHP);
+    }
+    public long ReadPilotHealth()
+    {
+        float hp = DisplayHP;
+        if (!IsDeterministicPilot || float.IsNaN(hp) || float.IsInfinity(hp) || hp < 0 || hp > 16777216 || hp != System.Math.Truncate(hp)
+            || IsDead != (hp == 0)) throw new System.InvalidOperationException("Pilot HP must be exact integral float within 0..2^24 with coherent dead state.");
+        return (long)hp;
+    }
+    internal void WritePilotHealth(long value)
+    {
+        // Caller validates all targets/ranges before entering this non-notifying write phase.
+        healthInfo.currentHP.SetWithoutNotify((float)value);
+        healthInfo.onDead.SetWithoutNotify(value == 0);
+        currentHP = (float)value;
+    }
+    public void PublishPilotHealth()
+    {
+        healthInfo.currentHP.NotifyCurrentValue();
+        healthInfo.onDead.NotifyCurrentValue();
+    }
     protected Animator animator;
     protected virtual void Awake()
     {
         // A pool may have already prepared this instance while its GameObject was inactive.
-        if (healthInfo == null)
+        if (healthInfo == null && characterHealthInfo != null)
         {
             ResetHealthForSpawn();
         }
@@ -37,6 +72,7 @@ public class CharacterHealthBase : MonoBehaviour
     /// <summary>Start a new life explicitly; ordinary enable/disable preserves health.</summary>
     public void ResetHealthForSpawn()
     {
+        if (IsDeterministicPilot) throw new System.InvalidOperationException("Exit the pilot match before resetting health.");
         InitializeHealth();
         // Clear before value notifications so a previous attacker cannot trigger defense reactions.
         currentEnemy = null;
@@ -48,6 +84,7 @@ public class CharacterHealthBase : MonoBehaviour
     }
     protected virtual void Update()
     {
+        if (IsDeterministicPilot) return;
         LookAtAttacker();
     }
     protected virtual void OnEnable()
@@ -83,7 +120,7 @@ public class CharacterHealthBase : MonoBehaviour
     private void OnCharacterHitEventHandler(float Damage, string HitName, string ParryName, Transform Attacker, Transform Bearer, ZZZ.CharacterComboBase characterCombo)
     {
       
-        if (Bearer != this.transform || IsDead) { return; }
+        if (IsDeterministicPilot || Bearer != this.transform || IsDead) { return; }
         SetEnemy(Attacker);
         CharacterHitAction(Damage, HitName, ParryName);
         OnCharacterDamageAction(Damage);
@@ -94,7 +131,7 @@ public class CharacterHealthBase : MonoBehaviour
  
     protected void OnCharacterDamageAction(float damage)
     {
-        if (IsDead) { return; }
+        if (IsDeterministicPilot || IsDead) { return; }
         healthInfo.TakeDamage(damage);
     }
     protected void CharacterStrengthAction(float damage)

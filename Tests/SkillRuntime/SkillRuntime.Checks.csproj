@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net8.0</TargetFramework><EnableDefaultCompileItems>false</EnableDefaultCompileItems><Nullable>disable</Nullable><ImplicitUsings>enable</ImplicitUsings></PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Compile Include="Phase3BChecks.cs" />
+    <Compile Include="Phase3CChecks.cs" />
+    <Compile Include="../SkillConfig/UnityStubs.cs" />
+    <Compile Include="../../Assets/Scripts/SkillConfig/*.cs" />
+    <Compile Include="../../Assets/Scripts/SkillRuntime/*.cs" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,162 @@
+#if DEVELOPMENT_BUILD || UNITY_EDITOR
+using System;
+using System.Collections;
+using GameProtocol;
+using SkillRuntime.Integration;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+using UnityEngine.InputSystem;
+
+// Automated OUTBOUND input only. Never delivers frames, edits HP/positions/config,
+// invokes Advance, or bypasses the real TCP login/match and UDP frame consumers.
+// Staged for acceptance builds only, inert without the explicit CLI flag.
+[DefaultExecutionOrder(32000)]
+public sealed class PilotNetworkAcceptanceDriver : MonoBehaviour
+{
+    string client;
+    float started;
+    bool loggedIn, matched, joined, complete;
+    long observedFrame = -1, lastAttack = -100, stageOneCast = -1, stageTwoCast = -1;
+    string bufferedOwner;
+    long terminalAt = -1;
+    Gamepad movementDevice;
+    InputSettings originalInputSettings, testInputSettings;
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+    static void Boot()
+    {
+        var args = Environment.GetCommandLineArgs();
+        int i = Array.IndexOf(args, "-pilotNetworkAcceptance");
+        if (i < 0 || i + 1 >= args.Length) return;
+        var go = new GameObject("Network acceptance OUTBOUND input driver");
+        DontDestroyOnLoad(go);
+        var driver = go.AddComponent<PilotNetworkAcceptanceDriver>(); driver.client = args[i + 1];
+    }
+    IEnumerator Start()
+    {
+        started = Time.realtimeSinceStartup;
+        Application.runInBackground = true; Application.targetFrameRate = 60;
+        Application.SetStackTraceLogType(LogType.Log, StackTraceLogType.None);
+        var uiShader = Shader.Find("UI/Wavy Slant Fill");
+        if (uiShader == null || !uiShader.isSupported) { Fail("Blood-bar shader missing or unsupported in player build"); yield break; }
+        Debug.Log("RESOURCE_FIX_PASS client=" + client + " blood-bar shader found and supported in player");
+        Debug.Log("[NetworkAcceptance] client=" + client + " pid=" + System.Diagnostics.Process.GetCurrentProcess().Id + " server=" + NetConfig.ServerIP + ":" + NetConfig.TcpServerPort + " realTCP=true realUDP=true scriptedOutboundInput=true");
+        yield return new WaitForSecondsRealtime(2);
+        if (SceneManager.GetActiveScene().name != "LoginScene") { Fail("Initial scene is not LoginScene"); yield break; }
+        loggedIn = true; LoginManager.Instance.OnClickLogin();
+    }
+    void LateUpdate()
+    {
+        if (complete) return;
+        if (Time.realtimeSinceStartup - started > 150) { Fail("Wall-clock timeout"); return; }
+        if (loggedIn && !matched && SceneManager.GetActiveScene().name == "MainScene")
+        {
+            matched = true;
+            GameBlackboard.Instance.SetGameData<CharacterNameList>(GameConfig.ROLE_CURRENTNAME, CharacterNameList.Xingjianya);
+            Debug.Log("[NetworkAcceptance] client=" + client + " match request uid=" + NetGlobal.Instance.userUid);
+            MatchManager.Instance.SendRequestMatchRequest();
+        }
+        var roles = BattleManager.roleManage;
+        if (!roles || !roles.initFinish || roles.Pilot == null) return;
+        var pilot = roles.Pilot;
+        if (pilot.Faulted) { Fail(pilot.Fault); return; }
+        int id = BattleData.Instance.battleID;
+        if (!joined)
+        {
+            joined = true;
+            int barCount = 0;
+            // RoleUI has one greenBar, unlike the separate red/green StateBarUI prefab.
+            // Check each actual role, not a guessed global component count.
+            for (int roleId = 1; roleId <= 2; roleId++)
+            {
+                var bars = roles.GetRoleFromBattleID(roleId).GetComponentsInChildren<WavySlantFillImage>(true);
+                if (bars.Length == 0) { Fail("Missing RoleUI blood-bar on role " + roleId); return; }
+                foreach (var bar in bars)
+                {
+                    var material = bar.GetComponent<UnityEngine.UI.Image>().material;
+                    if (material == null || material.shader == null || material.shader.name != "UI/Wavy Slant Fill")
+                    { Fail("Blood-bar runtime material did not bind the expected shader on role " + roleId); return; }
+                    barCount++;
+                }
+            }
+            Debug.Log("RESOURCE_FIX_PASS client=" + client + " blood-bar runtime materials bound count=" + barCount);
+            originalInputSettings = InputSystem.settings;
+            testInputSettings = Instantiate(originalInputSettings);
+            testInputSettings.backgroundBehavior = InputSettings.BackgroundBehavior.IgnoreFocus;
+            InputSystem.settings = testInputSettings;
+            movementDevice = InputSystem.AddDevice<Gamepad>("PilotAcceptanceMovement");
+            var input = CharacterInputSystem.Instance.inputActions;
+            input.Player.Disable();
+            input.Player.Movement.AddBinding("<Gamepad>/leftStick");
+            input.asset.devices = new InputDevice[] { movementDevice };
+            input.Player.Enable();
+            Debug.Log("[NetworkAcceptance] JOIN client=" + client + " uid=" + NetGlobal.Instance.userUid + " battleID=" + id + " seed=" + BattleData.Instance.randSeed + " digest=" + pilot.Digest);
+        }
+        long f = pilot.Runtime.LastCompletedFrame;
+        // Synthetic stick -> real PlayerNetworkInput.Capture -> original UDP sender.
+        // A LateUpdate write to BattleData is overwritten by physical idle Capture;
+        // feed the InputSystem instead. Binding/settings exist in this test process only.
+        int move = 121;
+        var self = roles.GetRoleFromBattleID(id);
+        var other = roles.GetRoleFromBattleID(3 - id);
+        var cast = pilot.Cast(id);
+        if (pilot.TerminalResult != SkillRuntime.RoundResult.None)
+        {
+            if (terminalAt < 0) { terminalAt = f; Debug.Log("[NetworkAcceptance] TERMINAL client=" + client + " F=" + f + " result=" + pilot.TerminalResult + " winner=" + pilot.TerminalWinner); }
+            // One attempted attack from the dead client verifies logical rejection.
+            if (f >= terminalAt + 5 && lastAttack < terminalAt && pilot.Health(id).IsDead && BattleData.Instance.PendingActionCount == 0) Attack(id, f, 0, "dead-input");
+        }
+        else if (f >= 40)
+        {
+            int active = f < 300 ? 1 : f < 550 ? 2 : 1;
+            bool already = f < 300 ? stageOneCast >= 0 : f < 550 && stageTwoCast >= 0;
+            if (id == active && cast == null && !already && f - lastAttack > 45)
+            {
+                var a = self.LogicalPosition; var b = other.LogicalPosition;
+                int side = id == 1 ? -1 : 1;
+                int dx = b.x + side * 30000 - a.x, dz = b.y - a.y;
+                if ((long)dx * dx + (long)dz * dz > 2200L * 2200)
+                    move = Direction(dx, dz);
+                else if (BattleData.Instance.PendingActionCount == 0)
+                {
+                    Attack(id, f, Direction(b.x - a.x, b.y - a.y), "normal1");
+                    if (f < 300) stageOneCast = f; else if (f < 550) stageTwoCast = f;
+                }
+            }
+            if (cast != null && cast.Skill.SkillId == "miyabi-normal-1" && cast.SkillFrame >= 8 && cast.SkillFrame <= 12
+                && bufferedOwner != cast.Key.ToString() && BattleData.Instance.PendingActionCount == 0)
+            {
+                bufferedOwner = cast.Key.ToString();
+                // Keep the first attack's direction, like a captured directional combo.
+                Attack(id, f, self.LogicalFacing / 3, "normal2-preinput");
+            }
+        }
+        Vector3 worldMove = move == 121 ? Vector3.zero : new Vector3(Mathf.Cos(move * 3 * Mathf.Deg2Rad), 0, Mathf.Sin(move * 3 * Mathf.Deg2Rad));
+        Vector3 localMove = Quaternion.Inverse(Quaternion.Euler(0, self.Player.camera.eulerAngles.y, 0)) * worldMove;
+        InputSystem.QueueDeltaStateEvent(movementDevice.leftStick, new Vector2(localMove.x, localMove.z));
+        if (f == observedFrame) return;
+        observedFrame = f;
+        if (f % 100 == 0) Debug.Log("[NetworkAcceptance] PROGRESS client=" + client + " F=" + f + " HP=" + pilot.Health(1).ReadPilotHealth() + "," + pilot.Health(2).ReadPilotHealth());
+        if (f >= 1300)
+        {
+            complete = true;
+            Debug.Log("NETWORK_ACCEPTANCE_CLIENT_COMPLETE client=" + client + " F=" + f + " HP=" + pilot.Health(1).ReadPilotHealth() + "," + pilot.Health(2).ReadPilotHealth() + " result=" + pilot.TerminalResult);
+            StartCoroutine(Finish());
+        }
+    }
+    static int Direction(int x, int z) => Mathf.Min(119, (int)(Mathf.Repeat(Mathf.Atan2(z, x) * Mathf.Rad2Deg, 360) / 3));
+    void Attack(int id, long frame, int facing, string phase)
+    {
+        lastAttack = frame;
+        BattleData.Instance.UpdateRightOperation(RightOpType.rop1, facing, 0);
+        Debug.Log("[NetworkAcceptance] OUTBOUND client=" + client + " battleID=" + id + " observedF=" + frame + " op=" + BattleData.Instance.selfOperation.operationID + " facing=" + facing + " phase=" + phase);
+    }
+    IEnumerator Finish() { yield return new WaitForSecondsRealtime(2); Application.Quit(0); }
+    void Fail(string reason) { complete = true; Debug.LogError("NETWORK_ACCEPTANCE_FAIL client=" + client + " " + reason); Application.Quit(1); }
+    void OnDestroy()
+    {
+        if (movementDevice != null && movementDevice.added) InputSystem.RemoveDevice(movementDevice);
+        if (originalInputSettings != null) InputSystem.settings = originalInputSettings;
+        if (testInputSettings != null) Destroy(testInputSettings);
+    }
+}
+#endif

@@ -1,0 +1,210 @@
+Phase 4A 真实角色战斗接入与验收记录
+修复更新（2026-10-12）：下述两项资源遗留已修复；Run-05-SameDirectory 同目录真实双客户端 32 项断言通过，1359 帧状态/hash/结算一致，7 项 Unity 文件读取脚本断言通过。两端血条 Shader 可加载且真实材质绑定成功，人工视觉仍待验收。详见 SkillRuntime_Phase4A_NetworkAcceptance.txt 第 9 节；以下补测和正文作为历史记录保留。
+补测更新（2026-10-12）：真实服务器、同机两个独立 Development 客户端已完成核心战斗同步验收。Run-03 的 1359 帧状态/hash/结算一致，双方普通移动和 Normal1->Normal2、扣血、死亡及死亡后输入拒绝通过；25 项日志断言通过。仍有同目录方向表文件锁冲突和构建血条 Shader 缺失，未宣称人工视觉、异机或完整 Phase4A 已验收。详见 docs/SkillRuntime_Phase4A_NetworkAcceptance.txt；下文保留 2026-10-11 首次交付时的历史记录。
+日期：2026-10-11
+工程：D:\GitHub\ARPGDEMO
+范围：仅 Phase 4A；不代表完整角色、真实双客户端或服务端回合已经验收。
+
+1. 交付状态
+适配代码：已实现。Windows Unity 2022.3.62f2c1 主工程编译并进入 Play Mode，使用 Resources 中现有 RoleBase + Character Prefab 创建两个真实 ZZZ.Player。
+真实角色场景：已执行 73 项脚本断言，全部通过。测试使用开发 loopback 逻辑帧投递器，不是 UDP 服务器、不是两个客户端。
+真实输入绑定：通过 InputSystem 虚拟鼠标向现有 L_AtK 动作注入，经真实 Player.Update / PlayerNetworkInput 进入可靠队列；不是人工点击验收。
+真实双客户端：未执行。现有 NetConfig.ServerIP=192.168.1.5，TCP 13001 在本次探测中主动拒绝连接。没有发送应用层协议消息，也没有改协议或部署服务器。
+服务端回合结果：未接通，留待 4C。Draw/Winner 保存在客户端会话；没有虚构赢家 ID 或发送旧 GameOver。
+人工视觉检查：动画观感、HUD 布局、真实鼠标/键盘体验和联机镜像需用户人工验收。批处理断言不能替代这些项目。
+
+2. 实际调用链
+Assets/Scripts/Game/Input/PlayerNetworkInput.cs Capture / FlushCapturedAction
+  -> BattleData.UpdateRightOperation：本地可靠动作队列；不创建 CastKey
+  -> 原 UdpMessageDispatcher 的发送与帧接收（本批未改协议）
+  -> Assets/Scripts/FrameSync/Managers/BattleManager.cs LogicUpdate
+  -> BattleData.TryGetNextPlayerOp / NextFrameID（只消费连续帧）
+  -> RoleManager.ConsumeFrame(frame, operations)
+  -> PilotBattleSession.Advance：资格检查、动作接受、预输入/连招门控
+  -> SkillFrameRuntime.StartAccepted：新 CastKey，首帧 k=0
+  -> RoleBase.PilotMove：普通移动 / 原 RootMotionPlayback / 3C KnockbackPlan，共用逻辑位置及地图约束
+  -> Runtime.CapturePostMove：双方完成移动后统一冻结快照
+  -> CombatResolver.Resolve / CombatBatch.TryCommit
+  -> PilotBattleSession.TryApply：先校验双方完整基线，再无通知写入双方 HP、Stun、Knockback
+  -> Runtime.CompleteFrame：末帧结算后退出、按 CastKey 清理所有权
+  -> Present：双方状态及命中记录提交完成后通知 Bindable、播放基本动画、更新开发 HUD。
+
+开发场景调用同一 RoleManager.ConsumeFrame、BattleData 连续帧缓存及真实 Player，但输入帧来自 PilotDevelopmentArena 的 loopback 投递器。
+该投递器的 Update/deltaTime 只产生测试服务器帧；没有给新战斗运行时增加第二个权威时钟。正式路径仍由原网络帧消费驱动。
+
+3. 对局模式与旧入口切换
+RoleManager 在 InitData 时从同对象 PilotMatchSettings.Freeze 固定整场模式与只读配置；组件不存在或 Legacy 时保持旧路径。
+DeterministicPilot 仅允许 Editor/Development build。配置不合法直接拒绝，没有技能级回退。
+同一会话绑定双方 Player。开局后的 Inspector 模式字段修改不热切换权威链；切回 Legacy 必须退出并重新创建角色/会话。
+
+入口                         Legacy                         DeterministicPilot
+输入门控/下一段选择           原 PlayerActionBuffer/FSM       新会话逻辑帧门控；本地只发送冻结输入
+角色逐帧调用                  原 Logic_Operation+Logic_Move   全场 PilotBattleSession.Advance
+AnimationEvent ATK/门控        保持原行为                     Player 分支提前返回，Animator.fireEvents=false
+Animator 进入/退出回调         保持原行为                     不决定施放结束，不清理新 Cast
+Root Motion                   原 handle / callback           同一旧播放器；CastKey 所有权；只由 PilotMove 推进
+旧 Logic_Move/TryPlayRootMotion 保持原行为                    Pilot 下不重复执行/启动
+旧“触发伤害”“生成伤害”广播    保持原行为                     健康组件忽略
+HP                            原健康通知机制                 同一健康实例的 healthInfo.currentHP，无第二份权威 HP
+受击/死亡反馈                 保持原行为                     提交后显示；不重算伤害；基础受击片段/倒地姿态
+GameOver 上行/下行回调         保持原行为                     阻断旧回合分支，保存本地结果，等待 4C
+VFX/SFX                       原行为                         本批不执行旧攻击表现事件；完整表现留待 4B
+
+未删除或重写 AnimatorController、AnimationEvent 资产、旧 RootMotionPlayback、旧 JSON 数据契约、网络协议。
+没有在受击/死亡时清空可靠队列或原始网络帧；已发送动作按确认的逻辑帧接纳/拒绝并按 operationID 确认。
+
+4. 配置来源与明确限制
+角色：星见雅镜像，真实 prefab Assets/Resources/BattleScene/Role/Character.prefab。
+原容器：实际 PlayerSO 的 lightCombo，GUID 6c9a63af5c7aae746b82775a2f40a128。
+白名单必须等于该真实容器的前两项，并与角色目录引用一致：
+  Unagi_Normal_1 -> miyabi-normal-1 -> GUID 3608c4587e7146d4b8b9f78174009635，D=20
+  Unagi_Normal_2 -> miyabi-normal-2 -> GUID e79851970ca93f64f9a3ebb0c13b8c3e，D=18
+只支持这两段普通攻击、无施放且无控制状态时的移动，以及已验证的预输入/接招/移动打断。
+Normal2 后的 Normal3、闪避/闪避攻击、Skill、FinishSkill、切人等在新模式逻辑层拒绝；没有通往旧伤害链的 fallback。
+用户已有测试技能仍保留在目录中，没有加入可达白名单，没有迁移其他角色。
+
+技能唯一来源仍是原 ComboData.skill。源 SO、目录、原伤害、动画入口、门控、Root Motion 内容及引用等进行 seal 检查，导出后再通过原 SkillConfigLoader 实际加载并核对 JSON。
+开发 Profile 只保存原资产引用、白名单、源/导出摘要和测试开局参数，不存第二套可编辑技能。
+沿用原 SchemaVersion。原 PartialPilot / HurtBox 未配置诊断、BattleReady=false、requireBattleReady 拒绝机制均保留。
+明确的开发隔离配置入口复用 RuntimeSkillCatalog.TryCreateIsolated，不能据此声称正式完整加载已经就绪。
+
+测试配置：HP=100；HurtCircle 半径 5000（精度 10000，即 0.5 世界单位），XZ 偏移 0。
+这些数值由开发 Profile 显式声明，不来自 CharacterController/Collider/旧 ShapeCircle，不写回正式角色 HurtBox。
+专用场景出生 X 为 -15000/+15000（±1.5 世界单位），Z=0，地图 XZ 大小 40x40；正式 BattleScene 的已有出生点未改。
+实际攻击盒、基础伤害 20、Root Motion 绑定保持原技能配置。专用场景原先 ±0.6 距离会在攻击盒 k=5 生效前冲过目标，验证后改为 ±1.5；没有扩大正式攻击盒。
+场景防御断言的加大球盒、双盒、无敌/可打断窗口、stun=3、knockback=999/3 帧和 HP=10 等，仅存在于测试 DTO 内存，不保存 SO、不导出 JSON。
+
+HP 兼容：原 Bindable<float> 保留为唯一持有者；要求 0..16777216 的精确整数且 dead 标志一致。非整数/非有限/越界拒绝，不静默舍入。
+WritePilotHealth 只在整批校验后静默写值；PublishPilotHealth 在双方提交后通知。Inspector currentHP 字段只是镜像。
+
+门控迁移来自 AnimationUtility.GetAnimationEvents 的真实秒数，以 ceil(round(seconds*1e6)/(33*1000)) 映射：
+  Normal1：EnablePreInput 0.204401568 -> 7；CancelAttackColdTime 0.5332215 -> 17；
+           DisableLinkCombo 0.6132047 -> 19；EnableMoveInterrupt 0.5332215 -> 17。
+  Normal2：EnablePreInput 0.193204686 -> 6；CancelAttackColdTime 0.45269224 -> 14；
+           DisableLinkCombo 0.566526949 -> 18；EnableMoveInterrupt 0.45269224 -> 14。
+Normal2 关闭门控 k=D=18 由正常施放退出表达，不导出一个越过 [0,D) 的事件、不提前钳制到 17、不延长技能。
+由既有注册 ComboGate 类型写入原 SO：Normal1 四个事件、Normal2 三个事件。仅添加 pilot-gates 轨道；旧动画事件不修改。
+
+Root Motion 首次接入只接受单 Clip、trimStart=0、trimEnd=完整源长度、speedPermille=1000、已绑定且不要求时间重映射的配置。
+动画资产的实际源长度、事件、状态路径、JSON 资源/hash 参与检查。旧 JSON 缺乏来源元数据仍输出 Warning，没有声称已证明烘焙来源等价。
+复用旧播放器的方向表/缩放/累计差分；技能开始当帧应用第一个样本，最后样本先应用再退出；覆盖提前结束则施放尾段保持位置。
+多 Clip/Trim/变速运行接入不在本批白名单能力内，明确拒绝，留 4B；没有修改旧时间映射行为。
+
+5. 实际文件清单（路径均相对 D:\GitHub\ARPGDEMO）
+新增代码：
+  Assets/Scripts/SkillRuntimeIntegration/PilotBattleProfile.cs：seal、白名单、能力校验、冻结配置/门控。
+  Assets/Scripts/SkillRuntimeIntegration/PilotBattleSession.cs：真实角色 adapter、整场调度、反馈及状态摘要。
+  Assets/Scripts/SkillRuntimeIntegration/PilotMatchSettings.cs：显式网络开发入口和 HP/结果 HUD。
+  Assets/Scripts/SkillRuntimeIntegration/PilotDevelopmentArena.cs：真实角色 loopback 开发场景及 fresh Legacy 重启。
+  Assets/Scripts/SkillRuntimeIntegration/PilotSceneVerification.cs：仅 UNITY_EDITOR 编译的真实 Play Mode 断言。
+  Assets/Editor/SkillRuntime/PilotArenaSetup.cs：实际事件迁移、校验/导出、准备场景、批处理入口。
+以上新增目录/脚本各自有 Unity .meta。
+
+修改既有代码：
+  Assets/Scripts/FrameSync/Battle/BattleData.cs：公开下一连续帧号只读属性。
+  Assets/Scripts/FrameSync/Managers/BattleManager.cs：对局统一入口、Pilot 禁止旧 GameOver。
+  Assets/Scripts/FrameSync/Managers/RoleManager.cs：冻结模式、双方绑定和整场 ConsumeFrame。
+  Assets/Scripts/FrameSync/Managers/RoleBase.cs：CastKey 位移所有权、共用逻辑位置写入及旧入口隔离。
+  Assets/Scripts/Game/Fsm/Player/Player.cs：模式绑定、旧回调隔离、基本动画、销毁清理。
+  Assets/Scripts/Game/Input/PlayerNetworkInput.cs：Pilot 原始输入发送分支，逻辑门控移至消费端。
+  Assets/Scripts/Game/Health/CharacterHealthBase.cs：唯一 HP 绑定、范围检查、静默写/延后通知、旧广播隔离。
+  Assets/Scripts/Tool/Tool_Data/BindableProperty.cs：新增 SetWithoutNotify / NotifyCurrentValue；原 Value 行为不改。
+
+配置/场景：
+  修改 Assets/ScriptableObject/ComboData/星见雅/Unagi_Normal_1.asset、Unagi_Normal_2.asset：上述已验证逻辑门控。
+  修改 Assets/Resources/SkillConfigs/Character_miyabi_Skills.json：经既有 Exporter 导出，Schema 不变。
+  新增 Assets/ScriptableObject/SkillConfigs/MiyabiPhase4A_Development.asset + .meta。
+  新增 Assets/Scenes/SkillRuntimePilotArena.unity + .meta。
+工具/报告：
+  Tests/SkillRuntime/RunPhase4AScene.ps1
+  Tests/SkillRuntime/ComparePilotLogs.ps1
+  docs/SkillRuntime_Phase4A_Report.txt
+
+Phase3B/3C 的 Assets/Scripts/SkillRuntime、既有 Tests/SkillRuntime 源码和两份旧报告在开工时已经存在但未被 Git 跟踪；本批没有重写这些已验收模块，不应计作本批新实现或清理删除。
+
+6. 执行证据
+执行环境：Windows 11；Unity 2022.3.62f2c1 主工程；.NET SDK 8.0.423。
+不是 NUnit/EditMode 测试框架结果；下列分别是 Unity Play Mode 脚本断言和独立 .NET 脚本断言。
+
+Unity 主工程：73/73，通过。
+  Logs/SkillRuntime-Phase4A-Scene-Final.log
+  完成标记 PHASE4A_SCENE_COMPLETE checks=73 realPlayers=true twoClients=false。
+  覆盖真实输入绑定/可靠队列/回显接受、两个真实 Player、原配置加载、正式就绪保护；
+  Normal1 全 20 帧与原播放器比较、Normal2 首帧/中间/末帧、静止尾段、末帧先结算后退出；
+  实际命中扣唯一 HP、远距离不命中、显示值一致、Normal1->Normal2、新施放身份、Normal3 和未支持技能拒绝；
+  旧 Cast 停止/Animator 退出/ATK/门控/伤害广播不再生效；
+  双方同帧命中、多盒同组去重、Single 不重复扣血/反馈；
+  无敌无扣血/反馈/记录；霸体受伤且抑制非零硬直/击退；零硬直仍可打断；
+  本帧位移保留、未来位移停止、击退增量/门控/地图钳制；
+  双方 HP 写完才通知、同帧死亡 Draw、死亡拒绝输入；
+  第二目标基线被改变时真实 adapter 不留下第一目标扣血/记录/反馈；
+  空操作/缺帧/重复帧、重建同状态 hash、一致性配置拒绝、销毁清理、fresh Legacy 攻击。
+  输入采用真实 InputSystem + 虚拟鼠标事件；为批处理焦点复制临时 InputSettings，测试后恢复，没有保存正式输入设置。
+  逻辑帧由测试投递器注入；未经过真正 UDP 双客户端。
+
+独立 .NET 回归：
+  dotnet run --project Tests/SkillRuntime/SkillRuntime.Checks.csproj -c Release
+  Logs/SkillRuntime-Phase4A-Regression.log：3B 122 项 + 5 项真实导出检查；3C 104 项通过。
+  dotnet run --project Tests/SkillConfig/SkillConfig.Tests.csproj -c Release
+  Logs/SkillRuntime-Phase4A-ConfigRegression.log：56 项通过。第一次运行受沙箱临时文件原子替换权限限制，重跑后通过。
+  dotnet run --project Tests/RootMotion/RootMotion.Tests.csproj -c Release
+  Logs/SkillRuntime-Phase4A-MotionRegression.log：47 项通过。
+  这些检查不代替 Unity 序列化、场景或联机回归。
+
+编译：Unity 主工程实际编译通过；前期 Unity 编译器+真实引用的独立编译日志为 Logs/SkillRuntime-Phase4A-Compile.log / -EditorCompile.log，仅作辅助证据。
+环境原有诊断包括 Entities 的无目标 asmref、WWW 过时、BattleManager.OnDestroy 隐藏基类等；本批未清理无关包。
+早期场景轮次日志 R2/R3/R4/R5 保留失败历史：终止门控边界、批处理输入焦点、测试出生距离、测试条目 ID 冲突均已修正并由最终轮重测。不要把早期轮次当最终结果。
+未获得批处理截图；不以图片证明人工视觉质量。
+
+双客户端阻塞证据：Logs/SkillRuntime-Phase4A-ServerProbe.log。连接被拒绝，未启动/修改未提供的服务端，不伪造双端通过。
+性能：本批真实场景未作生产预算评估；每帧开发日志、快照/字符串/BigInteger 分配仍存在。3B/3C 日志的计时为独立环境测量，不代表正式联机帧率。性能专项留 Phase5。
+
+7. 可执行验收步骤
+开发场景：
+  1) 打开 Unity 2022.3.62f2c1，等待编译。打开 Assets/Scenes/SkillRuntimePilotArena.unity。
+  2) 如修改了两试点 SO/目录/导出 JSON，先保存工作，运行 Tools > Skill Runtime > Prepare Phase 4A Arena。
+     此命令检查实际动画事件、更新两 SO 门控并显式导出 JSON、刷新开发 seal、重建专用场景。冲突门控报错，不覆盖用户不同的门控定义。
+  3) Play。应显示 DEVELOPMENT / loopback / DeterministicPilot，两个真实星见雅，HP 100/100。
+  4) P1 使用原移动输入和鼠标普攻；P2 Enter 普攻。可在 Scene 查看实际实例及逻辑位置。
+  5) 观察 [PilotCast] 的 SkillID / CastKey、[PilotFrame] 的 F/位置/HP/k/hash、[PilotSettlement] 的记录、接纳来源、退出和结果。
+  6) 在 Normal1 可接招区间再次普攻应进入 Normal2。尝试第三段/技能/闪避应显示 PilotReject，不应回退旧动作。
+  7) HP 命中每组扣一次；双方相互攻击，确认模型姿态、基本受击/倒地、HUD 与日志相符。
+  8) 按“Exit match and start fresh Legacy”后验证原普攻位移；必须看到新实例，不能热切换半场。
+  9) 再 fresh Pilot，切场景/退出 Play，检查残留角色、根位移与订阅。
+特殊防御/Draw 数值不要写进正式资产，用自动场景断言中的显式内存 fixture 复现。
+
+自动场景复跑（关闭已打开的该工程，避免双实例锁；脚本不会删除锁或关闭用户编辑器）：
+  powershell -ExecutionPolicy Bypass -File Tests/SkillRuntime/RunPhase4AScene.ps1
+  期望最后 PHASE4A_SCENE_COMPLETE checks=73，无 PHASE4A_FAIL / PilotHalt / NullReference / MissingReference。
+  脚本默认输出 Logs/SkillRuntime-Phase4A-Scene.log；本次最终证据使用带 -Final 后缀的日志。
+
+真实网络双客户端（待人工执行）：
+  1) 恢复现有服务器，确认 TCP 192.168.1.5:13001 和现有 UDP 战斗服务工作。不要修改协议去伪造 Draw。
+  2) 为开发验证，在实际被登录/匹配流程加载的 BattleScene 中，给 GameManager 对象添加 PilotMatchSettings：mode=DeterministicPilot、profile=MiyabiPhase4A_Development。
+     这是显式开发操作：保存该测试改动并同时用于两客户端；验收完撤销组件。原场景本批未自动修改。
+  3) 构建 Development Build；两个真实进程或 Editor+Development Player 通过原登录/匹配进入同局，使用同一导出/profile/规则版本。
+     可用 Start-Process -FilePath '<实际开发构建exe>' -ArgumentList '-logFile "D:\GitHub\ARPGDEMO\Logs\Pilot-Client-A.log"' -WindowStyle Hidden 启动后台进程；实际操作测试需用户正常打开客户端窗口。
+     另一端日志指定 Pilot-Client-B.log。先比较 [PilotMatch] 的 rules/digest/entity；没有自动版本握手，必须人工核对。
+  4) 进入攻击距离（正式原场景出生位置与专用测试场景不同），分别移动/普攻/接第二段；保留同一场完整日志，不混入重启后的帧号。
+  5) 对齐两端相同逻辑帧的 Entity/Cast、位置、k、HP、记录/来源、退出与 hash。
+  6) powershell -ExecutionPolicy Bypass -File Tests/SkillRuntime/ComparePilotLogs.ps1 -First Logs/Pilot-Client-A.log -Second Logs/Pilot-Client-B.log
+     此工具拒绝空日志、重复帧、帧集合或 hash 差异；比较通过本身不证明日志确实来自两个客户端，仍需保存进程和匹配证据。
+  7) 不用 PilotDevelopmentArena 的两个角色或两次回放替代该验证。
+本批没有替用户执行第 2 步的正式场景修改，也没有构建/启动两个已连接服务端的客户端。
+
+8. 当前限制、后续与回退
+4B：其余普攻/闪避入口/Skill/Ultimate、完整多 Clip/Trim/PlaybackSpeed Root Motion 映射、完整连招缓存规则、VFX/SFX/反馈资源、移动与受击动画观感整合。
+4C：真实协议版本/配置握手、稳定服务端对局身份/回合 generation、胜负/Draw 确认、回合重置与服务器流程。
+当前 EntityKey 使用已有 randSeed 派生的会话标识 + round=1 + battleID + generation=1，适用于本批一次性开发对局；不能当作跨服务器持久唯一对局 ID。
+正式 HurtBox/HP 玩法值仍未决定；本批只接受明确测试值。不可把 Restricted Pilot 通过标成 Complete/BattleReady。
+当前 Animator 保留原 Controller 作为表现来源；技能姿态按逻辑帧采样，命中后的基本受击片段使用独立表现游标，不反馈到逻辑。完整混合/脚步/音效不在本批。
+旧来源 JSON 的 provenance Warning 保留；已证明本批位移消费与旧播放器一致，不等于证明烘焙来源一致。
+如果遇到中途配置/状态异常，PilotHalt 停止消费，不回退 Legacy；修复配置后重新开局。
+真实两端、不同渲染帧率/网络异常/长时运行和完整旧连招人工回归未执行，属于待验收项目，不是通过项。
+
+回退：结束当前对局，重新实例化 Legacy；网络场景移除 PilotMatchSettings 或在下次开局前设 Legacy。不要中途改一名 Player 的标志。
+代码回退只撤销上列 Phase4A 修改及新增 SkillRuntimeIntegration/Editor SkillRuntime/开发 profile+scene/本批工具；两试点 SO 去掉本批 pilot-gates/events 并用旧导出流程同步 JSON。
+不要删除开工时已存在的未跟踪 Phase3B/3C 文件，也不要 git clean 或整目录恢复覆盖其他已验收工作。
+本批未提交 Git commit。Git 既有文件差异为 11 个文件，另有上述新增代码/资产/工具；最终精确行数见 Logs/SkillRuntime-Phase4A-GitDiff.txt。
+
+停止位置：Phase4A 交付，等待用户验收；不自动实施 4B、4C 或 Phase5。

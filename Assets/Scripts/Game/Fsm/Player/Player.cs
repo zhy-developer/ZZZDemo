@@ -72,6 +72,30 @@ namespace ZZZ
         private PlayerNetworkInput networkInput;
         private PlayerActionController actions;
         private RoleBase motionRole;
+        public bool IsDeterministicPilot { get; private set; }
+        public event System.Action PilotDestroyed;
+        public void BindDeterministicPilot()
+        {
+            if (IsDeterministicPilot) throw new System.InvalidOperationException("Player already belongs to a pilot match.");
+            if (statesStarted)
+            {
+                movementStateMachine.currentState.Value?.Exit(); comboStateMachine.currentState.Value?.Exit();
+                statesStarted = false;
+            }
+            IsDeterministicPilot = true;
+            characterAnimator.applyRootMotion = false;
+            characterAnimator.fireEvents = false;
+            characterAnimator.speed = 0;
+            currentComboState = "DeterministicPilot";
+        }
+
+        public void PilotVisual(string state, float normalizedTime)
+        {
+            if (!IsDeterministicPilot || !characterAnimator.HasState(0, Animator.StringToHash(state))) return;
+            characterAnimator.Play(state, 0, normalizedTime);
+            characterAnimator.Update(0);
+            transform.localPosition = Vector3.zero;
+        }
 
         public void BindMotionRole(RoleBase role) { motionRole = role; }
 
@@ -111,6 +135,7 @@ namespace ZZZ
         }
         protected override void Update()
         {
+            if (IsDeterministicPilot) { if (IsLocalPlayer) networkInput.Capture(); return; }
             if (!statesStarted) return;
             if (IsLocalPlayer)
             {
@@ -126,6 +151,7 @@ namespace ZZZ
         public void ApplyNetworkMovement(int direction)
         {
             HasNetworkMovement = direction >= 0 && direction <= 120;
+            if (IsDeterministicPilot) return;
             if (!statesStarted && networkRoleInitialized && isActiveAndEnabled) StartStates();
             if (!statesStarted || !isActiveAndEnabled) return;
             movementStateMachine.ApplyMovement(direction);
@@ -133,6 +159,7 @@ namespace ZZZ
 
         public bool ApplyNetworkAction(PlayerOperation operation)
         {
+            if (IsDeterministicPilot) return false; // Only the whole-match pilot dispatcher can accept actions.
             diagnosticOperationId = operation.operationID;
             TraceCombo("RECEIVE", $"op={operation.operationID} type={operation.rightOperation} payload={operation.operationValue2} index={operation.operationValue2 >> 2}");
             if (!statesStarted || !isActiveAndEnabled)
@@ -152,6 +179,7 @@ namespace ZZZ
 
         public void LogicTick()
         {
+            if (IsDeterministicPilot) return;
             if (statesStarted) actions.LogicTick();
         }
 
@@ -166,11 +194,13 @@ namespace ZZZ
 
         private void OnDestroy()
         {
+            PilotDestroyed?.Invoke();
             comboStateMachine?.Combo.Dispose();
         }
         #region 相关动画进入或退出触发的方法
         public void OnAnimationTranslateEvent(OnEnterAnimationPlayerState playerState)
         {
+            if (IsDeterministicPilot) return;
             if (!statesStarted) return;
             switch (playerState)
             {
@@ -192,6 +222,7 @@ namespace ZZZ
 
         public void OnAnimationExitEvent()
         {
+            if (IsDeterministicPilot) return;
             if (!statesStarted) return;
             movementStateMachine.OnAnimationExitEvent();
 
@@ -250,6 +281,7 @@ namespace ZZZ
 
         private void StartStates()
         {
+            if (IsDeterministicPilot) return;
             if (statesStarted) return;
             statesStarted = true;
             movementStateMachine.ChangeState(movementStateMachine.idlingState);
@@ -286,6 +318,7 @@ namespace ZZZ
         /// </summary>
         public void EnablePreInput(AnimationEvent animationEvent = null)
         {
+            if (IsDeterministicPilot) return;
             TraceComboEventEntry(nameof(EnablePreInput), animationEvent);
             if (!statesStarted || comboStateMachine.currentState.Value != comboStateMachine.ATKIngState)
             {
@@ -299,6 +332,7 @@ namespace ZZZ
         /// </summary>
         public void CancelAttackColdTime(AnimationEvent animationEvent = null)
         { 
+            if (IsDeterministicPilot) return;
             TraceComboEventEntry(nameof(CancelAttackColdTime), animationEvent);
             if (!statesStarted || comboStateMachine.currentState.Value != comboStateMachine.ATKIngState)
             {
@@ -313,6 +347,7 @@ namespace ZZZ
         /// </summary>
         public void DisableLinkCombo(AnimationEvent animationEvent = null)
         { 
+            if (IsDeterministicPilot) return;
             TraceComboEventEntry(nameof(DisableLinkCombo), animationEvent);
             if (!statesStarted || comboStateMachine.currentState.Value != comboStateMachine.ATKIngState)
             {
@@ -326,6 +361,7 @@ namespace ZZZ
         /// </summary>
         public void EnableMoveInterrupt(AnimationEvent animationEvent = null)
         {
+            if (IsDeterministicPilot) return;
             TraceComboEventEntry(nameof(EnableMoveInterrupt), animationEvent);
             if (!statesStarted || comboStateMachine.currentState.Value != comboStateMachine.ATKIngState)
             {
@@ -356,6 +392,7 @@ namespace ZZZ
         /// </summary>
         public void ATK(AnimationEvent animationEvent = null)
         {
+            if (IsDeterministicPilot) return;
             if (!IsLocalPlayer) return;
             comboStateMachine.ATKIngState.ATK(animationEvent);
         }
@@ -366,6 +403,7 @@ namespace ZZZ
 
         public void PlayVFX(string name)
         {
+            if (IsDeterministicPilot) return; // Complete VFX/SFX event integration is Phase 4B.
             VFX_PoolManager.Instance.TryGetVFX(characterName, name);
         }
 

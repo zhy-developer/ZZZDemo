@@ -55,6 +55,13 @@ namespace ZZZ
 
         private void FlushCapturedAction()
         {
+            if (player.IsDeterministicPilot)
+            {
+                if (capturedActions.Count == 0 || BattleData.Instance.PendingActionCount != 0) return;
+                var raw = capturedActions.Dequeue();
+                BattleData.Instance.UpdateRightOperation((RightOpType)raw.Type, raw.Value1, raw.Value2);
+                return; // Eligibility/step selection is authoritative only in the consumed logical frame.
+            }
             // Resolve only after the preceding action is echoed and applied locally.
             // A single pre-input waits for its animation window; remote clients never revalidate that window.
             if (capturedActions.Count == 0) return;

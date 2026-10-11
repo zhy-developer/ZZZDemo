@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7e46dfb0720ef764781fc7a9736a81dd, type: 3}
+  m_Name: MiyabiPhase4A_Development
+  m_EditorClassIdentifier: 
+  catalog: {fileID: 11400000, guid: 9a1ab0c1f22dbde47a72de717aee890d, type: 2}
+  comboContainer: {fileID: 11400000, guid: 6c9a63af5c7aae746b82775a2f40a128, type: 2}
+  allowedCombos:
+  - {fileID: 11400000, guid: 3608c4587e7146d4b8b9f78174009635, type: 2}
+  - {fileID: 11400000, guid: e79851970ca93f64f9a3ebb0c13b8c3e, type: 2}
+  exportedJson: {fileID: 4900000, guid: 93561b110967280488f28ec259a6bd31, type: 3}
+  sealedJsonHash: b51f7d2e1c441f30f8c179a7c30911759e74960f2fc20569482c19d782b771eb
+  sealedSourceHash: 0da3e782477fe0eecd60e5607878ef0367aceffc7c77fad6ac1a07c111f291a7
+  testHP: 100
+  testHurtRadius: 5000
+  testHurtOffset:
+    x: 0
+    y: 0
+    z: 0
+  idleState: Base Layer.Movement.Locomotion
+  hitState: "Base Layer.Hit.\u6B63\u9762\u53D7\u51FB1"
+  deathState: Base Layer.Hit.Avatar_Female_Size02_Unagi_Ani_HitFly_Front
+  testParameterNotice: 'DEVELOPMENT TEST ONLY: HP and HurtBox are not approved gameplay
+    values.'
