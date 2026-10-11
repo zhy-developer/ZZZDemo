@@ -60,6 +60,7 @@ namespace SkillConfig.Editor
                 var output = AnimationPlayableOutput.Create(graph, "Visual pose only", proxy.Animator); output.SetSourcePlayable(playable);
                 playable.SetTime(time); graph.Play(); graph.Evaluate(0);
                 proxy.RestoreAnimatorRoot(); // Only the integer table may move/rotate the logical preview root.
+                proxy.RefreshPoseMeshes();
                 SourceSeconds = time; ClipName = segment.clip.name;
             }
             catch { StopGraph(); throw; }

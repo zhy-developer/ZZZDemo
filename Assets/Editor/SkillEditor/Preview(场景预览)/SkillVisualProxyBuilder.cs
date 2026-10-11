@@ -19,6 +19,34 @@ namespace SkillConfig.Editor
         Quaternion[] rotations;
         SkinnedMeshRenderer[] skins;
         float[][] weights;
+        readonly List<Mesh> poseMeshes = new List<Mesh>();
+        internal void CreatePoseRenderers()
+        {
+            // Keep native skins only as CPU sampling sources. Publish one completed pose for
+            // body/face/hair together, without depending on when the editor render loop refreshes
+            // each skin's cached geometry after manual graph evaluation and root correction.
+            foreach (var skin in skins)
+            {
+                var mesh = new Mesh { name = "SkillPreview::Pose::" + skin.name, hideFlags = HideFlags.HideAndDontSave };
+                mesh.MarkDynamic(); poseMeshes.Add(mesh);
+                var go = SkillVisualProxyBuilder.Empty("SkillPreview::PoseRenderer", Root.scene);
+                go.transform.SetParent(skin.transform, false);
+                go.AddComponent<MeshFilter>().sharedMesh = mesh;
+                var renderer = go.AddComponent<MeshRenderer>();
+                renderer.sharedMaterials = skin.sharedMaterials; renderer.enabled = skin.enabled;
+                renderer.shadowCastingMode = skin.shadowCastingMode; renderer.receiveShadows = skin.receiveShadows;
+                skin.enabled = false;
+            }
+            RefreshPoseMeshes();
+        }
+        public void RefreshPoseMeshes()
+        {
+            for (int i = 0; i < skins.Length; i++)
+            {
+                // false keeps renderer scale out of vertices: the child renderer inherits it once.
+                if (skins[i].sharedMesh) skins[i].BakeMesh(poseMeshes[i], false);
+            }
+        }
         internal void CaptureRest()
         {
             transforms = Root.GetComponentsInChildren<Transform>(true);
@@ -36,7 +64,13 @@ namespace SkillConfig.Editor
             int i = Array.IndexOf(transforms, Animator.transform);
             Animator.transform.localPosition = positions[i]; Animator.transform.localRotation = rotations[i]; Animator.transform.localScale = scales[i];
         }
-        public void Dispose() { if (Root) Object.DestroyImmediate(Root); if (fallback) Object.DestroyImmediate(fallback); }
+        public void Dispose()
+        {
+            if (Root) Object.DestroyImmediate(Root);
+            foreach (var mesh in poseMeshes) if (mesh) Object.DestroyImmediate(mesh);
+            poseMeshes.Clear();
+            if (fallback) Object.DestroyImmediate(fallback);
+        }
     }
 
     public static class SkillVisualProxyBuilder
@@ -75,6 +109,7 @@ namespace SkillConfig.Editor
                         copy.bones = skin.bones.Select(b => b && map.TryGetValue(b, out var v) ? v : null).ToArray();
                         copy.rootBone = skin.rootBone && map.TryGetValue(skin.rootBone, out var bone) ? bone : null;
                         copy.localBounds = skin.localBounds; copy.updateWhenOffscreen = true;
+                        copy.quality = skin.quality;
                         for (int i = 0; copy.sharedMesh && i < copy.sharedMesh.blendShapeCount; i++) copy.SetBlendShapeWeight(i, skin.GetBlendShapeWeight(i));
                         renderer = copy;
                     }
@@ -98,7 +133,7 @@ namespace SkillConfig.Editor
                 int skipped = source.GetComponentsInChildren<Component>(true).Count(c => !c || !(c is Transform || c is Animator || c is MeshFilter || c is MeshRenderer || c is SkinnedMeshRenderer));
                 if (skipped > 0) proxy.Warnings.Add("Omitted gameplay/missing/physics components: " + skipped);
                 if (proxy.fallback) proxy.Warnings.Add("Missing materials use a temporary neutral material; original resources are untouched.");
-                proxy.CaptureRest(); return proxy;
+                proxy.CaptureRest(); proxy.CreatePoseRenderers(); return proxy;
             }
             catch { proxy.Dispose(); throw; }
         }

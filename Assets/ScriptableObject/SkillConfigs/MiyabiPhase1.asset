@@ -28,4 +28,11 @@ MonoBehaviour:
   skills:
   - {fileID: 11400000, guid: 3608c4587e7146d4b8b9f78174009635, type: 2}
   - {fileID: 11400000, guid: e79851970ca93f64f9a3ebb0c13b8c3e, type: 2}
-  resources: []
+  - {fileID: 11400000, guid: e9c658a028c2ea14c81a8e5121f600ea, type: 2}
+  resources:
+  - id: slash_1
+    kind: 0
+    asset: {fileID: 4214304940546854769, guid: 695ff324093e91743a8abf684fa028de, type: 3}
+  - id: hit_1
+    kind: 1
+    asset: {fileID: 8300000, guid: b97ffed8c0171224f91bb0a6dd0e00f2, type: 3}

@@ -32,6 +32,7 @@ namespace SkillConfig.Editor.Tests
         {
             if (SkillPreviewSession.LiveCount != 0 || Resources.FindObjectsOfTypeAll<SkillPreviewStage>().Length != 0 ||
                 Resources.FindObjectsOfTypeAll<GameObject>().Any(x => x.name.StartsWith("SkillPreview::")) ||
+                Resources.FindObjectsOfTypeAll<Mesh>().Any(x => x.name.StartsWith("SkillPreview::Pose::")) ||
                 Resources.FindObjectsOfTypeAll<AnimationClip>().Any(x => x.name.StartsWith("SkillPreview::")))
                 throw new Exception("Preview resources remain: " + label);
             Debug.Log("PHASE2C_PASS " + label);

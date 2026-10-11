@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEditor;
 using Object = UnityEngine.Object;
 
 namespace SkillConfig.Editor
@@ -61,7 +62,7 @@ namespace SkillConfig.Editor
                     var value = List(draft.skill, ListName(item)).Cast<object>().First(x => Id(x) == item.id);
                     Shift(value, delta);
                 }
-            });
+            }, allowExistingPreviewPaths: true);
         }
         public static string Delete(ComboData owner, CharacterSkillCatalog catalog, IEnumerable<string> ids)
         {
@@ -75,7 +76,7 @@ namespace SkillConfig.Editor
                     for (int i = list.Count - 1; i >= 0; i--) if (set.Contains(Id(list[i]))) list.RemoveAt(i);
                 }
                 SkillEditCommands.Reflow(draft);
-            });
+            }, allowExistingPreviewPaths: true);
         }
         static string GroupSignature(HitGroup group) { var copy = Clone(group); copy.id = ""; return JsonUtility.ToJson(copy); }
         static void RequireSelection(ComboData owner, HashSet<string> ids)
@@ -149,8 +150,22 @@ namespace SkillConfig.Editor
             });
             if (error == null) added = result.ToArray(); return error;
         }
-        // No asset/Undo/dirty changes until the full target catalog validates successfully.
-        static string Commit(ComboData owner, CharacterSkillCatalog catalog, string label, Action<ComboData> mutation)
+        // Moving/deleting items does not change catalog resource bindings. A valid direct asset outside Resources is
+        // usable by the safe editor preview, although the unchanged exporter must still reject it.
+        // Missing/wrong-kind assets, unresolved IDs, duplicate identities and timing errors remain fatal.
+        static bool ExistingPreviewPath(Diagnostic diagnostic, CharacterSkillCatalog catalog)
+        {
+            if (diagnostic.code != "RESOURCES_PATH" && diagnostic.code != "RESOURCE_PATH") return false;
+            return catalog.resources.Any(r => {
+                if (r == null || r.id != diagnostic.location || !r.asset || !EditorUtility.IsPersistent(r.asset)) return false;
+                bool correctType = r.kind == ResourceKind.VfxPrefab ? r.asset is GameObject :
+                    r.kind == ResourceKind.AudioClip && r.asset is AudioClip;
+                string path = AssetDatabase.GetAssetPath(r.asset).Replace((char)92, '/');
+                return correctType && path.Length > 0 && !path.Contains("/Resources/");
+            });
+        }
+        // Validate the whole draft before touching the original; Move/Delete permit unchanged preview-only paths.
+        static string Commit(ComboData owner, CharacterSkillCatalog catalog, string label, Action<ComboData> mutation, bool allowExistingPreviewPaths = false)
         {
             if (!owner || !catalog || !catalog.skills.Contains(owner)) return "需要选中包含该技能的角色目录。";
             var draft = Object.Instantiate(owner);
@@ -158,7 +173,8 @@ namespace SkillConfig.Editor
             {
                 mutation(draft);
                 SkillAssetValidator.BuildDraft(catalog, owner, draft, out var diagnostics);
-                var errors = diagnostics.Where(d => d.severity == DiagnosticSeverity.Error).ToArray();
+                var errors = diagnostics.Where(d => d.severity == DiagnosticSeverity.Error &&
+                    !(allowExistingPreviewPaths && ExistingPreviewPath(d, catalog))).ToArray();
                 if (errors.Length > 0) return "操作未提交（原数据未改变）：\n" + string.Join("\n", errors.Take(12).Select(d => d.ToString()));
                 var next = Clone(draft.skill);
                 SkillEditCommands.Apply(owner, label, () => owner.skill = next);

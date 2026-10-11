@@ -188,7 +188,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: bcdb0e9f28485874ba56fb2b31b67041, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -0.77
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: bcdb0e9f28485874ba56fb2b31b67041, type: 3}
       propertyPath: m_LocalPosition.z
@@ -2953,11 +2953,15 @@ MonoBehaviour:
   moveMult: 0.2
   dodgeMult: 0.2
   characterName: 1
-  currentMovementState: 
-  currentComboState: 
   enemy: {fileID: 0}
   playerSO: {fileID: 11400000, guid: 62960a9705650884bbb148509fcbde19, type: 2}
   playerCameraUtility:
     <virtualCamera>k__BackingField: {fileID: 0}
     <DefaultHorizontalWaitTime>k__BackingField: 0
     <DefaultHorizontalRecenteringTime>k__BackingField: 0.5
+  currentMovementState: 
+  currentComboState: 
+  enableComboDiagnostics: 1
+  finishSkillTimeline: {fileID: 0}
+  cameraFollowTarget: {fileID: 0}
+  cameraLookAtTarget: {fileID: 0}

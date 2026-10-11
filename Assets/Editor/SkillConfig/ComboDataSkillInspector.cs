@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using UnityEditor;
 using UnityEngine;
 
@@ -10,11 +10,13 @@ namespace SkillConfig.Editor
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
+
             EditorGUILayout.LabelField("原有 ComboData 配置", EditorStyles.boldLabel);
             DrawPropertiesExcluding(serializedObject, "m_Script", "skill");
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Phase 1 技能数据（未接入战斗）", EditorStyles.boldLabel);
             EditorGUILayout.HelpBox("保留旧字段和运行行为。新技能类型不由 AttackStyle 推断；HitGroup 基础伤害读取上方旧字段，不另存副本。保存不会自动导出 JSON。", MessageType.Info);
+
             var data = (ComboData)target;
             if (targets.Length == 1 && (data.skill == null || !data.skill.registered))
             {
