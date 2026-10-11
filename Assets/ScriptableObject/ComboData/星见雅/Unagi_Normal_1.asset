@@ -57,20 +57,20 @@ MonoBehaviour:
     - id: 96994c8c844c4ba98475f84c6c91c6f3
       trackId: cf61d4fcd5f546f8ae56823eb8343d30
       hitGroupId: 548b99b38d5846d5bb05e0ccd084c3bb
-      startFrame: 6
-      endFrame: 11
-      shape: 2
+      startFrame: 5
+      endFrame: 10
+      shape: 1
       offset:
         x: 0
-        y: 0
-        z: 20000
+        y: 5278
+        z: 4337
       size:
         x: 10000
         y: 10000
-        z: 10000
+        z: 11454
       yawMilliDegrees: 0
-      radius: 5000
-      height: 10000
+      radius: 6552
+      height: 23784
       sectorAngleMilliDegrees: 90000
     invincibility: []
     interrupts: []

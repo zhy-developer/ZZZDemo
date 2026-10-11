@@ -89,6 +89,10 @@ namespace SkillConfig.Editor
                 animatorRoot.SetActive(true);
                 proxy.Animator = animatorRoot.AddComponent<Animator>();
                 proxy.Animator.avatar = animatorSource ? animatorSource.avatar : null;
+                // Animation-only FBXs can use Copy From Other Avatar without carrying an
+                // Animator.avatar reference. Read their explicit importer binding as well.
+                if (!proxy.Animator.avatar && AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(source)) is ModelImporter importer)
+                    proxy.Animator.avatar = importer.sourceAvatar;
                 proxy.Animator.runtimeAnimatorController = null; proxy.Animator.applyRootMotion = false; proxy.Animator.fireEvents = false;
                 proxy.Animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
                 int skipped = source.GetComponentsInChildren<Component>(true).Count(c => !c || !(c is Transform || c is Animator || c is MeshFilter || c is MeshRenderer || c is SkinnedMeshRenderer));

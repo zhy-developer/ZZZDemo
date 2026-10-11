@@ -11,6 +11,7 @@ namespace SkillConfig.Editor
         readonly SkillShapeEdit edit = new SkillShapeEdit();
         string selection;
         int hotControl;
+        Tool lastTool;
         public void Cancel()
         {
             if (hotControl != 0 && GUIUtility.hotControl == hotControl) GUIUtility.hotControl = 0;
@@ -20,9 +21,13 @@ namespace SkillConfig.Editor
         public void Draw(SkillPreviewSession session, string selected, bool editHurt)
         {
             if (session == null || session.IsDisposed || !session.Stage || StageUtility.GetCurrentStage() != session.Stage) { Cancel(); return; }
+            if (lastTool != UnityEditor.Tools.current) { Cancel(); lastTool = UnityEditor.Tools.current; }
             string key = editHurt ? "@hurt" : selected;
             if (selection != key) { Cancel(); selection = key; }
             var e = Event.current;
+            // Native Handles call Event.Use(), which also changes rawType in Unity 2022.3.
+            // Capture the release before any control consumes it.
+            bool released = e.rawType == EventType.MouseUp;
             if (e.type == EventType.KeyDown && e.keyCode == KeyCode.Escape && edit.Active) { Cancel(); e.Use(); }
             if (!string.IsNullOrEmpty(session.Error)) { Cancel(); Handles.Label(Vector3.zero, session.Error); return; }
             DrawTrajectory(session);
@@ -48,8 +53,7 @@ namespace SkillConfig.Editor
                 }
                 Handles.Label(Vector3.up * 2.2f, session.Interrupted ? "Interrupted @ " + session.Frame : "Frame " + session.Frame + " · " + session.ClipName + " @ " + session.SourceSeconds.ToString("F6") + "s");
             }
-            // Native Handles consume MouseUp: rawType preserves the gesture's commit boundary.
-            if (edit.Active && e.rawType == EventType.MouseUp) { hotControl = 0; edit.Commit(); SceneView.RepaintAll(); }
+            if (edit.Active && released) { hotControl = 0; edit.Commit(); SceneView.RepaintAll(); }
             else if (edit.Active && e.type == EventType.Layout && GUIUtility.hotControl == 0) Cancel();
         }
         void DrawEditor(SkillPreviewSession session, HitBox box, bool hurt)
@@ -59,23 +63,27 @@ namespace SkillConfig.Editor
             float radius = box.radius / 10000f, height = box.height / 10000f, yaw = box.yawMilliDegrees / 1000f, angle = box.sectorAngleMilliDegrees / 1000f;
             var rotation = Quaternion.Euler(0, yaw, 0); float handleSize = HandleUtility.GetHandleSize(p);
             EditorGUI.BeginChangeCheck();
-            p = Handles.PositionHandle(p, Quaternion.identity);
-            if (box.shape == ShapeKind.Box)
+            if (UnityEditor.Tools.current == Tool.Rotate)
             {
-                size = Handles.ScaleHandle(size, p, rotation, handleSize);
-                yaw = Handles.Disc(rotation, p, Vector3.up, handleSize * .8f, false, 0).eulerAngles.y;
+                if (!hurt && (box.shape == ShapeKind.Box || box.shape == ShapeKind.Sector))
+                    yaw = Handles.Disc(rotation, p, Vector3.up, handleSize * .8f, false, 0).eulerAngles.y;
+                else Handles.Label(p, "此形状不需要旋转；W 移动 / R 尺寸");
             }
-            else
+            else if (UnityEditor.Tools.current == Tool.Scale)
             {
+                if (box.shape == ShapeKind.Box) size = Handles.ScaleHandle(size, p, rotation, handleSize);
+                else
+                {
                 radius = Handles.RadiusHandle(Quaternion.identity, p, radius);
                 if (box.shape != ShapeKind.Sphere) height = Handles.ScaleSlider(height, p + Vector3.up * height * .5f, Vector3.up, Quaternion.identity, handleSize, .0001f);
                 if (box.shape == ShapeKind.Sector)
                 {
-                    yaw = Handles.Disc(rotation, p, Vector3.up, Math.Max(radius, handleSize), false, 0).eulerAngles.y;
                     var edge = Quaternion.Euler(0, yaw + angle * .5f, 0) * Vector3.forward;
                     angle = Handles.ScaleSlider(angle, p + edge * radius, Vector3.Cross(Vector3.up, edge), Quaternion.identity, handleSize, .001f);
                 }
+                }
             }
+            else p = Handles.PositionHandle(p, Quaternion.identity);
             if (!EditorGUI.EndChangeCheck()) return;
             session.SetPlaying(false);
             if (!edit.Active) { if (hurt) edit.BeginHurt(session.Catalog); else edit.BeginBox(session.Owner, box.id); }

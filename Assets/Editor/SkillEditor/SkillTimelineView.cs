@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
@@ -12,13 +13,56 @@ namespace SkillConfig.Editor
         ComboData dragOwner;
         int dragMode, dragStart, dragEnd, control;
         float mouseStart;
+        readonly HashSet<string> selection = new HashSet<string>();
+        readonly Dictionary<string, Rect> bounds = new Dictionary<string, Rect>();
+        ComboData selectionOwner;
+        CharacterSkillCatalog catalog;
+        string anchor;
+        bool marquee, additive, keyboardFocus;
+        Vector2 marqueeStart;
+        HashSet<string> marqueeBase;
+        int moveDelta;
+        public string LastError { get; private set; }
+        public IReadOnlyCollection<string> Selection => selection;
         public int Cursor { get; private set; }
         public event Action<int> CursorChanged;
         public void SetCursor(int frame, bool notify = false) { int value = Math.Max(0, frame); if (value == Cursor) return; Cursor = value; if (notify) CursorChanged?.Invoke(Cursor); }
-        public bool IsDragging => dragging != null;
-        public void Cancel() { if (dragging != null) SkillEditCommands.EndGesture(); if (control != 0 && GUIUtility.hotControl == control) GUIUtility.hotControl = 0; control = 0; dragging = null; dragOwner = null; }
-        public void Draw(ComboData owner, string selected, Action<string> select)
+        public bool IsDragging => dragging != null || marquee;
+        public void Cancel() { if (dragging != null) SkillEditCommands.EndGesture(); if (control != 0 && GUIUtility.hotControl == control) GUIUtility.hotControl = 0; control = 0; dragging = null; dragOwner = null; marquee = false; }
+        void Report(string error) { LastError = error; }
+        IEnumerable<SkillTimelineItem> VisibleItems(ComboData owner, SkillTimelineItem[] all)
         {
+            var state = SkillEditorWorkspaceState.instance;
+            string prefix = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(owner)) + ":";
+            if (!state.collapsed.Contains(prefix + SkillTimelineAdapters.AnimationTrack) && !state.hiddenTracks.Contains(prefix + SkillTimelineAdapters.AnimationTrack))
+                foreach (var item in all.Where(i => i.animation)) yield return item;
+            foreach (var group in owner.skill.tracks.Where(t => t != null).OrderBy(t => t.displayOrder).GroupBy(t => t.group ?? ""))
+            {
+                if (group.Key.Length > 0 && state.collapsed.Contains(prefix + "group:" + group.Key)) continue;
+                foreach (var track in group)
+                {
+                    if (state.hiddenTracks.Contains(prefix + track.id) || state.collapsed.Contains(prefix + track.id)) continue;
+                    foreach (var item in all.Where(i => i.trackId == track.id)) yield return item;
+                }
+            }
+        }
+        void Paste(ComboData owner, Action<string> select)
+        {
+            var policy = PasteGroups.Copy;
+            if (SkillTimelineBatch.IsCrossSkill(owner))
+            {
+                int choice = EditorUtility.DisplayDialogComplex("跨技能粘贴", "选择 HitGroup 策略。基础伤害使用目标 ComboData；资源 ID 使用目标角色目录。动画插入会后移后续动画，不会移动其他事件。全部数据须通过 Validator 才提交。", "复制组", "取消", "复用等价组");
+                if (choice == 1) return; policy = choice == 2 ? PasteGroups.ReuseEquivalent : PasteGroups.Copy;
+            }
+            Report(SkillTimelineBatch.Paste(owner, catalog, Cursor, policy, out var added));
+            if (LastError == null) { selection.Clear(); selection.UnionWith(added); select(added.FirstOrDefault() ?? ""); }
+        }
+        public void Draw(ComboData owner, string selected, Action<string> select, CharacterSkillCatalog character = null)
+        {
+            catalog = character;
+            if (selectionOwner != owner) { Cancel(); selection.Clear(); selectionOwner = owner; anchor = null; keyboardFocus = false; LastError = null; }
+            if (!string.IsNullOrEmpty(selected) && SkillTimelineAdapters.Find(owner, selected) != null && !selection.Contains(selected)) { selection.Clear(); selection.Add(selected); }
+            selection.RemoveWhere(id => SkillTimelineAdapters.Find(owner, id) == null);
             var state = SkillEditorWorkspaceState.instance;
             using (new EditorGUILayout.HorizontalScope(EditorStyles.toolbar))
             {
@@ -34,10 +78,19 @@ namespace SkillConfig.Editor
                     foreach (TrackKind k in Enum.GetValues(typeof(TrackKind))) { var kind = k; menu.AddItem(new GUIContent(kind.ToString()), false, () => select("track:" + SkillEditCommands.AddTrack(owner, kind).id)); }
                     menu.ShowAsContext();
                 }
+                if (GUILayout.Button("显示全部轨道", EditorStyles.toolbarButton)) { state.hiddenTracks.Clear(); state.Persist(); }
             }
             Event e = Event.current;
+            bool released = e.rawType == EventType.MouseUp;
             if (e.type == EventType.KeyDown && e.keyCode == KeyCode.Escape && IsDragging) { Cancel(); e.Use(); }
+            if (keyboardFocus && !EditorGUIUtility.editingTextField && GUIUtility.keyboardControl == 0 && e.type == EventType.KeyDown && !IsDragging)
+            {
+                if ((e.control || e.command) && e.keyCode == KeyCode.C) { try { SkillTimelineBatch.Copy(owner, selection); Report(null); } catch (Exception ex) { Report(ex.Message); } e.Use(); }
+                else if ((e.control || e.command) && e.keyCode == KeyCode.V) { Paste(owner, select); e.Use(); }
+                else if (e.keyCode == KeyCode.Delete || e.keyCode == KeyCode.Backspace) { Report(SkillTimelineBatch.Delete(owner, catalog, selection.ToArray())); if (LastError == null) { selection.Clear(); select(""); } e.Use(); }
+            }
             var items = SkillTimelineAdapters.Items(owner).ToArray();
+            bounds.Clear();
             int duration = SkillTimelineAdapters.Duration(owner);
             float width = (float)Math.Max(650, Header + ((double)Math.Max(duration, items.Select(i => i.end).DefaultIfEmpty(0).Max()) + 8) * state.pixelsPerFrame);
             state.timelineScroll = EditorGUILayout.BeginScrollView(state.timelineScroll);
@@ -55,32 +108,65 @@ namespace SkillConfig.Editor
             DrawTrack(owner, SkillTimelineAdapters.AnimationTrack, "Animation（唯一）", items, width, selected, select);
             foreach (var group in owner.skill.tracks.Where(t => t != null).OrderBy(t => t.displayOrder).GroupBy(t => t.group ?? ""))
             {
-                if (group.Key.Length > 0) GUILayout.Label(group.Key, EditorStyles.boldLabel);
+                string groupKey = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(owner)) + ":group:" + group.Key;
+                if (group.Key.Length > 0)
+                {
+                    bool open = !state.collapsed.Contains(groupKey);
+                    bool next = EditorGUILayout.Foldout(open, group.Key, true);
+                    if (next != open) { if (next) state.collapsed.Remove(groupKey); else state.collapsed.Add(groupKey); state.Persist(); }
+                    if (!next) continue;
+                }
                 foreach (var track in group) DrawTrack(owner, track.id, track.name, items, width, selected, select);
             }
             // Invalid/deleted track references remain visible and recoverable, not silently hidden.
             foreach (var orphan in items.Where(i => i.trackId != SkillTimelineAdapters.AnimationTrack && !owner.skill.tracks.Any(t => t.id == i.trackId)).GroupBy(i => i.trackId))
                 DrawTrack(owner, orphan.Key, "Missing track", items, width, selected, select);
+            if (marquee)
+            {
+                var rect = Rect.MinMaxRect(Math.Min(marqueeStart.x, e.mousePosition.x), Math.Min(marqueeStart.y, e.mousePosition.y), Math.Max(marqueeStart.x, e.mousePosition.x), Math.Max(marqueeStart.y, e.mousePosition.y));
+                if (e.type == EventType.MouseDrag || released)
+                { selection.Clear(); if (additive) selection.UnionWith(marqueeBase); selection.UnionWith(bounds.Where(b => rect.Overlaps(b.Value)).Select(b => b.Key)); select(selection.FirstOrDefault() ?? ""); }
+                EditorGUI.DrawRect(rect, new Color(.2f, .6f, 1, .2f));
+                if (released) { Cancel(); e.Use(); } else if (e.type == EventType.MouseDrag) e.Use();
+            }
             GUILayout.EndVertical(); EditorGUILayout.EndScrollView();
-            if (IsDragging && e.rawType == EventType.MouseUp)
+            if (dragging != null && released)
             {
                 var current = SkillTimelineAdapters.Find(dragOwner, dragging.id);
                 if (current != null && current.start == dragging.start && current.end == dragging.end && (dragStart != current.start || dragEnd != current.end))
-                    SkillEditCommands.SetRange(dragOwner, dragging.id, dragStart, dragEnd);
+                {
+                    if (dragMode == 0) Report(SkillTimelineBatch.Move(dragOwner, catalog, selection.ToArray(), moveDelta));
+                    else SkillEditCommands.SetRange(dragOwner, dragging.id, dragStart, dragEnd);
+                }
                 Cancel(); e.Use();
             }
-            EditorGUILayout.LabelField("当前帧 " + Cursor + " / " + duration + " · 选中条目编辑参数；拖两端裁剪，Escape 取消。", EditorStyles.miniLabel);
+            EditorGUILayout.LabelField("当前帧 " + Cursor + " / " + duration + " · 选中 " + selection.Count + " · Ctrl/Shift 多选，空白框选；Ctrl+C/V、Delete；Escape 取消。", EditorStyles.miniLabel);
+            if (!string.IsNullOrEmpty(LastError)) EditorGUILayout.HelpBox(LastError, MessageType.Error);
         }
         void DrawTrack(ComboData owner, string track, string title, SkillTimelineItem[] all, float width, string selected, Action<string> select)
         {
             var state = SkillEditorWorkspaceState.instance; float scale = state.pixelsPerFrame;
             string foldKey = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(owner)) + ":" + track;
+            if (state.hiddenTracks.Contains(foldKey)) return;
             bool collapsed = state.collapsed.Contains(foldKey);
             var items = all.Where(i => i.trackId == track).ToArray();
             Rect row = GUILayoutUtility.GetRect(width, Row * (collapsed ? 1 : Math.Max(1, items.Length + 1)));
             EditorGUI.DrawRect(row, new Color(.19f, .19f, .19f));
             bool open = EditorGUI.Foldout(new Rect(3, row.y, 17, Row), !collapsed, GUIContent.none);
-            if (open == collapsed) { if (open) state.collapsed.Remove(foldKey); else state.collapsed.Add(foldKey); }
+            if (open == collapsed) { if (open) state.collapsed.Remove(foldKey); else state.collapsed.Add(foldKey); state.Persist(); }
+            if (Event.current.type == EventType.ContextClick && new Rect(0, row.y, Header, Row).Contains(Event.current.mousePosition))
+            {
+                var menu = new GenericMenu();
+                menu.AddItem(new GUIContent("隐藏（显示全部轨道可恢复）"), false, () => { state.hiddenTracks.Add(foldKey); state.Persist(); });
+                if (track != SkillTimelineAdapters.AnimationTrack)
+                {
+                    menu.AddItem(new GUIContent("属性 / 重命名 / 分组"), false, () => select("track:" + track));
+                    foreach (int direction in new[] { -1, 1 }) { int offset = direction; menu.AddItem(new GUIContent(direction < 0 ? "上移" : "下移"), false, () => {
+                        Report(SkillTimelineBatch.ReorderTrack(owner, catalog, track, offset));
+                    }); }
+                }
+                menu.ShowAsContext(); Event.current.Use();
+            }
             if (GUI.Button(new Rect(22, row.y, Header - 50, Row), title ?? "Track", EditorStyles.label)) select(track == SkillTimelineAdapters.AnimationTrack ? "" : "track:" + track);
             if (GUI.Button(new Rect(Header - 27, row.y, 25, Row), "+"))
             {
@@ -94,9 +180,11 @@ namespace SkillConfig.Editor
             for (int n = 0; n < items.Length; n++)
             {
                 var item = items[n]; bool active = dragging != null && dragging.id == item.id;
-                int start = active ? dragStart : item.start, end = active ? dragEnd : item.end;
+                bool bulk = dragging != null && dragMode == 0 && selection.Contains(item.id);
+                int start = bulk ? item.start + moveDelta : active ? dragStart : item.start, end = bulk ? item.end + moveDelta : active ? dragEnd : item.end;
                 Rect box = new Rect(Header + start * scale, row.y + (n + 1) * Row, Math.Max(8, (end - start) * scale), Row - 3);
-                var color = SkillTimelineAdapters.OutOfRange(item, duration) ? new Color(.65f, .2f, .2f) : selected == item.id ? new Color(.22f, .55f, .7f) : new Color(.27f, .36f, .45f);
+                bounds[item.id] = box;
+                var color = SkillTimelineAdapters.OutOfRange(item, duration) ? new Color(.65f, .2f, .2f) : selection.Contains(item.id) ? new Color(.22f, .55f, .7f) : new Color(.27f, .36f, .45f);
                 EditorGUI.DrawRect(box, color);
                 GUI.Label(box, (item.point ? "◆ " : "") + item.label + (item.tail ? " · tail" : ""), EditorStyles.whiteMiniLabel);
                 if (!item.point) { EditorGUI.DrawRect(new Rect(box.x, box.y, 3, box.height), Color.gray); EditorGUI.DrawRect(new Rect(box.xMax - 3, box.y, 3, box.height), Color.gray); }
@@ -105,16 +193,30 @@ namespace SkillConfig.Editor
                 {
                     string id = item.id; var menu = new GenericMenu();
                     menu.AddItem(new GUIContent("选中"), false, () => select(id));
-                    menu.AddItem(new GUIContent("删除"), false, () => { SkillEditCommands.DeleteItem(owner, id); select(""); }); menu.ShowAsContext(); e.Use();
+                    menu.AddItem(new GUIContent("复制所选"), false, () => { try { SkillTimelineBatch.Copy(owner, selection.Contains(id) ? selection : new[] { id }); } catch (Exception ex) { Report(ex.Message); } });
+                    menu.AddItem(new GUIContent("粘贴到指针"), false, () => Paste(owner, select));
+                    menu.AddItem(new GUIContent("删除所选"), false, () => { Report(SkillTimelineBatch.Delete(owner, catalog, selection.Contains(id) ? selection.ToArray() : new[] { id })); if (LastError == null) { selection.Clear(); select(""); } }); menu.ShowAsContext(); e.Use();
                 }
                 if (e.type == EventType.MouseDown && e.button == 0 && box.Contains(e.mousePosition))
                 {
-                    select(item.id);
+                    keyboardFocus = true; GUIUtility.keyboardControl = 0;
+                    if (e.control || e.command) { if (!selection.Add(item.id)) selection.Remove(item.id); anchor = item.id; select(selection.Contains(item.id) ? item.id : selection.FirstOrDefault() ?? ""); e.Use(); continue; }
+                    if (e.shift && anchor != null)
+                    {
+                        var ordered = VisibleItems(owner, all).ToArray();
+                        int a = Array.FindIndex(ordered, i => i.id == anchor), b = Array.FindIndex(ordered, i => i.id == item.id);
+                        if (a >= 0 && b >= 0) { selection.Clear(); selection.UnionWith(ordered.Skip(Math.Min(a,b)).Take(Math.Abs(a-b)+1).Select(i => i.id)); }
+                        else { selection.Clear(); selection.Add(item.id); }
+                    }
+                    else if (!selection.Contains(item.id)) { selection.Clear(); selection.Add(item.id); }
+                    anchor = item.id; select(item.id);
                     dragMode = item.point ? 0 : e.mousePosition.x < box.x + 6 ? -1 : e.mousePosition.x > box.xMax - 6 ? 1 : 0;
+                    if (selection.Count > 1) dragMode = 0;
                     // Animation order/position is contiguous; its body selects, edges trim source time.
-                    if (!item.animation || dragMode != 0)
+                    if (!item.animation || dragMode != 0 || selection.Count > 1)
                     {
                         dragging = item; dragOwner = owner; dragStart = item.start; dragEnd = item.end; mouseStart = e.mousePosition.x;
+                        moveDelta = 0;
                         SkillEditCommands.BeginGesture();
                         control = GUIUtility.GetControlID(FocusType.Passive); GUIUtility.hotControl = control;
                     }
@@ -123,11 +225,16 @@ namespace SkillConfig.Editor
                 if (active && e.type == EventType.MouseDrag)
                 {
                     int delta = Mathf.RoundToInt((e.mousePosition.x - mouseStart) / scale);
-                    if (dragMode == 0) { delta = Math.Max(-item.start, delta); dragStart = item.start + delta; dragEnd = item.end + delta; }
+                    if (dragMode == 0) { int minimum = all.Where(i => selection.Contains(i.id)).Min(i => i.start); delta = Math.Max(-minimum, delta); moveDelta = delta; dragStart = item.start + delta; dragEnd = item.end + delta; }
                     else if (dragMode < 0) dragStart = Math.Max(0, Math.Min(item.end - 1, item.start + delta));
                     else dragEnd = Math.Max(item.start + 1, item.end + delta);
                     e.Use();
                 }
+            }
+            if (!IsDragging && Event.current.type == EventType.MouseDown && Event.current.button == 0 && row.Contains(Event.current.mousePosition) && Event.current.mousePosition.x >= Header)
+            {
+                keyboardFocus = true; GUIUtility.keyboardControl = 0; marquee = true; marqueeStart = Event.current.mousePosition; additive = Event.current.control || Event.current.command; marqueeBase = new HashSet<string>(selection);
+                control = GUIUtility.GetControlID(FocusType.Passive); GUIUtility.hotControl = control; Event.current.Use();
             }
         }
     }

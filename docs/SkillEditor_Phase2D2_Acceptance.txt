@@ -1,0 +1,147 @@
+Phase 2D-2 连招 Graph：实现与验收报告
+日期：2026-10-10；范围仅 2D-2。未进入 2D-3 或 Phase 3。
+
+一、Phase 2D-1 状态复核
+
+已读取 docs/SkillEditor_Phase2D1_Results.txt 与验收文档。原记录：Unity 2022.3.62f2c1 隔离 Edit Mode executeMethod 数据37、GUI10、重开4；Phase1 25+57、2B35+重开4、2C120；独立.NET56。
+这些是此前实际执行的自动化证据，不是本轮新测，也不等价于完整对战回归。
+用户本轮确认：多选、批量拖动、复制粘贴、Undo/Redo 基本达到预期。没有据此把全部人工条目标为通过。
+保留待办：正式项目完整UI矩阵、跨技能所有资源覆盖、重启后的完整工作流、正式对战Play回归；2C的来源元数据、精确Root Motion时间重映射和所有角色覆盖继续保留。
+2D-1限制：非连续动画复制可能违反连续主轨约束，整体拒绝；剪贴板仅编辑器会话内有效；跨角色资源不自动迁移。未发现新的数据丢失、Undo损坏、重复ID生成或跨技能引用损坏证据。本轮最新回归结果见 Results 文件。
+
+二、旧连招系统：代码和真实数据依据
+
+1. Assets/Scripts/ScriptableObjectVO/ComboData/ComboContainerData.cs
+   comboDatas 为有序 ComboData 引用列表；Init 缓存第0段；GetComboName 等按索引读取。
+   SwitchDodgeATK 只用 DodgeATKData 替换第0段；ResetComboDatas 恢复缓存首段。
+   SwitchBackDodgeATK 同样可替换第0段，但全 Assets/Scripts 搜索只有声明，没有调用。
+   BackDodgeATKData 不代表当前战斗已接入的后闪专用分支。Graph只读显示该字段引用和明确诊断。
+
+2. Assets/Scripts/Game/Fsm/Player/State Machine/Combo/CharacterComboBase.cs
+   构造函数 CloneCombo 复制 lightCombo/heavyCombo 和列表，每角色运行时操作自己的副本，Init 缓存首段。
+   TryGetAttackIndex：非闪避、同一容器且canLink=true时使用comboIndex；否则索引0。
+   PlayNetworkAttack：消费发送端选定的索引，不用接收端动画时间重新选择；闪避替换0，否则恢复普通首段。
+   UpdateComboAnimation：currentIndex赋值 → ATK状态 → CrossFadeInFixedTime(comboName,0.111f,0,0) → 对应旧RootMotion → UpdateComboInfo。
+   UpdateComboInfo 索引加1，超过最后段回0。因此图显示顺序边及条件性的末段回0，不表示自动连播或无条件状态转场。
+   CanInput / CanATK / DisConnectCombo 修改原输入、攻击和续连标志。
+
+3. Assets/Scripts/Game/Fsm/Player/PlayerActionController.cs
+   Prepare(rop1/rop6) 检查 CanBaseComboInput；轻攻击且 IsDodgeOrSprint 才设 dodge。
+   TryGetAttackIndex 选定索引编码进 payload；canATK决定Ready或Wait。
+   Execute 使用 payload 的索引和dodge调用 PlayNetworkAttack。
+   重攻击、技能和终结技能走原有独立入口，Graph不把它们改造成任意分支。
+
+4. Assets/Scripts/Game/Fsm/Player/State Machine/Movement/PlayerMovementStateMachine.cs
+   IsDodgeOrSprint 同时包括 dashingState、dashBackingState、sprintingState。
+   因此前闪、后闪和疾跑期间的轻攻击当前都经过 DodgeATKData，而不是后闪自动使用 BackDodgeATKData。
+
+5. Assets/Scripts/Game/Fsm/Player/Player.cs
+   PrepareNetworkAction / ApplyNetworkAction 连接网络动作控制器。
+   EnablePreInput、CancelAttackColdTime、DisableLinkCombo 等 AnimationEvent 仅在有效攻击状态转发。
+   Assets/Scripts/Game/Fsm/Player/State Machine/Combo/States/ComboStates/PlayerATKIngState.cs
+   对应事件转发到 CharacterComboBase；Update检查动画攻击状态结束；StartMotion/Exit管理旧位移。
+   Assets/Scripts/Game/Fsm/Player/State Machine/OnAnimationTranslation.cs 保留原状态回调。
+   Graph不创建Animator Transition，不编辑AnimationEvent，也不认为每段必须自然播放到结束才能接下一段。
+
+6. Assets/Scripts/Game/Input/PlayerNetworkInput.cs 与 Assets/Scripts/FrameSync/Battle/PlayerActionQueue.cs
+   本地输入捕获 → PlayerActionBuffer.TryPrepareHead → Prepare选定payload；Wait缓存已选择段，待canATK允许发送。
+   闪避清除尚未发送的攻击预输入。后续可靠队列与服务端回显保持原状。
+   Graph没有接触这些代码、网络协议或帧调度。
+
+7. 真实星见雅配置
+   Assets/ScriptableObject/PlayerInfo/PlayerInfo（星见雅）.asset 的 lightCombo 引用
+   Assets/ScriptableObject/ComboContainerData/星见雅基础连招.asset（GUID 6c9a63af5c7aae746b82775a2f40a128）；heavyCombo为空。
+   列表为 Unagi_Normal_1 → 2 → 3 → 4 → 5 → 6，DodgeATKData=Unagi_Rush_ATK，BackDodgeATKData为空。
+   对应资产位于 Assets/ScriptableObject/ComboData/星见雅/；AnimatorController为 Assets/Art/AnimatorController/星见雅.controller。
+   Normal1/2显示 miyabi-normal-1 / miyabi-normal-2；其余旧技能显示 Legacy，不写入迁移字段。
+   SkillID是显示身份，节点身份和正式连招引用仍是原 ComboData 对象/GUID，名称不是查找键。
+
+允许编辑的关系：重排现有普通段；移除普通段后前后自动相接（至少一段）；替换已接入的Dodge入口。
+不支持的关系：任意条件边、跳转规则、新运行时分支、BackDodge接入。删除中间段是改变整个列表，不是为玩家增加动态跳段能力。
+为避免旧 SwitchDodgeATK 的空引用报错，已配置的Dodge入口不能直接清空，只能替换。原本为空的容器显示Warning，可补配置。
+
+三、实现方式与安全
+
+SkillComboGraphDraft 是编辑器内存事务，不是可序列化的第二份战斗配置。它只记录编辑基线、待应用列表和Dodge引用。
+Apply前检查：持久化资产、非空列表、缺失引用、重复普通节点、非空动画入口、已登记节点的空/重复SkillID、删除Dodge、外部修改冲突、Play Mode。
+完整差异包含原资产路径、修改前后列表、闪避引用、Legacy涉及情况、起手与索引影响；用户明确点击“应用到原资产”才写入。
+使用 SkillEditCommands.Apply，在实际修改之前 RegisterCompleteObjectUndo；一次写入列表和Dodge，一次Undo/Redo；Flush保存原容器。
+基线冲突时禁止覆盖，必须取消草稿/重载。取消、关窗、脚本重载和进入Play会丢弃未应用草稿；资产不受影响。
+BackDodgeATKData不写，ComboData.skill不写，Animator/网络/RootMotion/战斗执行代码不写。
+GraphLayout/GraphNode 仅保存在 Library/SkillEditor/Workspace.asset，按容器GUID、节点资产GUID索引，包含位置、缩放、平移。
+布局待保存、关系草稿未应用/容器已保存、技能JSON待导出分别显示。保存布局或应用Graph不会自动导出JSON。
+Phase1 DTO/Schema不含连招边；Graph明确提示关系不在技能JSON中。实际测试比较Graph应用前后Phase1 DTO不变。
+Graph嵌在原SkillEditorWindow，通过页面工具栏切换；树和Graph共享owner；双击对应Timeline。
+Legacy节点可选、定位原资产和查看，但不自动创建技能配置；进入Timeline显示未登记提示。
+节点右键或普通连线右键启动重接，随后点击目标节点；它等价于列表重排。线条不代表新的条件分支。
+
+四、本批新增与修改文件
+
+新增（C#均配套.meta）：
+- Assets/Editor/SkillEditor/SkillComboGraphDraft.cs
+- Assets/Editor/SkillEditor/SkillComboGraphView.cs
+- Assets/Editor/SkillEditor/Tests/SkillComboGraphChecks.cs
+- Assets/Editor/SkillEditor/Tests/SkillGraphInteractionChecks.cs
+- Tests/SkillEditor/PrepareGraphHarness.ps1
+- docs/SkillEditor_Phase2D2_Acceptance.txt
+- docs/SkillEditor_Phase2D2_Results.txt
+
+修改：
+- Assets/Editor/SkillEditor/SkillEditorWindow.cs：Timeline/Graph切换、共享选择、布局保存、生命周期。
+- Assets/Editor/SkillEditor/SkillEditorWorkspaceState.cs：Library内Graph布局数据。
+- Tests/SkillEditor/RunPhase2CChecks.ps1
+- Tests/SkillEditor/RunUnityChecks.ps1
+  两个测试执行器调用PrepareGraphHarness，复制真实容器和角色引用到隔离工程。未改正式ComboContainerData代码。
+
+已有2C目录重命名、2D-1修改、Normal1/Normal2及角色JSON差异保留，不算本批改动。本批没有应用任何正式连招关系变更。
+
+五、测试结果和限制
+
+实际执行结果、日志路径、日志Hash及Git摘要见 SkillEditor_Phase2D2_Results.txt。
+Unity检查是在 Temp/SkillEditorPhase2C 的隔离工程、Unity 2022.3.62f2c1、Edit Mode -executeMethod执行，非NUnit报告。
+实际使用了Unity资产数据库、Undo、保存重开和真实IMGUI事件；不把它们说成完整人工验收。
+隔离工程的Unity.VisualScripting命名空间及DeLogger日志包装为编译占位；真实ComboContainerData源码保持原样。没有执行正式玩家/网络/战斗链。
+未自动操作应用确认弹窗和右键菜单的人工完整路径；这些须按下面步骤确认。
+未执行正式双端Play对战、全角色资源、真实Animator衔接手感、脚本重载期间完整人工工作流。
+
+六、Unity逐项人工验收
+
+1. 打开 Tools/Skill Editor/Skill Editor，切换“连招 Graph”。核对所选容器为星见雅基础连招，六个普通节点及Rush节点，Normal1/2显示SkillID，其余Legacy。
+2. 核对青色普通顺序、灰色条件回0、黄色闪避替换0和接第1段；Back明确无调用，不应当作生效分支。
+3. 单击节点检查选中，双击Normal1/2进入对应Timeline；从技能树选Normal2，再回Graph应定位它。Legacy双击不得登记新技能。
+4. 拖动节点、滚轮缩放、中键平移，保存布局，关闭窗口和重启Unity后复查。正式容器文件与JSON不应因此变化。
+5. 推荐先复制一份容器作为测试资产，在Graph的ObjectField选择它。节点右键前移/后移；或右键节点/青色边选择重接，然后点目标。检查只产生关系草稿、原容器不变。
+6. 点击预览变更，逐项核对路径、之前/之后、Dodge、Legacy、入口影响。选择取消，原资产不变，草稿可继续编辑；再“取消草稿/重载”彻底放弃。
+7. 重做修改并明确应用：Inspector里容器引用正确；一次Undo/Redo恢复整个批次。保存后关闭窗口、重启Unity验证。
+8. ObjectField替换Dodge为有效技能，或“闪避入口连线”点节点；必须经确认才写入。清空已有Dodge、删除最后普通段、空引用、重复ID应被拒绝。
+9. 草稿未应用时用普通Inspector修改容器或Undo外部变化，Graph必须提示冲突且不能覆盖。取消/重载后才能继续。
+10. 验证Graph应用前后技能JSON待导出状态按技能自身数据决定，不能把Graph关系标成已导出；点击Export仍使用原Phase1功能。
+11. 回归Timeline多选、批量移动、Ctrl+C/V、跨技能HitGroup、Delete、文本输入保护、Undo/Redo；回归Scene预览Seek、Shapes、RootMotion与关闭清理。
+
+七、旧连招Play模式回归方案（尚未执行，需用户人工确认）
+
+准备：保存现有资产的Git差异/备份；测试Graph用副本。正式基础连招保持本轮开始时的六段顺序和Rush引用；取消所有草稿。按项目原有方式启动1v1双端，不在运行中应用Graph。
+A. 原角色进入游戏，无新增MissingReference/NullReference/技能调用异常。
+B. 静止按普攻，确认Normal1；在原预输入窗口连续按，检查[ComboTrace] PREPARE/SEND_QUEUED/RECEIVE/PLAY_REQUEST索引0→1，Animator播放Normal1→Normal2。双端次序一致，无额外跳段；位移、伤害及手感与基线比较。
+C. 过早、窗口内、断连窗口后分别按普攻：过早丢弃/缓存和重起首段须与原行为一致；不能因Graph显示边就无条件续连。连续多次验证2→3→…→6及回0，失败保留完整日志。
+D. 有移动输入前闪后在闪避状态按轻攻击：dodge=true,index=0，PLAY_REQUEST为Unagi_Rush_ATK；合法续按后接普通索引1，即Normal2。
+E. 无移动输入后闪时重复测试；当前代码也应走DodgeATKData=Rush，而不是不存在的BackDodge配置。记录实际状态与日志，不凭动作方向猜测。
+F. 疾跑状态轻攻击重复D；普通移动/静止起手仍应为Normal1。闪避取消未发送的普攻预输入行为保持原状。
+G. 停止Play，确认正式ComboContainerData、AnimatorController、ComboData及JSON未被运行时副本替换污染。
+H. 完成后再验收“原行为不变”。本轮EditMode的容器替换/恢复测试仅支持其中的数据结论，不能当作A~G通过。
+
+八、已知限制与回退
+
+- 不支持任意分支；BackDodge无实际调用，保持只读。若需要启用，须另行批准运行时工作，不能在2D-2补接。
+- 不添加全新普通技能到序列，本批聚焦现有段重排/移除和Dodge替换；被移除草稿可取消恢复，已应用可Undo或通过原容器Inspector维护。
+- 普通列表同资产重复出现可查看索引，但本版禁止应用有歧义的重复节点配置。
+- Graph检查引用/身份/结构，不证明新顺序的动画手感或某任意新Dodge技能与角色Animator兼容。替换入口需人工确认原comboName在角色Controller存在，Graph不自动改Controller。
+- 布局本机Library保存，不导出、不参与运行时；不承诺跨机器同步。未应用关系草稿不跨重载保存。
+- 默认容器仅按已保存选择或目录技能引用交集查找，并非新增角色到容器的运行时绑定。顶部始终显示真实目标，其他角色可显式选择。
+- 2C/2D-1未完成的正式战斗与完整人工矩阵仍为待办；未静默关闭。
+
+回退：先退出预览/关闭窗口；只撤销本批Window/Workspace中Graph相关增量及执行器的PrepareGraphHarness调用，移除本批四个C#及.meta和新辅助脚本。保留2C/2D-1已有改动。
+本批未改正式容器内容，无资产迁移；若用户之后已明确应用关系编辑，应单独Undo或从自己的备份恢复该容器，不要整体reset仓库。
+JSON Schema、Animator、RootMotion、网络和战斗脚本均无需回退。本批未提交Git。
+
+交付后停止，等待2D-2验收，不自动进入2D-3。

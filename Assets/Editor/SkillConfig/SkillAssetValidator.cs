@@ -44,6 +44,17 @@ namespace SkillConfig.Editor
             return motion is BlendTree tree && tree.children.Any(c => ContainsClip(c.motion, clip));
         }
         public static SkillConfigDto Build(CharacterSkillCatalog catalog, out List<Diagnostic> issues)
+            => BuildCore(catalog, out issues, null, null);
+        // Validate a proposed replacement without treating its original asset/catalog as competitors.
+        // All unrelated global identities and ownership constraints are still checked.
+        public static SkillConfigDto BuildDraft(CharacterSkillCatalog catalog, ComboData original, ComboData replacement, out List<Diagnostic> issues)
+        {
+            if (!catalog || !original || !replacement || !catalog.skills.Contains(original)) throw new ArgumentException("Invalid draft owner");
+            var context = UnityEngine.Object.Instantiate(catalog);
+            try { context.skills = catalog.skills.Select(s => s == original ? replacement : s).ToList(); return BuildCore(context, out issues, catalog, original); }
+            finally { UnityEngine.Object.DestroyImmediate(context); }
+        }
+        static SkillConfigDto BuildCore(CharacterSkillCatalog catalog, out List<Diagnostic> issues, CharacterSkillCatalog originalCatalog, ComboData originalSkill)
         {
             issues = new List<Diagnostic>();
             var dto = new SkillConfigDto { schemaVersion = 1, logicFrameIntervalMs = 33, precision = 10000 };
@@ -110,14 +121,14 @@ namespace SkillConfig.Editor
             foreach (string guid in AssetDatabase.FindAssets("t:ComboData"))
             {
                 var other = AssetDatabase.LoadAssetAtPath<ComboData>(AssetDatabase.GUIDToAssetPath(guid));
-                if (other == null || other.skill == null || !other.skill.registered || catalog.skills.Contains(other)) continue;
+                if (other == null || other == originalSkill || other.skill == null || !other.skill.registered || catalog.skills.Contains(other)) continue;
                 if (dto.skills.Any(s => s.skillId == other.skill.skillId)) issues.Add(new Diagnostic(DiagnosticSeverity.Error, "GLOBAL_SKILL_ID", other.name, "Another registered ComboData has this SkillID."));
             }
             foreach (string guid in AssetDatabase.FindAssets("t:CharacterSkillCatalog"))
             {
                 var other = AssetDatabase.LoadAssetAtPath<CharacterSkillCatalog>(AssetDatabase.GUIDToAssetPath(guid));
-                if (other == null || other == catalog) continue;
-                if (string.Equals(other.characterId, catalog.characterId, StringComparison.OrdinalIgnoreCase) || (other.skills != null && other.skills.Any(s => s != null && catalog.skills.Contains(s))))
+                if (other == null || other == catalog || other == originalCatalog) continue;
+                if (string.Equals(other.characterId, catalog.characterId, StringComparison.OrdinalIgnoreCase) || (other.skills != null && other.skills.Any(s => s != null && (catalog.skills.Contains(s) || s == originalSkill))))
                     issues.Add(new Diagnostic(DiagnosticSeverity.Error, "CATALOG_OWNERSHIP", other.name, "Duplicate CharacterID or skill owned by another catalog."));
             }
             dto.sourceFingerprint = RootMotionBindingValidator.Hash(fingerprint.ToString());

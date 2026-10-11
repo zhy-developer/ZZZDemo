@@ -1,0 +1,422 @@
+Phase 2D-1 execution evidence — 2026-10-10
+Unity 2022.3.62f2c1; isolated Edit Mode executeMethod assertions, not NUnit/Test Runner.
+Harness: Temp/SkillEditorPhase2C and Temp/SkillEditorPhase2B.
+No formal-project Play Mode/manual regression is claimed.
+
+Latest scoped runs:
+2D1 data: 37 assertions; GUI: 10 (two tracks); fresh-process reopen: 4.
+Phase1: 25 + 57; Phase2B: 35 + 4 reopen; Phase2C: 120.
+Standalone .NET: 56, does not replace Unity or combat regression.
+
+Final read-only review: no additional high-confidence atomicity/identity/reference/Undo issue.
+Animation paste limitation: preserve relative offsets; incompatible noncontiguous/mixed selections
+are rejected by ANIMATION_CONTIGUITY. Do not pack animations and silently alter event timing.
+
+Earlier failures resolved: draft identity falsely detected itself; isolated catalog fixture missing;
+old 2B fixture assumed one HitBox; Temp expected-ID file was removed by Unity on exit.
+Latest logs below are final reruns, not those early failed attempts.
+
+Pending manual checks, rollback, complete changed-file inventory:
+docs/SkillEditor_Phase2D1_Acceptance.md
+Phase2C carry-forward backlog:
+docs/SkillEditor_Phase2C_Checkpoint_20261010.md
+
+Evidence lines and final log SHA256:
+
+Logs/SkillEditor-Phase2C-Phase2D1.log
+PASS lines: 37
+FAIL/compiler-error lines: 0
+841DDB9D700751EAA6D86E303C851146BF83269F23683984398E2208AA70CC14
+PHASE2D1_PASS operation validates: 
+PHASE2D1_PASS relative timing preserved
+PHASE2D1_PASS single Undo restores whole batch
+PHASE2D1_PASS single Redo restores whole batch
+PHASE2D1_PASS negative batch rejected atomically
+PHASE2D1_PASS out of duration rejected atomically
+PHASE2D1_PASS operation validates: 
+PHASE2D1_PASS paste generates distinct IDs and relative times
+PHASE2D1_PASS operation validates: 
+PHASE2D1_PASS batch delete
+PHASE2D1_PASS operation validates: 
+PHASE2D1_PASS same skill keeps existing HitGroup
+PHASE2D1_PASS missing equivalent group rejects without mutation
+PHASE2D1_PASS operation validates: 
+PHASE2D1_PASS cross skill copies valid shared group
+PHASE2D1_PASS operation validates: 
+PHASE2D1_PASS equivalent group reused only on request
+PHASE2D1_PASS source asset untouched by cross paste
+PHASE2D1_PASS missing required resource rejects mixed paste atomically
+PHASE2D1_PASS operation validates: 
+PHASE2D1_PASS mixed typed event/window/VFX copy preserves payload and legal AutoComplete tail
+PHASE2D1_PASS operation validates: 
+PHASE2D1_PASS operation validates: 
+PHASE2D1_PASS SFX payload and duration survive copy
+PHASE2D1_PASS operation validates: 
+PHASE2D1_PASS operation validates: 
+PHASE2D1_PASS display order never sorts events or changes execution order
+PHASE2D1_PASS operation validates: 
+PHASE2D1_PASS cross animation preserves original motion binding
+PHASE2D1_PASS animation gap rejected; other events untouched
+PHASE2D1_PASS saved item ID stable after import
+PHASE2D1_PASS Warnings allow JSON export
+PHASE2D1_PASS operation validates: 
+PHASE2D1_PASS persistent owner identity preserved; changed batch marks stale without exporting
+PHASE2D1_PASS Undo restores export consistency
+PHASE2D1_PASS draft validation still rejects unrelated duplicate global SkillID
+PHASE2D1_PASS rejected batch never overwrites existing JSON
+
+Logs/SkillEditor-Phase2C-Phase2D1Interaction.log
+PASS lines: 10
+FAIL/compiler-error lines: 0
+EBC66C279CC78E75CA875DE19EDDD529225DB18452DDDFD93EC0A427572BFC82
+PHASE2D1_GUI_PASS mouse can select a Timeline item
+PHASE2D1_GUI_PASS Ctrl click selects multiple items
+PHASE2D1_GUI_PASS batch drag remains temporary before MouseUp
+PHASE2D1_GUI_PASS mouse drag commits both relative intervals: 
+PHASE2D1_GUI_PASS Ctrl C/V pastes batch at cursor
+PHASE2D1_GUI_PASS Delete ignored while text editor active
+PHASE2D1_GUI_PASS Delete removes selected batch
+PHASE2D1_GUI_PASS Shift selects continuous range
+PHASE2D1_GUI_PASS rectangle selects both rows
+PHASE2D1_GUI_PASS Escape cancels batch drag
+
+Logs/SkillEditor-Phase2C-Phase2D1Reopen.log
+PASS lines: 4
+FAIL/compiler-error lines: 0
+3EBC2D644A1A7AC72D5AF792E8E92BD4B8C2E98B2792383C1D16CB21229B8D78
+PHASE2D1_PASS fresh Unity process reopens batch data
+PHASE2D1_PASS saved HitGroup references valid
+PHASE2D1_PASS stable IDs identical after fresh process
+PHASE2D1_PASS group and Library visibility/fold state persist across restart
+
+Logs/SkillEditor-Phase2B-Phase2D1Regression.log
+PASS lines: 117
+FAIL/compiler-error lines: 0
+B498D7EE4563B741EFB7A559079D931F84C8305B3509DC876F19CBA994DD2927
+PHASE2B_PASS tail still requires a positive interval
+PHASE2B_PASS command applies edit
+PHASE2B_PASS Undo restores before mutation
+PHASE2B_PASS Redo restores edit
+PHASE2B_PASS create HitBox
+PHASE2B_PASS delete Undo HitBox
+PHASE2B_PASS create Invincibility
+PHASE2B_PASS delete Undo Invincibility
+PHASE2B_PASS create Interrupt
+PHASE2B_PASS delete Undo Interrupt
+PHASE2B_PASS create Event
+PHASE2B_PASS delete Undo Event
+PHASE2B_PASS create Vfx
+PHASE2B_PASS delete Undo Vfx
+PHASE2B_PASS create Sfx
+PHASE2B_PASS delete Undo Sfx
+PHASE1_PASS pilot real asset validation
+PHASE1_PASS partial catalog guard
+PHASE1_PASS legacy provenance Warning
+PHASE1_PASS Resources load real export
+PHASE1_PASS battle configuration rejected
+PHASE1_PASS IDs survive Unity JsonUtility roundtrip
+PHASE1_PASS fresh export status
+PHASE1_PASS Unity JSON unknown schema rejected
+PHASE1_PASS Unity JSON malformed input rejected
+PHASE1_PASS optional no-motion segment survives Unity serialization
+PHASE1_PASS typed event parameters survive Unity serialization
+PHASE1_PASS missing actual Clip reference rejected
+PHASE1_PASS missing actual Root Motion reference rejected
+PHASE1_PASS legacy damage marks export stale
+PHASE1_PASS float damage int-overflow rejected
+PHASE1_PASS legacy entry marks export stale
+PHASE1_PASS root settings mark export stale
+PHASE1_PASS new authoring fields mark export stale
+PHASE1_PASS case-folded CharacterID export collision rejected
+PHASE1_PASS illegal pilot blocks export
+PHASE1_PASS blocked export preserves old JSON
+PHASE1_PASS real asset duplicate ID rejected
+PHASE1_PASS rename pilot asset
+PHASE1_PASS ID survives rename/save/reimport
+PHASE1_PASS restored pilot exported
+PHASE1_RESULT 25 Unity checks passed. Run VerifyReopen in a NEW Editor process next.
+REVISION_PASS start-equals-end expected Error WINDOW
+REVISION_PASS start-equals-end preserves previous JSON bytes
+REVISION_PASS start-equals-end preserves export GUID/meta
+REVISION_PASS start-after-end expected Error WINDOW
+REVISION_PASS start-after-end preserves previous JSON bytes
+REVISION_PASS start-after-end preserves export GUID/meta
+REVISION_PASS zero-speed expected Error ANIMATION_TIME
+REVISION_PASS zero-speed preserves previous JSON bytes
+REVISION_PASS zero-speed preserves export GUID/meta
+REVISION_PASS duplicate-ID-inside-catalog expected Error SKILL_ID
+REVISION_PASS duplicate-ID-inside-catalog preserves previous JSON bytes
+REVISION_PASS duplicate-ID-inside-catalog preserves export GUID/meta
+REVISION_PASS unknown-HitGroup expected Error GROUP_REF
+REVISION_PASS unknown-HitGroup preserves previous JSON bytes
+REVISION_PASS unknown-HitGroup preserves export GUID/meta
+REVISION_PASS missing-required-motion expected Error ROOT_MISSING
+REVISION_PASS missing-required-motion preserves previous JSON bytes
+REVISION_PASS missing-required-motion preserves export GUID/meta
+REVISION_PASS missing-required-VFX expected Error RESOURCE_REF
+REVISION_PASS missing-required-VFX preserves previous JSON bytes
+REVISION_PASS missing-required-VFX preserves export GUID/meta
+REVISION_PASS invalid-required-resource-asset expected Error RESOURCE_TYPE
+REVISION_PASS invalid-required-resource-asset preserves previous JSON bytes
+REVISION_PASS invalid-required-resource-asset preserves export GUID/meta
+REVISION_PASS real-resource baseline is valid
+REVISION_PASS actual Normal1 full-trim 1x maps to 20 frames
+REVISION_PASS Normal1-20-to-19-resource-specific expected Error ANIMATION_DURATION
+REVISION_PASS Normal1-20-to-19-resource-specific preserves previous JSON bytes
+REVISION_PASS Normal1-20-to-19-resource-specific preserves export GUID/meta
+REVISION_PASS legacy-base-damage baseline fresh
+REVISION_PASS legacy-base-damage marks stale
+REVISION_PASS legacy-base-damage still valid (not stale merely from Error)
+REVISION_PASS legacy-base-damage restored fresh
+REVISION_PASS legacy-entry-full-state-path baseline fresh
+REVISION_PASS legacy-entry-full-state-path marks stale
+REVISION_PASS legacy-entry-full-state-path still valid (not stale merely from Error)
+REVISION_PASS legacy-entry-full-state-path restored fresh
+REVISION_PASS legacy-root-distance baseline fresh
+REVISION_PASS legacy-root-distance marks stale
+REVISION_PASS legacy-root-distance still valid (not stale merely from Error)
+REVISION_PASS legacy-root-distance restored fresh
+REVISION_PASS legacy-root-reference baseline fresh
+REVISION_PASS legacy-root-reference marks stale
+REVISION_PASS legacy-root-reference restored fresh
+REVISION_PASS catalog-reference-list baseline fresh
+REVISION_PASS catalog-reference-list marks stale
+REVISION_PASS catalog-reference-list still valid (not stale merely from Error)
+REVISION_PASS catalog-reference-list restored fresh
+REVISION_PASS new-animation-endpoint baseline fresh
+REVISION_PASS new-animation-endpoint marks stale
+REVISION_PASS new-animation-endpoint restored fresh
+REVISION_PASS registered duplicate outside catalog found by AssetDatabase scan
+REVISION_PASS duplicate-asset-added-to-catalog expected Error SKILL_ID
+REVISION_PASS duplicate-asset-added-to-catalog preserves previous JSON bytes
+REVISION_PASS duplicate-asset-added-to-catalog preserves export GUID/meta
+REVISION_PASS unregistered external asset intentionally outside ID scan
+REVISION_PASS restored catalog and original export remain consistent
+REVISION_RESULT 57 additional actual Unity checks passed; original 25 checks also rerun. Full combat acceptance remains pending.
+PHASE2B_PASS animation contiguous after insert
+PHASE2B_PASS animation insert Undo
+PHASE2B_PASS range edit persists
+PHASE2B_PASS range Undo
+PHASE2B_PASS speed reflows animation only
+PHASE2B_PASS shortening invalidates late event
+PHASE2B_PASS all types valid including AutoComplete and sound tails
+PHASE2B_PASS AutoComplete tail beyond cast is not range error
+PHASE2B_PASS Warning export succeeds
+PHASE2B_PASS export clean
+PHASE2B_PASS Resources loader roundtrip
+PHASE2B_PASS legacy damage stale
+PHASE2B_PASS Undo restores export consistency
+PHASE2B_PASS invalid export preserves old bytes
+PHASE2B_PASS track delete removes owned items
+PHASE2B_PASS track delete Undo restores references
+PHASE2B_PASS group cascade delete
+PHASE2B_PASS group Undo restores references
+PHASE2B_PASS window close keeps authoring values
+
+Logs/SkillEditor-Phase2B-Phase2D1Reopen.log
+PASS lines: 4
+FAIL/compiler-error lines: 0
+8BC6C507569901CA2D5CFF5D75838649651CF2A419FF3A07D199CE1E52538FFD
+PHASE2B_PASS new Unity process stable ID and saved fields
+PHASE2B_PASS all saved list references survive reopen
+PHASE2B_PASS reopen Resources load
+PHASE2B_PASS reopen export consistency
+
+Logs/SkillEditor-Phase2C-Phase2D1PreviewRegression.log
+PASS lines: 120
+FAIL/compiler-error lines: 0
+81C1287DA290031FC20AD131C40B3C52B52E4D61AA98BA9073C40815FC80D3FA
+PHASE2C_PASS visual-only builder exists
+PHASE2C_PASS real Miyabi visual source loaded
+PHASE2C_PASS independent preview Stage opened
+PHASE2C_PASS no managed gameplay components in visual proxy
+PHASE2C_PASS real model meshes are visible components
+PHASE2C_PASS Animator has no controller/events/root motion application
+PHASE2C_PASS visual proxy disposal is idempotent
+PHASE2C_PASS Stage destruction closes preview Scene
+PHASE2C_PASS main Scene and source unchanged
+PHASE2C_PASS stateless animation sampler exists
+PHASE2C_PASS Normal1 repeated random Seek pose identical
+PHASE2C_PASS Normal1 actually animates bones
+PHASE2C_PASS Normal1 correct Clip and source time
+PHASE2C_PASS original Clip untouched
+PHASE2C_PASS Normal2 repeated random Seek pose identical
+PHASE2C_PASS Normal2 actually animates bones
+PHASE2C_PASS Normal2 correct Clip and source time
+PHASE2C_PASS original Clip untouched
+PHASE2C_PASS Trim and PlaybackSpeed map to source time
+PHASE2C_PASS endpoint clamps to trim end
+PHASE2C_PASS temporary animation clones released
+PHASE2C_PASS integer motion preview exists
+PHASE2C_PASS Normal1 identity mapping supported
+PHASE2C_PASS Normal1 exact legacy delta / random prefix at 0
+PHASE2C_PASS Normal1 exact legacy delta / random prefix at 1
+PHASE2C_PASS Normal1 exact legacy delta / random prefix at 2
+PHASE2C_PASS Normal1 exact legacy delta / random prefix at 3
+PHASE2C_PASS Normal1 exact legacy delta / random prefix at 4
+PHASE2C_PASS Normal1 exact legacy delta / random prefix at 5
+PHASE2C_PASS Normal1 exact legacy delta / random prefix at 6
+PHASE2C_PASS Normal1 exact legacy delta / random prefix at 7
+PHASE2C_PASS Normal1 exact legacy delta / random prefix at 8
+PHASE2C_PASS Normal1 exact legacy delta / random prefix at 9
+PHASE2C_PASS Normal1 exact legacy delta / random prefix at 10
+PHASE2C_PASS Normal1 exact legacy delta / random prefix at 11
+PHASE2C_PASS Normal1 exact legacy delta / random prefix at 12
+PHASE2C_PASS Normal1 exact legacy delta / random prefix at 13
+PHASE2C_PASS Normal1 exact legacy delta / random prefix at 14
+PHASE2C_PASS Normal1 exact legacy delta / random prefix at 15
+PHASE2C_PASS Normal1 exact legacy delta / random prefix at 16
+PHASE2C_PASS Normal1 exact legacy delta / random prefix at 17
+PHASE2C_PASS Normal1 exact legacy delta / random prefix at 18
+PHASE2C_PASS Normal1 exact legacy delta / random prefix at 19
+PHASE2C_PASS missing provenance warns
+PHASE2C_PASS valid static tail holds last position
+PHASE2C_PASS unsupported speed mapping disables trajectory
+PHASE2C_PASS Normal2 identity mapping supported
+PHASE2C_PASS Normal2 exact legacy delta / random prefix at 0
+PHASE2C_PASS Normal2 exact legacy delta / random prefix at 1
+PHASE2C_PASS Normal2 exact legacy delta / random prefix at 2
+PHASE2C_PASS Normal2 exact legacy delta / random prefix at 3
+PHASE2C_PASS Normal2 exact legacy delta / random prefix at 4
+PHASE2C_PASS Normal2 exact legacy delta / random prefix at 5
+PHASE2C_PASS Normal2 exact legacy delta / random prefix at 6
+PHASE2C_PASS Normal2 exact legacy delta / random prefix at 7
+PHASE2C_PASS Normal2 exact legacy delta / random prefix at 8
+PHASE2C_PASS Normal2 exact legacy delta / random prefix at 9
+PHASE2C_PASS Normal2 exact legacy delta / random prefix at 10
+PHASE2C_PASS Normal2 exact legacy delta / random prefix at 11
+PHASE2C_PASS Normal2 exact legacy delta / random prefix at 12
+PHASE2C_PASS Normal2 exact legacy delta / random prefix at 13
+PHASE2C_PASS Normal2 exact legacy delta / random prefix at 14
+PHASE2C_PASS Normal2 exact legacy delta / random prefix at 15
+PHASE2C_PASS Normal2 exact legacy delta / random prefix at 16
+PHASE2C_PASS Normal2 exact legacy delta / random prefix at 17
+PHASE2C_PASS missing provenance warns
+PHASE2C_PASS valid static tail holds last position
+PHASE2C_PASS unsupported speed mapping disables trajectory
+PHASE2C_PASS owned preview session exists
+PHASE2C_PASS session initial sample works
+PHASE2C_PASS multi Clip switches exactly at half-open boundary
+PHASE2C_PASS preview speed leaves skill speed and 33ms step unchanged
+PHASE2C_PASS sequential and random Seek root positions equal
+PHASE2C_PASS interruption freezes position and disables attack visual intervals
+PHASE2C_PASS loop resets to origin frame
+PHASE2C_PASS invalid segment hides stale pose
+PHASE2C_PASS valid Seek after error restores exact pose
+PHASE2C_PASS session closes Stage and unregisters ownership
+PHASE2C_PASS session leaves no visual roots/lights
+PHASE2C_PASS session leaves no clip clones
+PHASE2C_PASS session does not dirty original Scene
+PHASE2C_PASS temporary shape transaction exists
+PHASE2C_PASS Box drag draft does not mutate SO
+PHASE2C_PASS Box commits quantized geometry without timing changes
+PHASE2C_PASS Box Undo
+PHASE2C_PASS Box Redo
+PHASE2C_PASS Box cancel discards draft
+PHASE2C_PASS Sphere drag draft does not mutate SO
+PHASE2C_PASS Sphere commits quantized geometry without timing changes
+PHASE2C_PASS Sphere Undo
+PHASE2C_PASS Sphere Redo
+PHASE2C_PASS Sphere cancel discards draft
+PHASE2C_PASS Capsule drag draft does not mutate SO
+PHASE2C_PASS Capsule commits quantized geometry without timing changes
+PHASE2C_PASS Capsule Undo
+PHASE2C_PASS Capsule Redo
+PHASE2C_PASS Capsule cancel discards draft
+PHASE2C_PASS Sector drag draft does not mutate SO
+PHASE2C_PASS Sector commits quantized geometry without timing changes
+PHASE2C_PASS Sector Undo
+PHASE2C_PASS Sector Redo
+PHASE2C_PASS Sector cancel discards draft
+PHASE2C_PASS Cylinder drag draft does not mutate SO
+PHASE2C_PASS Cylinder commits quantized geometry without timing changes
+PHASE2C_PASS Cylinder Undo
+PHASE2C_PASS Cylinder Redo
+PHASE2C_PASS Cylinder cancel discards draft
+PHASE2C_PASS HurtBox commit
+PHASE2C_PASS HurtBox Undo
+PHASE2C_PASS building source with ExecuteAlways never instantiates its scripts
+PHASE2C_PASS attack AnimationEvent never executed during forward sampling
+PHASE2C_PASS temporary clips contain zero AnimationEvents
+PHASE2C_PASS source AnimationEvent is preserved
+PHASE2C_PASS geometry edits save/export through unchanged Phase1 pipeline
+PHASE2C_PASS five shapes survive JSON readback
+PHASE2C_PASS persisted geometry fixture loads
+PHASE2C_PASS opening replacement preview disposes previous session
+PHASE2C_PASS closing window disposes active preview
+PHASE2C_PASS Scene/Inspector five Handles and HurtBox GUI smoke: 
+PHASE2C_PASS window close leaves no session/Stage
+
+Logs/SkillEditor-Phase2D1-DotNet.log
+PASS lines: 56
+FAIL/compiler-error lines: 0
+88E6E6C3CB9A5F2EEDB2F6EBFC10DECDC553589EF0554506D1D97E08A7D8BE03
+PASS: empty document rejected
+PASS: valid partial read-only config
+PASS: unsupported version 0
+PASS: unsupported version 2
+PASS: unsupported version -1
+PASS: duplicate ID rejected
+PASS: no implicit skill type
+PASS: animation gap rejected
+PASS: zero speed rejected
+PASS: out-of-source trim rejected
+PASS: multi-state binding allowed
+PASS: multi-clip contiguous skill supported
+PASS: animation overlap rejected
+PASS: legitimate static tail accepted
+PASS: missing provenance Warning
+PASS: wrong source Error
+PASS: 2x mapping declared future-only
+PASS: cannot hide remapping requirement
+PASS: verified inconsistent source duration Error
+PASS: coverage beyond source rejected even without provenance
+PASS: base damage resolved
+PASS: base damage change needs no manual sync
+PASS: duplicate base damage rejected
+PASS: Repeat positive interval
+PASS: dangling group rejected
+PASS: shape parameters Box
+PASS: shape parameters Sphere
+PASS: shape parameters Capsule
+PASS: shape parameters Sector
+PASS: shape parameters Cylinder
+PASS: invalid shape rejected
+PASS: typed registered event valid
+PASS: wrong typed payload rejected
+PASS: unknown event rejected
+PASS: critical before window end rejected
+PASS: critical at exclusive end accepted
+PASS: missing resource rejected
+PASS: Warning export succeeds
+PASS: export readback succeeds
+PASS: partial cannot become battle config
+PASS: snapshot mutation isolated
+PASS: deterministic serialization
+PASS: ID survives serialization
+PASS: old JSON protected on write
+PASS: temporary cleanup write
+PASS: old JSON protected on readback
+PASS: temporary cleanup readback
+PASS: old JSON protected on replace
+PASS: temporary cleanup replace
+PASS: invalid export preserves bytes
+PASS: successful atomic replacement
+PASS: malformed/versionless input: 
+PASS: malformed/versionless input: garbage
+PASS: malformed/versionless input: []
+PASS: malformed/versionless input: {}
+PASS: malformed/versionless input: {broken
+RESULT: 56 standalone checks passed. Unity serialization/Inspector/Resources NOT covered by adapters.
+
+Scoped tracked Git diff stat (RunPhase2CChecks also contains earlier 2C edits):
+ Assets/Editor/SkillConfig/SkillAssetValidator.cs   |  17 ++-
+ Assets/Editor/SkillEditor/SkillEditorWindow.cs     |   2 +-
+ .../SkillEditor/SkillEditorWorkspaceState.cs       |   1 +
+ Assets/Editor/SkillEditor/SkillTimelineView.cs     | 135 ++++++++++++++++++---
+ .../SkillEditor/Tests/SkillEditorPhase2BChecks.cs  |   4 +
+ Tests/SkillEditor/RunPhase2CChecks.ps1             |  13 ++
+ Tests/SkillEditor/RunUnityChecks.ps1               |  11 ++
+ 7 files changed, 165 insertions(+), 18 deletions(-)
+New untracked C# files (+ .meta each): SkillTimelineBatch.cs, Tests/SkillEditorPhase2D1Checks.cs, Tests/SkillTimelineInteractionChecks.cs under Assets/Editor/SkillEditor. New docs: checkpoint, acceptance, this results file, and plan. See acceptance file for exact paths. Git has not been committed.
+Assets/Scripts diff-name check: empty. Scoped git diff --check: exit 0 (line-ending notices only). Prior Preview/Scene renames, 2C fixes and user Normal1/Normal2/JSON changes remain; whole-worktree diff is not attributable to this batch.

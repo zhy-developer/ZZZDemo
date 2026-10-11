@@ -224,7 +224,16 @@ namespace SkillConfig.Editor.Tests
                 {
                     typeof(SkillEditorWindow).GetField("selected", flags).SetValue(window, box.id);
                     window.SendEvent(new Event { type = EventType.Layout }); window.SendEvent(new Event { type = EventType.Repaint });
-                    sceneView.SendEvent(new Event { type = EventType.Layout }); sceneView.SendEvent(new Event { type = EventType.Repaint });
+                    var originalTool = UnityEditor.Tools.current;
+                    try
+                    {
+                        foreach (var tool in new[] { Tool.Move, Tool.Rotate, Tool.Scale })
+                        {
+                            UnityEditor.Tools.current = tool;
+                            sceneView.SendEvent(new Event { type = EventType.Layout }); sceneView.SendEvent(new Event { type = EventType.Repaint });
+                        }
+                    }
+                    finally { UnityEditor.Tools.current = originalTool; }
                 }
                 typeof(SkillPreviewPanel).GetField("hurt", flags).SetValue(panel, true);
                 sceneView.SendEvent(new Event { type = EventType.Layout }); sceneView.SendEvent(new Event { type = EventType.Repaint });

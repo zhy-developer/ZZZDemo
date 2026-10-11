@@ -1,7 +1,7 @@
 {
     "schemaVersion": 1,
     "characterId": "miyabi",
-    "sourceFingerprint": "8df484c734a1260ee0e3c3f25b0efc69da7ddf30197a9ebd1e9f38900ec824c9",
+    "sourceFingerprint": "58f6817f0d1f478d5d4e4343ff30c4a7b36e8f6247462730f18ef78b7f0ec0c9",
     "logicFrameIntervalMs": 33,
     "precision": 10000,
     "completeness": 0,
@@ -58,9 +58,57 @@
                     }
                 }
             ],
-            "tracks": [],
-            "hitGroups": [],
-            "hitBoxes": [],
+            "tracks": [
+                {
+                    "id": "cf61d4fcd5f546f8ae56823eb8343d30",
+                    "name": "HitBox",
+                    "group": "",
+                    "kind": 0,
+                    "displayOrder": 0
+                }
+            ],
+            "hitGroups": [
+                {
+                    "id": "548b99b38d5846d5bb05e0ccd084c3bb",
+                    "mode": 0,
+                    "repeatIntervalFrames": 1,
+                    "damageSource": 0,
+                    "explicitDamage": 0,
+                    "hitStunFrames": 0,
+                    "knockback": {
+                        "x": 0,
+                        "y": 0,
+                        "z": 0
+                    },
+                    "knockbackFrames": 0,
+                    "hitVfxResourceId": "",
+                    "hitSfxResourceId": ""
+                }
+            ],
+            "hitBoxes": [
+                {
+                    "id": "96994c8c844c4ba98475f84c6c91c6f3",
+                    "trackId": "cf61d4fcd5f546f8ae56823eb8343d30",
+                    "hitGroupId": "548b99b38d5846d5bb05e0ccd084c3bb",
+                    "startFrame": 6,
+                    "endFrame": 11,
+                    "shape": 2,
+                    "offset": {
+                        "x": 0,
+                        "y": 0,
+                        "z": 20000
+                    },
+                    "size": {
+                        "x": 10000,
+                        "y": 10000,
+                        "z": 10000
+                    },
+                    "yawMilliDegrees": 0,
+                    "radius": 5000,
+                    "height": 10000,
+                    "sectorAngleMilliDegrees": 90000
+                }
+            ],
             "invincibility": [],
             "interrupts": [],
             "events": [],
@@ -106,12 +154,84 @@
                     }
                 }
             ],
-            "tracks": [],
-            "hitGroups": [],
-            "hitBoxes": [],
+            "tracks": [
+                {
+                    "id": "f53d6fa6169b4d1b8814fb8df4767282",
+                    "name": "HitBox",
+                    "group": "",
+                    "kind": 0,
+                    "displayOrder": 0
+                },
+                {
+                    "id": "8f3a21b662c84eb0b8eab15f8be66ad5",
+                    "name": "Event",
+                    "group": "",
+                    "kind": 3,
+                    "displayOrder": 1
+                }
+            ],
+            "hitGroups": [
+                {
+                    "id": "517d10c1642e4495b1dfcfde612a0448",
+                    "mode": 0,
+                    "repeatIntervalFrames": 1,
+                    "damageSource": 0,
+                    "explicitDamage": 0,
+                    "hitStunFrames": 0,
+                    "knockback": {
+                        "x": 0,
+                        "y": 0,
+                        "z": 0
+                    },
+                    "knockbackFrames": 0,
+                    "hitVfxResourceId": "",
+                    "hitSfxResourceId": ""
+                }
+            ],
+            "hitBoxes": [
+                {
+                    "id": "c576d6c4e1f64fde9ec322243ae99f1a",
+                    "trackId": "f53d6fa6169b4d1b8814fb8df4767282",
+                    "hitGroupId": "517d10c1642e4495b1dfcfde612a0448",
+                    "startFrame": 0,
+                    "endFrame": 7,
+                    "shape": 0,
+                    "offset": {
+                        "x": 0,
+                        "y": 0,
+                        "z": 0
+                    },
+                    "size": {
+                        "x": 10000,
+                        "y": 10000,
+                        "z": 10000
+                    },
+                    "yawMilliDegrees": 0,
+                    "radius": 5000,
+                    "height": 10000,
+                    "sectorAngleMilliDegrees": 90000
+                }
+            ],
             "invincibility": [],
             "interrupts": [],
-            "events": [],
+            "events": [
+                {
+                    "id": "deaa60201f304835b3e178cae0b955f6",
+                    "trackId": "8f3a21b662c84eb0b8eab15f8be66ad5",
+                    "eventId": "presentation.marker",
+                    "frame": 7,
+                    "order": 0,
+                    "version": 1,
+                    "execution": 0,
+                    "parameterKind": 1,
+                    "marker": {
+                        "text": ""
+                    },
+                    "comboGate": {
+                        "enabled": false
+                    }
+                }
+            ],
             "vfx": [],
             "sfx": []
         }
@@ -131,21 +251,9 @@
         },
         {
             "severity": 0,
-            "code": "NO_HITBOX",
-            "location": "miyabi-normal-1",
-            "message": "Data pilot only: no hit boxes configured, no battle behavior enabled."
-        },
-        {
-            "severity": 0,
             "code": "MOTION_METADATA",
             "location": "miyabi-normal-1/animation/animation-1",
             "message": "Legacy bake lacks source GUID/version/scale provenance; association is not proof of bake equivalence."
-        },
-        {
-            "severity": 0,
-            "code": "NO_HITBOX",
-            "location": "miyabi-normal-2",
-            "message": "Data pilot only: no hit boxes configured, no battle behavior enabled."
         },
         {
             "severity": 0,

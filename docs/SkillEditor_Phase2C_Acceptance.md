@@ -18,7 +18,7 @@
 
 PreviewSceneStage 拥有独立预览 Scene。视觉代理逐个创建 Transform、MeshFilter、MeshRenderer、SkinnedMeshRenderer 和新 Animator，映射骨骼和 Avatar；不实例化原 GameObject，不复制任意组件，不加载完整玩家后禁用脚本。控制器为空，fireEvents/applyRootMotion 关闭。
 
-AnimationClip 临时副本移除 AnimationEvent、对象引用曲线及非允许绑定。每次 Seek 恢复初始姿态并建立手动求值 PlayableGraph，采样后恢复动画根，最后对独立逻辑根应用整数位移。原 Clip、Prefab、Scene 不写入。图、临时 Clip、视觉对象、灯光、回调随会话释放。
+AnimationClip 临时副本移除 AnimationEvent、对象引用曲线及非允许绑定。每次 Seek 恢复初始姿态并建立手动求值 PlayableGraph，采样后恢复动画根，最后对独立逻辑根应用整数位移。2026-10-10 修正：构建时 applyRootMotion 关闭，但采样时必须开启以从骨骼提取根运动，再将动画根恢复；否则骨骼自身平移与整数表重复叠加。事件始终关闭。原 Clip、Prefab、Scene 不写入。图、临时 Clip、视觉对象、灯光、回调随会话释放。
 
 Root Motion 恒等映射直接使用未改动的 RootMotionPlayback 计算整数前缀和；任意 Seek 使用该前缀，表提前结束后保持位置。缺少来源证据显示 Warning。需要精确重映射时禁用整条位移轨迹并提示，动画仍可按 Trim/Speed 单独采样；不把原表当作正确重映射结果。
 

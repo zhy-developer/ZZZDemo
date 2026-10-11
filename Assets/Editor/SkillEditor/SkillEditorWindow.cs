@@ -14,6 +14,8 @@ namespace SkillConfig.Editor
         readonly SkillTimelineView timeline = new SkillTimelineView();
         readonly SkillInspectorPanel inspector = new SkillInspectorPanel();
         SkillPreviewPanel preview;
+        readonly SkillComboGraphView graph = new SkillComboGraphView();
+        [SerializeField] bool graphPage;
         List<Diagnostic> issues = new List<Diagnostic>();
         Vector2 treeScroll, diagnosticScroll;
         string search = "";
@@ -41,23 +43,24 @@ namespace SkillConfig.Editor
             EditorApplication.projectChanged += Changed;
             EditorApplication.playModeStateChanged += PlayModeChanged;
             diagnosticsDirty = true;
-            preview = new SkillPreviewPanel(f => timeline.SetCursor(f), Repaint);
+            preview = new SkillPreviewPanel(f => timeline.SetCursor(f), Repaint, SelectItem);
             timeline.CursorChanged += PreviewSeek;
         }
         void OnDisable()
         {
             SkillEditCommands.Changed -= Changed; EditorApplication.projectChanged -= Changed; EditorApplication.playModeStateChanged -= PlayModeChanged;
-            timeline.Cancel(); SkillEditCommands.Flush(); Persist();
+            graph.Dispose(); timeline.Cancel(); SkillEditCommands.Flush(); Persist();
             timeline.CursorChanged -= PreviewSeek; preview?.Dispose(); preview = null;
         }
         void OnLostFocus() { timeline.Cancel(); Repaint(); }
         void PreviewSeek(int frame) => preview?.Seek(frame);
-        void PlayModeChanged(PlayModeStateChange state) { preview?.CloseSession(); timeline.Cancel(); SkillEditCommands.Flush(); Repaint(); }
+        void PlayModeChanged(PlayModeStateChange state) { graph.ResetDraft(); preview?.CloseSession(); timeline.Cancel(); SkillEditCommands.Flush(); Repaint(); }
         void Changed()
         {
             timeline.Cancel();
-            if (catalog && owner && !catalog.skills.Contains(owner)) { owner = catalog.skills.FirstOrDefault(s => s); selected = ""; }
-            diagnosticsDirty = true; stale = true; Repaint();
+            if (catalog && owner && !catalog.skills.Contains(owner) && !graph.Contains(owner)) { owner = catalog.skills.FirstOrDefault(s => s); selected = ""; }
+            // A container/layout change must not masquerade as a skill JSON modification.
+            diagnosticsDirty = true; stale = !catalog || SkillConfigExporter.IsStale(catalog); Repaint();
         }
         void Persist()
         {
@@ -86,23 +89,26 @@ namespace SkillConfig.Editor
                     var next = (CharacterSkillCatalog)EditorGUILayout.ObjectField(catalog, typeof(CharacterSkillCatalog), false, GUILayout.Width(245));
                     if (next != catalog) { SkillEditCommands.Flush(); catalog = next; Choose(catalog ? catalog.skills.FirstOrDefault(s => s) : null); }
                     if (GUILayout.Button("角色配置", EditorStyles.toolbarButton)) selected = "@catalog";
-                    GUILayout.Label(stale ? "● 待导出" : "✓ 已导出", GUILayout.Width(80));
+                    GUILayout.Label(stale ? "JSON 待导出" : "JSON 已导出", GUILayout.Width(95));
                     GUILayout.Label((owner && EditorUtility.IsDirty(owner)) || (catalog && EditorUtility.IsDirty(catalog)) ? "SO 未保存" : "SO 已保存", GUILayout.Width(80));
                     if (GUILayout.Button("保存 SO", EditorStyles.toolbarButton)) Save();
                     if (GUILayout.Button("校验", EditorStyles.toolbarButton)) Validate();
                     using (new EditorGUI.DisabledScope(!catalog))
                         if (GUILayout.Button("Export JSON", EditorStyles.toolbarButton)) { SkillEditCommands.Flush(); issues = SkillConfigExporter.Export(catalog); stale = SkillConfigExporter.IsStale(catalog); diagnosticsDirty = false; nextValidation = EditorApplication.timeSinceStartup + 2; }
                 }
-                preview?.Draw(owner, catalog, selected, timeline.Cursor);
+                int page = GUILayout.Toolbar(graphPage ? 1 : 0, new[] { "Timeline", "连招 Graph" });
+                if ((page == 1) != graphPage) { graphPage = page == 1; timeline.Cancel(); preview?.CloseSession(); }
+                if (!graphPage) preview?.Draw(owner, catalog, selected, timeline.Cursor);
                 using (new EditorGUILayout.HorizontalScope())
                 {
                     DrawTree();
                     using (new EditorGUILayout.VerticalScope(GUILayout.ExpandWidth(true)))
                     {
-                        if (owner && owner.skill != null && owner.skill.registered) timeline.Draw(owner, selected, SelectItem);
+                        if (graphPage) graph.Draw(catalog, owner, (skill, openTimeline) => { Choose(skill); if (openTimeline) graphPage = false; });
+                        else if (owner && owner.skill != null && owner.skill.registered) timeline.Draw(owner, selected, SelectItem, catalog);
                         else EditorGUILayout.HelpBox("选择已登记的 ComboData。编辑器直接编辑原技能配置。", MessageType.Info);
                     }
-                    inspector.Draw(owner, catalog, selected, SelectItem);
+                    if (!graphPage) inspector.Draw(owner, catalog, selected, SelectItem);
                 }
                 diagnosticScroll = EditorGUILayout.BeginScrollView(diagnosticScroll, GUILayout.Height(110));
                 foreach (var issue in issues)
@@ -112,14 +118,14 @@ namespace SkillConfig.Editor
                 }
                 EditorGUILayout.EndScrollView();
                 if (Event.current.type == EventType.KeyDown && Event.current.control && Event.current.keyCode == KeyCode.S) { Save(); Event.current.Use(); }
-                if (Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Delete && !EditorGUIUtility.editingTextField && owner && SkillTimelineAdapters.Find(owner, selected) != null)
+                if (!graphPage && Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Delete && !EditorGUIUtility.editingTextField && owner && SkillTimelineAdapters.Find(owner, selected) != null)
                 { SkillEditCommands.DeleteItem(owner, selected); selected = ""; Event.current.Use(); }
             }
             if (EditorApplication.isPlayingOrWillChangePlaymode) EditorGUILayout.HelpBox("Play Mode 中只读；Phase 2B 不修改运行中的战斗配置。", MessageType.Info);
         }
         void Save()
         {
-            SkillEditCommands.Flush(); if (owner) AssetDatabase.SaveAssetIfDirty(owner); if (catalog) AssetDatabase.SaveAssetIfDirty(catalog); Persist(); Validate();
+            graph.SaveLayout(); SkillEditCommands.Flush(); if (owner) AssetDatabase.SaveAssetIfDirty(owner); if (catalog) AssetDatabase.SaveAssetIfDirty(catalog); Persist(); Validate();
         }
         void FocusDiagnostic(Diagnostic issue)
         {

@@ -1,0 +1,182 @@
+Phase 2D-3 验收与交付说明
+日期：2026-10-11
+范围：VFX/SFX 安全预览与编辑器综合回归。停止在本阶段，不进入 Phase 3。
+基线：根目录 Unity_PvP_FrameSync_SkillEditor_Codex_PRD_v1.0.md、已批准 Phase 2A 和现有 Phase 1 / 2B / 2C / 2D-1 / 2D-2。
+本文件路径以项目根目录 D:/GitHub/ARPGDEMO 为基准。
+
+一、Phase 2D-2 状态复核
+
+1. 已实现：真实 ComboContainerData 普攻顺序图、SkillID/Legacy 节点、Dodge 入口、节点定位、布局缩放平移、变更草稿、显式应用、Undo/Redo、保存。
+2. 历史证据：docs/SkillEditor_Phase2D2_Results.txt：Graph 数据 28、独立进程重开 3、GUI 10；本轮也重跑这些检查。
+3. 用户反馈仅为“基本完成人工验收”，保留该状态，不提升为全部通过。正式工程中逐项确认对话框、人工保存重开、全部快捷键仍需用户确认。
+4. 普攻真实关系仍由 comboDatas 数组顺序及旧运行时决定，图不支持任意分支。现有 BackDodge 入口没有实际调用证据，仍按既有只读限制处理；没有自动迁移 Legacy。
+5. Graph 关系应用保存在原 ComboContainerData；布局保存在 Library；Phase 1 技能 JSON 不包含连招边。这三个状态继续分别显示。
+6. 原游戏 Normal1→Normal2、现有闪避攻击入口和双客户端回归没有新的人工结果，仍待人工测试。隔离工程进入 Play Mode 仅证明预览清理。
+7. 已知遗留：布局拖动不是技能数据 Undo；Graph 无法表达原容器以外的分支；未确认的正式场景/全部角色回归不因本次开发而消失。
+
+二、实现方式与边界
+
+数据与编辑
+- 唯一编辑数据源仍是 ComboData.skill.vfx / sfx。使用现有 VfxCue / SfxCue / CharacterSkillCatalog.resources。
+- 没有修改 DTO、JSON Schema、Phase 1 Loader/Exporter/校验器。
+- Scene VFX Handles 使用 SkillEditCommands.BeginGesture / Apply / EndGesture：拖动只改临时副本，松手前登记 Undo 后一次提交；Escape 取消。Inspector 仍走既有 SerializedObject 命令。
+- 位移精度 10000，旋转毫度精度 1000，scalePermille 为既有统一缩放（非三轴独立缩放）。Inspector 回显量化后的保存值。
+- 预览时钟、粒子模拟、音源状态绝不反向写入 SO。仅明确编辑操作改数据；自动保存 SO 不自动导出 JSON。
+
+VFX 安全构建
+- SkillVfxProxy.Validate 在构建之前检查完整组件树与组件引用。
+- 只重建原生 Transform、ParticleSystem、ParticleSystemRenderer、MeshFilter、MeshRenderer。没有 Instantiate(业务 Prefab)，不执行其 MonoBehaviour 生命周期。
+- 拒绝缺失脚本、MonoBehaviour、Animator/VFX Graph/TrailRenderer 等不在支持集合中的组件，以及外部组件/对象依赖。
+- 碰撞、Trigger、External Forces、Lights、Prewarm 不支持可靠隔离/历史重建，明确拒绝。
+- 子发射器必须是所属发射器的后代，引用映射到会话自己的组件。跨树引用和循环引用拒绝。
+- 保留 Prefab 根的原缩放；事件设置其生成位置/朝向，子层级保持原局部变换。材质、网格只读共享，不修改原资产。
+- 粒子 stopAction 改为会话实例的 None，禁用 playOnAwake，固定 cue ID 派生随机种子，避免业务回调和不确定种子。源 Prefab 不变。
+- 没有调用正式特效池、正式音频管理器、伤害、网络、角色注册、AnimationEvent 或技能事件执行器。
+
+绑定与 Seek
+- 每帧严格 0.033 秒，Animation Trim/PlaybackSpeed 与已有动画采样一致。
+- Root 跟随逻辑根；Bone 支持精确相对路径，短名仅在唯一匹配时接受；偏移按米应用，不继承 FBX 骨骼缩放。
+- World 在事件 startFrame 的真实采样姿态与整数 Root Motion 位置取生成矩阵，然后保持世界位置。
+- Seek 清除旧表现，从 0 帧按 33ms 逐帧重建：先采样角色/骨骼，再推进原生粒子。没有把移动发射器简单放到目标位置后一次快进。
+- 固定种子、子粒子和世界空间/移动发射历史均通过实际 Unity 粒子状态检查。
+- 暂停保留状态，粒子由手动 Simulate 控制；循环回绕销毁旧表现，按循环起帧重建。循环区间只是预览参数。
+- 预览倍速只改变墙钟推进速度，不改 SO PlaybackSpeed 或逻辑帧长度。
+- 这是粒子模拟状态级重建；依赖 Shader 全局 _Time、GPU 效果、摄像机/屏幕内容等外观不保证 Seek/暂停一致，界面有明确诊断。不能把该范围当作全资源视觉验收。
+- 逐帧重建成本随帧数和资源复杂度增长；当前无历史快照缓存。预览安全上限 60000 逻辑帧，不用于权威战斗。
+
+生命周期与打断
+- TimelineControlled 在 endFrame 停止全部发射，现存粒子继续衰减；自然清空后销毁。防止不消失资源的编辑器兜底是 endFrame+900 帧（29.7 秒），到达时强制清理并诊断。
+- AutoComplete 自然完成后清理，允许跨越技能结束；maxLifetimeFrames 是既有明确上限。循环粒子显示警告，并在该上限清理，不会无限残留。
+- 收尾由独立 PresentationFrame 推进，技能 Frame 停在动画末尾，不修改技能总时长。
+- 模拟打断：startFrame>=打断帧的事件不触发；Precast 立即清理；已经出现的 AttackCritical 按原生命周期继续收尾；剩余技能运动停止。
+- 关键特效 startFrame 必须不早于最后 interrupt.endFrame。非法配置预览拒绝、Phase 1 校验阻止导出。
+- 打断操作会暂停并重建指定帧，点击“播放”可继续观察/试听收尾；该行为是编辑器模拟，不改变正式战斗规则。打断后 Seek 回打断前再播放，会推进到指定打断帧再执行策略。
+- Seek/重置/循环清理旧实例；切技能、关窗口、离开 Stage、脚本重载、进入 Play Mode、异常退出全部清理会话拥有的实例和订阅。
+- 参数错误可保留隐藏的视觉会话供修改后恢复，但其 VFX/SFX 已清空；意外异常销毁整个会话。
+
+SFX
+- 每条事件拥有独立隐藏 AudioSource，2D，默认不使用任何正式 Mixer/音频管理器。只停止/销毁自己的音源。
+- 在 Unity 2022.3.62f2c1 编辑模式实际验证了两个音源同时推进采样、各自音量、暂停停止采样、恢复继续、单独停止、会话关闭不停止外部音源。
+- OneShot 自然音频长度与配置 endFrame 取较早边界；Loop 按显式 endFrame 有限结束。
+- 音量按 volumePermille、fadeInFrames、fadeOutFrames 逐逻辑帧计算。
+- StopImmediately：立即释放；PlayToEnd：继续到配置/自然结束。Loop+PlayToEnd 采用已有 endFrame 作为有限收尾边界；FadeOut 从打断时音量衰减，结束释放。
+- 拖动 Seek 和逐帧静音。随后播放不补播已经跳过的 OneShot；仍在有效区间的 Loop 从对应偏移恢复。普通暂停恢复使用同一音源和采样位置。
+- 单次 Editor 更新跨多帧时逐帧处理事件，并纠正仍在播放的音源偏移，避免卡顿后所有新音效都从零开始。
+- 0.25/0.5/1/2 倍预览通过 AudioSource.pitch 同步音速，音调也改变；没有保调变速。压缩/流式音频的 Seek 精度受编解码包限制，显示诊断。
+- 未加载完成的音频显示诊断，等待资源加载后重新 Seek/播放；本批不修改音频导入设置。
+- 本轮自动测试证明原生 API 状态，不替代原工程设备上的主观听感、混音及延迟验收。
+
+三、实际文件清单
+
+新增生产编辑器代码（均有 .meta）：
+Assets/Editor/SkillEditor/Preview(场景预览)/SkillVfxProxy.cs
+Assets/Editor/SkillEditor/Preview(场景预览)/SkillPresentationPreview.cs
+Assets/Editor/SkillEditor/Preview(场景预览)/SkillAudioPreview.cs
+Assets/Editor/SkillEditor/SceneHitBox/SkillVfxHandles.cs
+
+修改生产编辑器代码：
+Assets/Editor/SkillEditor/Preview(场景预览)/SkillPreviewSession.cs
+  接入表现会话、逐帧历史重建、收尾时钟、区间循环、音频暂停/恢复、打断和统一清理。
+Assets/Editor/SkillEditor/Preview(场景预览)/SkillPreviewPanel.cs
+  VFX Handles、表现计数/时钟、循环区间、诊断条目定位、所有权清理。
+Assets/Editor/SkillEditor/SkillEditorWindow.cs
+  给原 PreviewPanel 传递既有 SelectItem 回调。其余 Graph/Timeline 的历史差异不是本轮新增。
+
+新增测试（及 .meta）：
+Assets/Editor/SkillEditor/Tests/SkillAudioProbe.cs
+Assets/Editor/SkillEditor/Tests/SkillPresentationChecks.cs
+Assets/Editor/SkillEditor/Tests/SkillPresentationResourceChecks.cs
+Assets/Editor/SkillEditor/Tests/SkillPresentationInteractionChecks.cs
+Assets/Editor/SkillEditor/Tests/SkillPresentationLifecycleChecks.cs
+
+测试脚本：
+新增 Tests/SkillEditor/PreparePresentationHarness.ps1
+修改 Tests/SkillEditor/RunPhase2CChecks.ps1
+修改 Tests/SkillEditor/RunUnityChecks.ps1
+隔离工程增加 ParticleSystem 模块，并复制真实资源与运行时哨兵脚本；不修改正式项目 Packages。
+
+交付材料：
+docs/SkillEditor_Phase2D3_Acceptance.txt
+docs/SkillEditor_Phase2D3_Results.txt
+
+四、自动化验收矩阵
+
+A. 独立 .NET：56，通过；仅 DTO/验证/文件导出契约，不代表 Unity。
+B. Unity EditMode（真实 Editor API / SendEvent / 原生粒子/音频，不是 NUnit Test Runner）：
+- 表现会话：绑定、World 触发姿态、移动发射器和子发射器 Seek、固定种子、暂停、循环、AutoComplete、Timeline 尾迹、有限循环资源、打断、音效策略、量化编辑、Undo/Redo、场景保护、异常清理。
+- 真实资源：项目 FX_slash_01.prefab / IMPT-punch-1.wav 引用，真实粒子模拟，Normal1/Normal2 联合动画预览，原资源字节不变；合规测试资源导出/待导出标记/非法导出保护。
+- 真实 Scene 鼠标事件：拖动临时状态、MouseUp 提交、Undo/Redo、Escape。
+- 保存重开：另启 Unity 进程验证位置/旋转/缩放、音量/打断策略与 JSON 一致。
+- 原生音频：真实时间推进、多音源、音量、暂停恢复、独立停止、会话关闭。
+- 生命周期：确实持有 VFX/Audio 后离开 Stage、实际脚本重载、实际进入/退出 Play Mode；无会话资源残留。
+- 既有回归：Phase 1、2B、2C 120、Timeline 37+GUI10、Graph28+GUI10及独立进程重开3、旧形状实际拖动。
+具体最终计数、日志 SHA256 和命令见 Results.txt；不要把有失败的早期日志计入通过。
+C. 正式工程人工验收：下节全部待确认；没有擅自标记“已全部通过”。
+
+真实资源限制：
+- 实际斩击 Prefab 含 3 个粒子系统，通过原生粒子模拟及重建检查。
+- 其 ShaderGraph 材质在最小隔离工程中缺失渲染依赖，出现 InternalErrorShader；另一个原生 Shader 可导入。因而材质外观是未验收项，不用粒子状态相同冒充视觉完全相同。
+- 原斩击位于 Third Parts，不在 Resources，可安全预览但按现有规则禁止导出。测试只在 Temp 隔离工程复制到 Resources 后验证导出，没有迁移正式资源。
+- 未实际执行完整游戏普攻、网络对战或正式闪避入口 Play 回归。
+
+五、Unity 人工验收步骤（请逐项记录通过/失败）
+
+准备：
+1. 等原工程编译完成，从 Tools/Skill Editor/Skill Editor 菜单打开窗口，选择星见雅 Normal1/Normal2。
+2. 先备份将编辑的 SO/目录，或使用编辑器“复制为新技能”制作测试技能。不要复制 SkillID 手工制造生产冲突。
+3. 在“角色配置”的资源列表添加 VfxPrefab 和 AudioClip 绑定及唯一 resourceId。
+   可先用 Third Parts/VFX_Klaus/Prefabs/Stylized Hit & Slash/FX_slash_01.prefab 观察预览；
+   音效用 Resources/Audio/Combo/Hit/IMPT-punch-1.wav。
+   要测试成功导出，VFX 必须改用 Resources 内合规资源/测试副本。原 Third Parts 路径的导出 Error 是预期结果。
+
+VFX/时序：
+4. 新建 VFX 轨道，添加 Precast 事件，startFrame=1，AutoComplete，maxLifetimeFrames=45；在 Inspector 绑定 resourceId。
+5. 开 Scene 预览，分别在 Normal1/Normal2 播放/暂停/逐帧/反复 Seek。检查事件只出现一次，没有累积旧实例。
+6. 复制该条目测试 Root、Bone、World。Bone 填模型实际完整路径（唯一短名也可），错路径应诊断。
+   World 从触发帧之后保持生成位置；从 0 播到 8 与直接 Seek 8，位置/粒子表现应一致（排除已诊断 Shader 全局时间效果）。
+7. TimelineControlled 设置 [1,5)，第 5 帧停止发射，旧粒子正常收尾；AutoComplete 可在动画末尾后继续，技能总时长不改变。
+8. 测试循环区间 [2,8)、0.25/0.5/1/2 倍速、连续 20 次回绕/前后 Seek；实例数量不持续增长。SO PlaybackSpeed 不改变。
+9. 选择 VFX，W/E/R 分别改位置、旋转、统一缩放。拖动时 Inspector 不提前保存；松手后量化回显；Escape 取消。
+   Inspector 精确输入应立即更新 Scene；Ctrl+Z 撤销、Ctrl+Y 重做（或 Unity Edit 菜单），保存关闭重开值不丢失。
+
+音效：
+10. 添加两条 SFX，使用不同起帧/音量；一条 OneShot，一条 Loop，设置有限 endFrame 及淡入淡出。
+    正常播放应同时可听且互不覆盖；Seek/前后逐帧静音；恢复不重播全部历史 OneShot。
+11. 暂停保持音源位置，恢复继续；观察/试听 0.5 和 2 倍的变调变速。检查实际设备音量/延迟，自动状态检查不代替这一项。
+12. 三条音效分别设置 StopImmediately、PlayToEnd、FadeOut。在事件已开始后模拟打断，再点播放试听收尾。
+    StopImmediately 消失；PlayToEnd 到原 endFrame（Loop 也有限）；FadeOut 降到零并释放。
+13. 打断帧之后的 VFX/SFX 不出现；Precast 立即清理；已出现的关键特效按生命周期收尾，角色不再继续位移。
+    创建可打断区间后把 AttackCritical 放在最后区间结束之前，应显示 Error 并阻止导出；放在结束帧允许。
+
+安全与回归：
+14. 使用带业务脚本/Animator/碰撞模块的测试 VFX，应明确拒绝，不应先执行 Awake/OnEnable。
+    故意删除资源或填错 Bone，诊断要显示技能与条目，点击诊断能定位 Inspector。
+15. 播放声音/粒子后关预览、关窗口、切技能、离开预览 Stage、触发脚本重载、进入 Play Mode。
+    本会话声音停止，临时对象/音源/粒子/PlayableGraph 不残留，其他音源不被全局停止。
+16. 确认正式 Scene 和源 Prefab 没有脏标记或文件变化。完成测试前后的 Console 不新增业务 MissingReference/NullReference。
+17. 对 VFX/SFX 做 Ctrl 多选、框选、批量移动、同技能/跨技能复制粘贴、删除及整批 Undo/Redo；
+    新条目 ID 不重复，资源缺失阻止批量提交，字段和相对时间保持，文本输入不被快捷键抢占。
+18. 修改后“待导出”；仅保存 SO 不改 JSON。点击 Export 得到合法 JSON；
+    再把区间设为非法或资源清空，Export 必须报 Error 且旧 JSON 字节不变。恢复配置后再次显式导出。
+19. Graph/Timeline/技能树选择同步；拖 Graph 节点只改布局；草稿取消不改容器；
+    确認一次连招变更预览，明确 Apply 后容器改变，Undo/Redo/保存重开正确；
+    Graph 边变动不得显示为已导出技能 JSON。
+20. 原游戏 Play 模式：恢复正式连招顺序，Normal1→Normal2 连按，观察原 Animator 动画/预输入/Root Motion；
+    触发现有前闪避攻击入口（Unagi_Rush_ATK），确认仍走原流程。
+    BackDodge 无调用依据的入口只验证图上的只读诊断，不声称完成不存在的运行时路径。
+    比较预览打开前后、关闭后，以及尚未导出新 JSON 时的原战斗行为。
+    这是真实战斗回归，必须由你在原场景确认，不属于隔离清理测试的通过范围。
+
+六、Git 差异、资源影响和回退
+
+- 本轮生产变更只在 Editor：4 个新增实现、3 个现有编辑器文件接入；没有正式技能/目录/容器/Prefab/材质/场景/JSON 自动迁移或导出。
+- 当前仓库原有未提交变化包括：Preview→Preview(场景预览)、Scene→SceneHitBox 重命名、Phase 2D-1/2D-2 文件、Normal1/2 与角色 JSON，以及用户的“星见雅基础连招 1.asset”。全部保留，不能算成本批代码变更。
+- git diff 对 Assets/Scripts、正式 AnimatorController 和已跟踪 ComboContainerData 没有新增差异。完整工作区 diff/stat 包含历史变更，未跟踪文件也不会计入普通 diff。
+- Results.txt 同时记录本批文件 SHA256/行数、当时 git 状态和 diff 摘要，方便与历史差异区分。
+- 回退时先关闭预览/编辑器窗口，再从已验收 2D-2 快照恢复上述 3 个修改文件及两个测试 runner，删除本批新增的 4 个实现、5 个测试及其 .meta、PreparePresentationHarness.ps1。
+  若没有该快照，应按本批接入点移除 Presentation/Audio/VfxHandles 调用和 Window 的 SelectItem 预览回调，而不是对整个仓库 git reset/checkout。
+- 不恢复或删除用户手工配置、旧阶段修改、用户测试容器。正式 Schema 和数据均未迁移，因此无需生产数据回滚。
+- Temp/SkillEditorPhase2C 和 Phase2B 只是隔离测试工程；不要把其中生成的测试 SO/Resources/运行时哨兵同步到 Assets。
+- 未完成事项：正式工程材质/设备试听、完整原战斗/网络回归、全部资源兼容性。Shader 时间、预热/碰撞/脚本类特效、跨树子发射器暂不支持精准安全 Seek；必须保持诊断。
+
+结论：实现和列明的自动检查完成；Phase 2D-3 整体人工验收等待用户确认。没有批准或开始 Phase 3。

@@ -8,6 +8,8 @@ namespace SkillConfig.Editor
     public sealed class SkillPreviewPanel : IDisposable
     {
         readonly SkillShapeHandles handles = new SkillShapeHandles();
+        readonly SkillVfxHandles vfxHandles = new SkillVfxHandles();
+        readonly Action<string> selectItem;
         SkillPreviewSession session;
         GameObject source;
         string catalogKey, failure;
@@ -17,16 +19,16 @@ namespace SkillConfig.Editor
         readonly Action repaint;
         Vector2 scroll;
         public SkillPreviewSession Session => session;
-        public SkillPreviewPanel(Action<int> setCursor, Action repaint)
+        public SkillPreviewPanel(Action<int> setCursor, Action repaint, Action<string> selectItem = null)
         {
-            this.setCursor = setCursor; this.repaint = repaint;
-            SceneView.duringSceneGui += OnSceneGUI; SkillEditCommands.Changed += handles.Cancel;
+            this.setCursor = setCursor; this.repaint = repaint; this.selectItem = selectItem;
+            SceneView.duringSceneGui += OnSceneGUI; SkillEditCommands.Changed += handles.Cancel; SkillEditCommands.Changed += vfxHandles.Cancel;
         }
-        public void CloseSession() { handles.Cancel(); if (session != null) { session.Updated -= OnUpdated; session.Dispose(); session = null; } }
-        public void Dispose() { CloseSession(); SceneView.duringSceneGui -= OnSceneGUI; SkillEditCommands.Changed -= handles.Cancel; }
-        public void Seek(int frame) { handles.Cancel(); if (session == null || session.IsDisposed) return; session.SetPlaying(false); session.Seek(frame); }
-        void OnUpdated() { if (session != null && !session.IsDisposed) setCursor(session.Frame); else handles.Cancel(); repaint(); }
-        void OnSceneGUI(SceneView scene) { if (session != null) handles.Draw(session, selected, hurt); }
+        public void CloseSession() { handles.Cancel(); vfxHandles.Cancel(); if (session != null) { session.Updated -= OnUpdated; session.Dispose(); session = null; } }
+        public void Dispose() { CloseSession(); SceneView.duringSceneGui -= OnSceneGUI; SkillEditCommands.Changed -= handles.Cancel; SkillEditCommands.Changed -= vfxHandles.Cancel; }
+        public void Seek(int frame) { handles.Cancel(); vfxHandles.Cancel(); if (session == null || session.IsDisposed) return; session.SetPlaying(false); session.Seek(frame); }
+        void OnUpdated() { if (session != null && !session.IsDisposed) setCursor(session.Frame); else { handles.Cancel(); vfxHandles.Cancel(); if (session != null) failure=session.Error; } repaint(); }
+        void OnSceneGUI(SceneView scene) { if (session != null) { handles.Draw(session, selected, hurt); if (!hurt) vfxHandles.Draw(session, selected); else vfxHandles.Cancel(); } }
         string selected;
         public void Draw(ComboData owner, CharacterSkillCatalog catalog, string selection, int frame)
         {
@@ -83,19 +85,41 @@ namespace SkillConfig.Editor
             }
             if (!string.IsNullOrEmpty(failure)) EditorGUILayout.HelpBox(failure, MessageType.Error);
             if (session == null || session.IsDisposed) return;
+            using (new EditorGUILayout.HorizontalScope(EditorStyles.toolbar))
+            {
+                GUILayout.Label("形状工具", GUILayout.Width(60));
+                var tool = UnityEditor.Tools.current;
+                int current = tool == Tool.Rotate ? 1 : tool == Tool.Scale ? 2 : 0;
+                int nextTool = GUILayout.Toolbar(current, new[] { "移动 (W)", "旋转 (E)", "尺寸 (R)" }, GUILayout.Width(270));
+                if (nextTool != current)
+                {
+                    handles.Cancel(); vfxHandles.Cancel(); UnityEditor.Tools.current = nextTool == 1 ? Tool.Rotate : nextTool == 2 ? Tool.Scale : Tool.Move;
+                    SceneView.RepaintAll();
+                }
+                GUILayout.Label("Scene View 使用 W / E / R；切换工具取消未提交拖动", EditorStyles.miniLabel);
+            }
             using (new EditorGUILayout.HorizontalScope())
             {
                 GUILayout.Label("帧 " + session.Frame + " · " + session.ClipName + " · source " + session.SourceSeconds.ToString("F6") + "s", GUILayout.MinWidth(260));
                 interruptFrame = EditorGUILayout.IntField("打断帧", interruptFrame, GUILayout.Width(190));
-                if (GUILayout.Button("模拟打断", GUILayout.Width(80))) { handles.Cancel(); session.Interrupt(interruptFrame); }
-                if (GUILayout.Button("重置打断", GUILayout.Width(80))) { handles.Cancel(); session.ClearInterrupt(); }
+                if (GUILayout.Button("模拟打断", GUILayout.Width(80))) { handles.Cancel(); vfxHandles.Cancel(); session.Interrupt(interruptFrame); }
+                if (GUILayout.Button("重置打断", GUILayout.Width(80))) { handles.Cancel(); vfxHandles.Cancel(); session.ClearInterrupt(); }
             }
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                session.LoopStartFrame = EditorGUILayout.IntField("循环起帧",session.LoopStartFrame);
+                session.LoopEndFrame = EditorGUILayout.IntField("循环止帧（0=技能末尾）",session.LoopEndFrame);
+            }
+            EditorGUILayout.LabelField("表现帧 " + session.PresentationFrame + " / 技能帧 " + session.Frame + " · VFX " + session.Presentation.Effects.Count() + " · SFX " + session.Presentation.Audio.Count, EditorStyles.miniLabel);
+            EditorGUILayout.LabelField("Seek/逐帧静音；播放倍速同步音调；打断后点击播放可试听收尾。循环回绕清理旧表现。",EditorStyles.miniLabel);
+            if (session.Presentation.Issues.Count > 0) EditorGUILayout.HelpBox("表现预览有 " + session.Presentation.Issues.Count + " 条诊断，打开“诊断 / 位移”查看并定位条目。",MessageType.Warning);
             if (!string.IsNullOrEmpty(session.Error)) EditorGUILayout.HelpBox(session.Error, MessageType.Error);
             if (!session.Motion.Supported) EditorGUILayout.HelpBox("位移预览不支持此映射，已禁用整条轨迹；动画独立采样。" + string.Join("\n", session.Motion.Diagnostics), MessageType.Warning);
             else EditorGUILayout.LabelField("旧表回放：来源元数据未验证；无 Animator Transition 混合。", EditorStyles.miniLabel);
             if (hurt && catalog && !catalog.hurtBoxConfigured) EditorGUILayout.HelpBox("先在角色配置启用并填写合法 HurtBox，再使用 Handles。", MessageType.Info);
             if (!details) return;
             scroll = EditorGUILayout.BeginScrollView(scroll, GUILayout.Height(100));
+            foreach(var issue in session.Presentation.Issues) if(GUILayout.Button(issue.Text,EditorStyles.wordWrappedMiniLabel)) selectItem?.Invoke(issue.ItemId);
             foreach (var message in session.Proxy.Warnings.Concat(session.Motion.Diagnostics)) EditorGUILayout.LabelField(message, EditorStyles.wordWrappedMiniLabel);
             int start = Math.Max(0, session.Frame - 3), end = Math.Min(session.Duration, session.Frame + 3);
             for (int f = start; f <= end; f++)

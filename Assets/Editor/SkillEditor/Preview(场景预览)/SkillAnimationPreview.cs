@@ -29,6 +29,8 @@ namespace SkillConfig.Editor
         public void Sample(AnimationSegment segment, int frame)
         {
             double time = MapTime(segment, frame);
+            if (segment.clip.hasRootCurves && (!proxy.Animator.avatar || !proxy.Animator.avatar.isValid))
+                throw new ArgumentException("Root Motion preview requires a valid Avatar to extract motion. Select the character model (星见雅), or configure the source FBX's Avatar binding; animation-only FBX without Avatar cannot be sampled safely.");
             if (segment.clip.isHumanMotion && (!proxy.Animator.avatar || !proxy.Animator.avatar.isValid || !proxy.Animator.avatar.isHuman))
                 throw new ArgumentException("Humanoid animation requires a valid matching visual Avatar.");
             if (!clips.TryGetValue(segment.clip, out var clip))
@@ -44,8 +46,12 @@ namespace SkillConfig.Editor
                 }
             }
             // A fresh manual graph + rest pose makes random seek independent of prior clip/time.
-            StopGraph(); proxy.RestoreRest(); proxy.Animator.Rebind(); proxy.RestoreRest();
-            proxy.Animator.runtimeAnimatorController = null; proxy.Animator.applyRootMotion = false; proxy.Animator.fireEvents = false;
+            StopGraph(); proxy.RestoreRest();
+            // Extraction must be enabled: disabling it leaves motion in the animated skeleton,
+            // so adding the integer table would move the visible character twice.
+            // This isolated Animator has no gameplay components; its extracted root is reset below.
+            proxy.Animator.runtimeAnimatorController = null; proxy.Animator.applyRootMotion = true; proxy.Animator.fireEvents = false;
+            proxy.Animator.Rebind(); proxy.RestoreRest();
             try
             {
                 graph = PlayableGraph.Create("SkillPreview::Animation"); graph.SetTimeUpdateMode(DirectorUpdateMode.Manual);

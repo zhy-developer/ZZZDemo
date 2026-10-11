@@ -45,6 +45,10 @@ namespace SkillConfig.Editor.Tests
             var source = AssetDatabase.LoadAssetAtPath<CharacterSkillCatalog>(SkillPilotSetup.CatalogPath);
             Directory.CreateDirectory("Assets/Phase2BChecks"); AssetDatabase.Refresh();
             var owner = UnityEngine.Object.Instantiate(source.skills[0]);
+            // User pilots now contain authored geometry. This test requires an empty data-track
+            // fixture; clear only the transient copy, never the user's source asset.
+            owner.skill.tracks.Clear(); owner.skill.hitGroups.Clear(); owner.skill.hitBoxes.Clear();
+            owner.skill.invincibility.Clear(); owner.skill.interrupts.Clear(); owner.skill.events.Clear(); owner.skill.vfx.Clear(); owner.skill.sfx.Clear();
             owner.skill.skillId = "phase2b-check-skill";
             AssetDatabase.CreateAsset(owner, "Assets/Phase2BChecks/Skill.asset");
             var catalog = ScriptableObject.CreateInstance<CharacterSkillCatalog>();
