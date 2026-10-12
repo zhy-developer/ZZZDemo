@@ -1,4 +1,4 @@
-namespace ZZZ
+﻿namespace ZZZ
 {
     public enum PlayerRenderAction { None, Attack, Hit, Dead, Skill, Dodge }
     public struct PlayerRenderFrame
@@ -23,8 +23,14 @@ namespace ZZZ
         readonly PlayerSkillViewState skill;
         readonly PlayerDodgeViewState dodge;
         public PlayerComboStateMachine(Player player)
-        { Player = player; idle = new PlayerNullState(this); attack = new PlayerATKIngState(this); hit = new PlayerHitState(this); dead = new PlayerDeadState(this);
-            skill = new PlayerSkillViewState(this); dodge = new PlayerDodgeViewState(this); }
+        {
+            Player = player; 
+            idle = new PlayerNullState(this);
+            attack = new PlayerATKIngState(this); 
+            hit = new PlayerHitState(this); 
+            dead = new PlayerDeadState(this);
+            skill = new PlayerSkillViewState(this); 
+            dodge = new PlayerDodgeViewState(this); }
         public void Apply(PlayerRenderFrame frame)
         {
             Frame = frame;
