@@ -6,9 +6,10 @@ using UnityEngine;
 namespace SkillRuntime.Integration
 {
     // Match-level owner survives accidental scene/Player unload while result confirmation is pending.
-    public sealed class PilotResultFlow : MonoBehaviour
+    [UnityEngine.Scripting.APIUpdating.MovedFrom(true, "SkillRuntime.Integration", "Assembly-CSharp", "PilotResultFlow")]
+    public sealed class BattleResultFlow : MonoBehaviour
     {
-        public static PilotResultFlow Active { get; private set; }
+        public static BattleResultFlow Active { get; private set; }
         static readonly System.Collections.Generic.HashSet<string> retiredMatches = new System.Collections.Generic.HashSet<string>(StringComparer.Ordinal);
         public static bool WasRetired(string match) => match != null && retiredMatches.Contains(match);
         public ClientAgreement Agreement { get; } = new ClientAgreement();
@@ -16,18 +17,18 @@ namespace SkillRuntime.Integration
         public bool Leaving { get; private set; }
         public string Diagnostic { get; private set; }
         public string Match { get; private set; }
-        PilotBattleSession session;
+        BattleSession session;
         Action confirmed, retireScheduling;
         int slot;
         long sessionKey;
         string digest;
         float nextRetry, waitingSince;
         bool applied;
-        public static PilotResultFlow Open(PilotBattleSession session, Action onConfirmed, Action onRetire)
+        public static BattleResultFlow Open(BattleSession session, Action onConfirmed, Action onRetire)
         {
             if (Active != null) throw new InvalidOperationException("Previous match has not retired.");
-            var go = new GameObject("Pilot result session"); DontDestroyOnLoad(go);
-            var flow = go.AddComponent<PilotResultFlow>(); Active = flow; flow.session = session; flow.confirmed = onConfirmed;
+            var go = new GameObject("Battle result session"); DontDestroyOnLoad(go);
+            var flow = go.AddComponent<BattleResultFlow>(); Active = flow; flow.session = session; flow.confirmed = onConfirmed;
             flow.retireScheduling = onRetire;
             flow.Match = BattleData.Instance.MatchId; flow.slot = BattleData.Instance.battleID;
             flow.sessionKey = BattleData.Instance.SessionKey; flow.digest = session.Digest;
@@ -59,7 +60,7 @@ namespace SkillRuntime.Integration
             try
             {
                 var result = ResultWire.Read(message.result);
-                if (result == null || result.Match != Match || result.Session != sessionKey || result.Rules != PilotBattleProfile.Rules || result.Config != digest)
+                if (result == null || result.Match != Match || result.Session != sessionKey || result.Rules != BattleProfile.Rules || result.Config != digest)
                     throw new InvalidOperationException("Invalid confirmation scope/version/config.");
                 var status = (AgreementStatus)message.status;
                 if (status == AgreementStatus.Confirmed)

@@ -14,7 +14,7 @@ namespace SkillConfig
     public sealed class CharacterSkillCatalog : ScriptableObject
     {
         public string characterId;
-        public CatalogCompleteness completeness = CatalogCompleteness.PartialPilot;
+        public CatalogCompleteness completeness = CatalogCompleteness.Partial;
         public string migrationNotes;
         public RuntimeAnimatorController animatorController;
         public bool hurtBoxConfigured;

@@ -9,7 +9,7 @@ namespace SkillRuntime.Integration
     // Non-authoritative consumer, invoked once for every committed logical frame, including
     // catch-up frames. Synchronous Resources loading means there is no outstanding async
     // request that can resurrect a cancelled cast. Nothing here feeds the combat hash.
-    public sealed class PilotPresentation : IDisposable
+    public sealed class BattlePresentation : IDisposable
     {
         sealed class Effect
         {
@@ -22,7 +22,7 @@ namespace SkillRuntime.Integration
             public CastKey Cast; public string Id; public SfxCue Cue; public SkillPresentationLease Lease;
             public long Start, End, FadeStart = -1, FadeEnd; public float FadeVolume;
         }
-        readonly PilotConfiguration config;
+        readonly BattleProfileSnapshot config;
         readonly Dictionary<int, RoleBase> roles;
         readonly Dictionary<string, SkillDto> skills;
         readonly List<Effect> effects = new List<Effect>();
@@ -34,10 +34,10 @@ namespace SkillRuntime.Integration
         public string LastRequests => string.Join(";", requests);
         public int ActiveVfx => effects.Count;
         public int ActiveSfx => sounds.Count;
-        public PilotPresentation(PilotConfiguration config, IEnumerable<RoleBase> roles)
+        public BattlePresentation(BattleProfileSnapshot config, IEnumerable<RoleBase> roles)
         { this.config = config; this.roles = roles.ToDictionary(r => r.Player.BattleID); skills = config.Skills.ToDictionary(s => s.Skill.SkillId, s => s.CopyPresentation(), StringComparer.Ordinal); }
         void Diagnose(string key, Exception ex)
-        { if (diagnosed.Add(key)) Debug.LogWarning("[PilotPresentation] " + key + ": " + ex.Message + " (authority unaffected)"); }
+        { if (diagnosed.Add(key)) Debug.LogWarning("[BattlePresentation] " + key + ": " + ex.Message + " (authority unaffected)"); }
         T Resource<T>(string id, ResourceKind kind) where T : UnityEngine.Object
         {
             var r = config.Resource(id);

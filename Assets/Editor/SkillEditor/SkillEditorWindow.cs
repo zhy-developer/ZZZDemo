@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using SkillRuntime.Integration;
@@ -11,7 +11,7 @@ namespace SkillConfig.Editor
     {
         [SerializeField] CharacterSkillCatalog catalog;
         [SerializeField] ComboData owner;
-        [SerializeField] PilotBattleProfile battleProfile;
+        [SerializeField] BattleProfile battleProfile;
         string exportMessage = "";
         bool exportFailed;
         bool sealCurrent;
@@ -28,7 +28,7 @@ namespace SkillConfig.Editor
         double nextValidation;
         [MenuItem("工具箱/Skill Editor/Skill Editor")]
         public static void Open() => GetWindow<SkillEditorWindow>("Skill Editor");
-        public static void OpenProfile(PilotBattleProfile profile)
+        public static void OpenProfile(BattleProfile profile)
         {
             var w = GetWindow<SkillEditorWindow>("Skill Editor");
             w.catalog = profile.catalog;
@@ -87,8 +87,8 @@ namespace SkillConfig.Editor
         {
             if (battleProfile) return;
             if (!catalog) return;
-            var matches = AssetDatabase.FindAssets("t:PilotBattleProfile")
-                .Select(g => AssetDatabase.LoadAssetAtPath<PilotBattleProfile>(AssetDatabase.GUIDToAssetPath(g)))
+            var matches = AssetDatabase.FindAssets("t:BattleProfile")
+                .Select(g => AssetDatabase.LoadAssetAtPath<BattleProfile>(AssetDatabase.GUIDToAssetPath(g)))
                 .Where(p => p && p.catalog == catalog).ToArray();
             // Multiple matches require an explicit choice; never reseal an arbitrary profile.
             if (matches.Length == 1) battleProfile = matches[0];
@@ -131,7 +131,7 @@ namespace SkillConfig.Editor
                 }
                 using (new EditorGUILayout.HorizontalScope())
                 {
-                    var nextProfile = (PilotBattleProfile)EditorGUILayout.ObjectField("战斗配置", battleProfile, typeof(PilotBattleProfile), false);
+                    var nextProfile = (BattleProfile)EditorGUILayout.ObjectField("战斗配置", battleProfile, typeof(BattleProfile), false);
                     if (nextProfile != battleProfile) { battleProfile = nextProfile; exportMessage = ""; diagnosticsDirty = true; sealCurrent = false; }
                     if (battleProfile) GUILayout.Label(sealCurrent ? "摘要已更新" : "摘要待更新", GUILayout.Width(85));
                     using (new EditorGUI.DisabledScope(!battleProfile))
@@ -177,15 +177,15 @@ namespace SkillConfig.Editor
                 if (battleProfile && battleProfile.catalog != catalog)
                     throw new InvalidOperationException("所选战斗配置不属于当前角色目录。");
                 ResolveProfile();
-                if (!battleProfile && AssetDatabase.FindAssets("t:PilotBattleProfile")
-                    .Select(g => AssetDatabase.LoadAssetAtPath<PilotBattleProfile>(AssetDatabase.GUIDToAssetPath(g)))
+                if (!battleProfile && AssetDatabase.FindAssets("t:BattleProfile")
+                    .Select(g => AssetDatabase.LoadAssetAtPath<BattleProfile>(AssetDatabase.GUIDToAssetPath(g)))
                     .Any(p => p && p.catalog == catalog))
                     throw new InvalidOperationException("此目录对应多个战斗配置，请先选择需要更新的战斗配置。");
                 preview?.CloseSession();
                 Save();
                 if (battleProfile)
                 {
-                    PilotProfileMaintenance.ExportAndSeal(battleProfile);
+                    BattleProfileMaintenance.ExportAndSeal(battleProfile);
                     exportMessage = "已保存并导出，战斗配置摘要已更新：" + battleProfile.name;
                 }
                 else

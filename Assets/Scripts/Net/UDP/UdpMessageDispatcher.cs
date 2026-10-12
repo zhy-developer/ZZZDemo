@@ -1,4 +1,4 @@
-﻿using GameProtocol;
+using GameProtocol;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -59,11 +59,11 @@ public class UdpMessageDispatcher : Singleton<UdpMessageDispatcher>
         _ready.battleID = _battleID;
         var data = BattleData.Instance;
         _ready.matchId = data.MatchId; _ready.roundId = data.RoundId; _ready.protocolVersion = 1; _ready.joinTicket = data.JoinTicket;
-        var pilot = BattleManager.roleManage?.Pilot;
-        if (pilot == null) return;
+        var session = BattleManager.roleManage?.Session;
+        if (session == null) return;
         _ready.authorityMode = 1;
-        _ready.rules = SkillRuntime.Integration.PilotBattleProfile.Rules;
-        _ready.configHash = pilot.Digest;
+        _ready.rules = SkillRuntime.Integration.BattleProfile.Rules;
+        _ready.configHash = session.Digest;
         Debug.Log("SendBattleReady   _upd== " + _upd);
         _upd.SendMessage(PackageHandler.PackSendMessage<UdpBattleReady>(_ready, CSID.UDP_BATTLE_READY));
     }

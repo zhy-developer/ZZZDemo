@@ -1,4 +1,4 @@
-﻿using GameProtocol;
+using GameProtocol;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -14,7 +14,7 @@ public class BattleManager : MonoSingleton<BattleManager>
     private bool isBattleStart;
     private bool isBattleFinish;
     private bool destroyed;
-    private SkillRuntime.Integration.PilotResultFlow resultFlow;
+    private SkillRuntime.Integration.BattleResultFlow resultFlow;
 
     [HideInInspector]
     public static RoleManager roleManage;
@@ -37,7 +37,7 @@ public class BattleManager : MonoSingleton<BattleManager>
         yield return new WaitUntil(() => {
             return roleManage.initFinish;
         });
-        if (roleManage.Pilot != null) resultFlow = SkillRuntime.Integration.PilotResultFlow.Open(roleManage.Pilot,
+        if (roleManage.Session != null) resultFlow = SkillRuntime.Integration.BattleResultFlow.Open(roleManage.Session,
             () => { if (!destroyed) delegate_gameOver?.Invoke(); },
             () => { if (this) { destroyed = true; CancelInvoke(); StopAllCoroutines(); } });
         this.InvokeRepeating("Send_BattleReady", 0.5f, 0.2f);
@@ -61,8 +61,8 @@ public class BattleManager : MonoSingleton<BattleManager>
     void Message_Battle_Start(UdpBattleStart _mes)
     {
         if (destroyed || !BattleData.Instance.InScope(_mes.matchId, _mes.roundId)) return;
-        if (roleManage?.Pilot == null || !string.IsNullOrEmpty(_mes.error) || _mes.protocolVersion != 1 || _mes.authorityMode != 1 ||
-            _mes.configHash != roleManage.Pilot.Digest || _mes.rules != SkillRuntime.Integration.PilotBattleProfile.Rules)
+        if (roleManage?.Session == null || !string.IsNullOrEmpty(_mes.error) || _mes.protocolVersion != 1 || _mes.authorityMode != 1 ||
+            _mes.configHash != roleManage.Session.Digest || _mes.rules != SkillRuntime.Integration.BattleProfile.Rules)
         { Debug.LogError("[MatchRejected] " + (_mes.error ?? "mode/version mismatch")); CancelInvoke("Send_BattleReady"); return; }
         BattleStart();
     }
@@ -122,16 +122,16 @@ public class BattleManager : MonoSingleton<BattleManager>
     float nextMissingFrameRetry;
     void LogicUpdate()
     {
-        if (destroyed || roleManage == null || roleManage.Pilot?.TerminalSnapshot != null) return;
+        if (destroyed || roleManage == null || roleManage.Session?.TerminalSnapshot != null) return;
         var data = BattleData.Instance;
         // Bounded catch-up drains already received consecutive frames. Every step is still
         // exactly one server tick; render cadence/wall time never supplies authority inputs.
-        int budget = roleManage.Pilot != null ? 8 : 1;
+        int budget = roleManage.Session != null ? 8 : 1;
         for (int i = 0; i < budget; i++)
         {
             if (!data.TryGetNextPlayerOp(out var op))
             {
-                if (roleManage.Pilot != null && data.HighestReceivedFrame >= data.NextFrameID && Time.realtimeSinceStartup >= nextMissingFrameRetry)
+                if (roleManage.Session != null && data.HighestReceivedFrame >= data.NextFrameID && Time.realtimeSinceStartup >= nextMissingFrameRetry)
                 {
                     nextMissingFrameRetry = Time.realtimeSinceStartup + .25f;
                     int end = (int)Math.Min((long)data.HighestReceivedFrame, (long)data.NextFrameID + 31);
@@ -141,7 +141,7 @@ public class BattleManager : MonoSingleton<BattleManager>
             }
             if (!roleManage.ConsumeFrame(data.NextFrameID, op)) return;
             data.RunOpSucces();
-            if (roleManage.Pilot?.TerminalSnapshot != null) return;
+            if (roleManage.Session?.TerminalSnapshot != null) return;
         }
     }
 

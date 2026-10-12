@@ -27,8 +27,8 @@ MonoBehaviour:
   dodgeBack: {fileID: 11400000, guid: 1db92609ccbd6044b85c4576e420f84c, type: 2}
   dodgeCooldownFrames: 16
   exportedJson: {fileID: 4900000, guid: 93561b110967280488f28ec259a6bd31, type: 3}
-  sealedJsonHash: 69132fbd22a3935ffeba37e1302449394c36c38ee56aa46eede65b1231c407ad
-  sealedSourceHash: 5c4d718e4bff5877ecaf6f2811025747a2e9ace2a43d64dca8c268e0026e9a72
+  sealedJsonHash: f7e86bcb3bed9d5ceb6d15bd84a95ddf496fec11810dc7ef76b09fe5e301c6dd
+  sealedSourceHash: 348b82d44c18399435a8af6ff2d13bec28c6c0213ce32ee5c16909ce5e2f3635
   testHP: 100
   testHurtRadius: 5000
   testHurtOffset:

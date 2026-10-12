@@ -11,9 +11,9 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 
 // Exporting and sealing are explicit authoring actions; build validation remains read-only.
-public static class PilotProfileMaintenance
+public static class BattleProfileMaintenance
 {
-    public static void ExportAndSeal(PilotBattleProfile profile)
+    public static void ExportAndSeal(BattleProfile profile)
     {
         if (EditorApplication.isPlayingOrWillChangePlaymode) throw new InvalidOperationException("Leave Play Mode before exporting configuration.");
         if (!profile || !profile.catalog) throw new InvalidOperationException("Select a battle profile with a catalog.");
@@ -26,7 +26,7 @@ public static class PilotProfileMaintenance
         Seal(profile);
     }
 
-    public static void CheckExport(PilotBattleProfile profile)
+    public static void CheckExport(BattleProfile profile)
     {
         if (!profile || !profile.catalog) throw new InvalidOperationException("Select a battle profile with a catalog.");
         if (SkillConfigExporter.IsStale(profile.catalog))
@@ -35,7 +35,7 @@ public static class PilotProfileMaintenance
             throw new InvalidOperationException("Profile must reference its catalog's actual exported JSON.");
     }
 
-    public static void Seal(PilotBattleProfile profile)
+    public static void Seal(BattleProfile profile)
     {
         if (EditorApplication.isPlayingOrWillChangePlaymode) throw new InvalidOperationException("Leave Play Mode before sealing configuration.");
         CheckExport(profile);
@@ -59,8 +59,8 @@ public static class PilotProfileMaintenance
     }
 }
 
-[CustomEditor(typeof(PilotBattleProfile))]
-public sealed class PilotBattleProfileInspector : Editor
+[CustomEditor(typeof(BattleProfile))]
+public sealed class BattleProfileInspector : Editor
 {
     public override void OnInspectorGUI()
     {
@@ -74,7 +74,7 @@ public sealed class PilotBattleProfileInspector : Editor
             EditorGUILayout.PropertyField(serializedObject.FindProperty("testHurtOffset"), true);
         }
         serializedObject.ApplyModifiedProperties();
-        var profile = (PilotBattleProfile)target;
+        var profile = (BattleProfile)target;
         using (new EditorGUI.DisabledScope(true))
         {
             EditorGUILayout.TextField("Sealed source", profile.sealedSourceHash ?? "");
@@ -118,10 +118,10 @@ public sealed class GameplayBuildValidation : IProcessSceneWithReport, IPreproce
     internal static void ValidateScene(Scene scene, BuildReport report)
     {
         var manager = scene.GetRootGameObjects().SelectMany(g => g.GetComponentsInChildren<GameManager>(true)).Single();
-        var settings = manager.GetComponent<PilotMatchSettings>();
+        var settings = manager.GetComponent<BattleMatchSettings>();
         if (!settings) throw new BuildFailedException("BattleScene must declare its battle mode explicitly.");
-        if (settings.mode != BattleAuthorityMode.DeterministicPilot) throw new BuildFailedException("Legacy combat has been removed. Select DeterministicPilot.");
-        PilotProfileMaintenance.CheckExport(settings.profile);
+        if (settings.mode != BattleAuthorityMode.Deterministic) throw new BuildFailedException("Legacy combat has been removed. Select Deterministic.");
+        BattleProfileMaintenance.CheckExport(settings.profile);
         if (!settings.profile.normalGameplay && (report.summary.options & BuildOptions.Development) == 0)
             throw new BuildFailedException("A test profile cannot be used in a non-development build.");
         var config = settings.Freeze();

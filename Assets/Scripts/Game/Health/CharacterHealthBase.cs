@@ -7,7 +7,7 @@ public class CharacterHealthBase : MonoBehaviour
     protected CharacterHealthInfo healthInfo;
     [SerializeField] float currentHP;
     public bool IsDead => healthInfo != null && healthInfo.onDead.Value;
-    public bool IsDeterministicPilot { get; private set; }
+    public bool IsBattleBound { get; private set; }
     public float DisplayHP => healthInfo ? healthInfo.currentHP.Value : 0;
     public float DisplayMaxHP => healthInfo ? healthInfo.maxHP : 0;
     protected virtual void Awake()
@@ -16,14 +16,14 @@ public class CharacterHealthBase : MonoBehaviour
     }
     public void ResetHealthForSpawn()
     {
-        if (IsDeterministicPilot) throw new System.InvalidOperationException("A bound view must consume a battle snapshot.");
+        if (IsBattleBound) throw new System.InvalidOperationException("A bound view must consume a battle snapshot.");
         if (!healthInfo) healthInfo = characterHealthInfo ? Instantiate(characterHealthInfo) : ScriptableObject.CreateInstance<CharacterHealthInfo>();
         healthInfo.InitHealthData(); currentHP = healthInfo.currentHP.Value;
     }
-    public void InitializePilotHealth(int maxHP)
+    public void InitializeBattleHealth(int maxHP)
     {
         if (!healthInfo) healthInfo = ScriptableObject.CreateInstance<CharacterHealthInfo>();
-        IsDeterministicPilot = true; ApplySnapshot(maxHP, maxHP);
+        IsBattleBound = true; ApplySnapshot(maxHP, maxHP);
     }
     public void ApplySnapshot(long hp, int maxHP)
     {

@@ -7,7 +7,7 @@ using ZZZ;
 namespace SkillRuntime.Integration
 {
     // Render state only. No reference to BattleWorld or a mutable combat adapter.
-    public sealed class PilotBattleView : IDisposable
+    public sealed class BattleView : IDisposable
     {
         sealed class ActorView
         {
@@ -17,25 +17,25 @@ namespace SkillRuntime.Integration
             internal float HitLength;
             internal CastKey? CinematicCast;
         }
-        readonly PilotConfiguration config;
+        readonly BattleProfileSnapshot config;
         readonly Dictionary<int, ActorView> actors;
         readonly Queue<BattleFrame> pending = new Queue<BattleFrame>();
-        readonly PilotPresentation effects;
+        readonly BattlePresentation effects;
         BattleFrame latest;
         long acceptedFrame = -1, effectFrame;
         double tailSeconds;
         bool disposed;
-        public PilotBattleView(PilotConfiguration configuration, IEnumerable<RoleBase> roles)
+        public BattleView(BattleProfileSnapshot configuration, IEnumerable<RoleBase> roles)
         {
             config = configuration;
             actors = roles.ToDictionary(r => r.Player.BattleID, r => new ActorView { Role = r,
                 Health = r.Player.GetComponent<CharacterHealthBase>() ?? r.Player.gameObject.AddComponent<CharacterHealthBase>() });
             foreach (var actor in actors.Values)
             {
-                actor.Role.Player.BindDeterministicPilot();
-                actor.Health.InitializePilotHealth(config.HP);
+                actor.Role.Player.BindBattleView();
+                actor.Health.InitializeBattleHealth(config.HP);
             }
-            effects = new PilotPresentation(config, actors.Values.Select(a => a.Role));
+            effects = new BattlePresentation(config, actors.Values.Select(a => a.Role));
         }
         public void Enqueue(BattleFrame frame)
         {
@@ -59,7 +59,7 @@ namespace SkillRuntime.Integration
                     {
                         view.Role.ApplySnapshot(row);
                         view.Health.ApplySnapshot(row.HP, row.MaxHP);
-                        view.Role.Player.PilotRoundClosed = latest.Result != RoundResult.None;
+                        view.Role.Player.BattleRoundClosed = latest.Result != RoundResult.None;
                         Present(view, row, latest);
                     }
                     catch (Exception e) { Debug.LogException(e); }
@@ -130,7 +130,7 @@ namespace SkillRuntime.Integration
         {
             if (disposed) return; disposed = true; pending.Clear(); effects.Dispose();
             foreach (var actor in actors.Values)
-                if (actor.Role && actor.Role.Player) { actor.Role.Player.StopSkillPresentation(); actor.Role.Player.StopPilotPresentation(); }
+                if (actor.Role && actor.Role.Player) { actor.Role.Player.StopSkillPresentation(); actor.Role.Player.StopBattlePresentation(); }
         }
     }
 }

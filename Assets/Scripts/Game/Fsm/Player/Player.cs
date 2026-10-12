@@ -21,8 +21,8 @@ namespace ZZZ
         public new Transform camera { get; private set; }
         public int BattleID { get; private set; }
         public bool IsLocalPlayer { get; private set; }
-        public bool IsDeterministicPilot { get; private set; }
-        public bool PilotRoundClosed { get; internal set; }
+        public bool IsBattleBound { get; private set; }
+        public bool BattleRoundClosed { get; internal set; }
         public bool HasNetworkMovement { get; private set; }
         public PlayerMovementStateMachine movementStateMachine { get; private set; }
         public PlayerComboStateMachine comboStateMachine { get; private set; }
@@ -33,8 +33,8 @@ namespace ZZZ
         AttackStyle? cinematicStyle;
         CameraSwitcher cinematicCameras;
         public void BindBattleInput(System.Func<BattleFrame> snapshot)
-        { inputSnapshot = snapshot; IsDeterministicPilot = true; }
-        internal Vector3 PilotInputAim()
+        { inputSnapshot = snapshot; IsBattleBound = true; }
+        internal Vector3 BattleInputAim()
         {
             var snapshot = inputSnapshot?.Invoke();
             if (snapshot != null && BattleID >= 1 && BattleID <= 2)
@@ -68,14 +68,14 @@ namespace ZZZ
         }
         protected override void Update()
         {
-            if (IsDeterministicPilot && IsLocalPlayer && inputSnapshot?.Invoke()?.Result == RoundResult.None) networkInput.Capture();
+            if (IsBattleBound && IsLocalPlayer && inputSnapshot?.Invoke()?.Result == RoundResult.None) networkInput.Capture();
         }
-        public void BindDeterministicPilot()
+        public void BindBattleView()
         {
             hasLocomotion = characterAnimator.HasState(0, Animator.StringToHash("WalkStart"))
                 && characterAnimator.HasState(0, Animator.StringToHash("Locomotion"))
                 && characterAnimator.HasState(0, Animator.StringToHash("Idle"));
-            StopPilotPresentation();
+            StopBattlePresentation();
         }
         public void ApplyRenderFrame(PlayerRenderFrame frame)
         {
@@ -88,21 +88,21 @@ namespace ZZZ
         // Called by presentation states only. These methods never mutate combat state.
         internal void PlayAttack(PlayerRenderFrame frame)
         {
-            if (locomotion) StopPilotPresentation();
+            if (locomotion) StopBattlePresentation();
             attackPlayback.Apply(frame);
             transform.localPosition = Vector3.zero;
         }
         internal void PlayPose(string state, float normalizedTime)
         {
             if (!characterAnimator || string.IsNullOrEmpty(state) || !characterAnimator.HasState(0, Animator.StringToHash(state))) return;
-            StopPilotPresentation();
+            StopBattlePresentation();
             characterAnimator.Play(state, 0, normalizedTime);
             characterAnimator.Update(0);
             transform.localPosition = Vector3.zero;
         }
         internal void PlayLocomotion(string idleState, bool moving)
         {
-            moving &= hasLocomotion && !PilotRoundClosed;
+            moving &= hasLocomotion && !BattleRoundClosed;
             bool entering = !locomotion;
             if (!entering && locomotionMoving == moving) return;
             locomotion = true; locomotionMoving = moving;
@@ -116,7 +116,7 @@ namespace ZZZ
             if (moving) characterAnimator.CrossFadeInFixedTime("WalkStart", .14f, 0, 0);
             else if (entering) characterAnimator.CrossFadeInFixedTime(hasLocomotion ? "Idle" : idleState, .14f, 0, 0);
         }
-        public void StopPilotPresentation()
+        public void StopBattlePresentation()
         {
             attackPlayback?.Reset();
             if (!characterAnimator) return;
@@ -130,9 +130,9 @@ namespace ZZZ
         void LateUpdate()
         {
             attackPlayback?.ClampEnd();
-            if (IsDeterministicPilot) transform.localPosition = Vector3.zero;
+            if (IsBattleBound) transform.localPosition = Vector3.zero;
         }
-        void OnDisable() { StopSkillPresentation(); StopPilotPresentation(); networkInput?.Clear(); }
+        void OnDisable() { StopSkillPresentation(); StopBattlePresentation(); networkInput?.Clear(); }
         public void StartSkillPresentation(AttackStyle style, double elapsedSeconds)
         {
             StopSkillPresentation();

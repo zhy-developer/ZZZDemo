@@ -6,7 +6,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Program.cs" />
-    <Compile Include="../../Assets/Scripts/SkillRuntimeIntegration/PilotBattleSession.cs" />
+    <Compile Include="../../Assets/Scripts/SkillRuntimeIntegration/BattleSession.cs" />
     <Compile Include="../../Assets/Scripts/MatchLifecycle/*.cs" />
     <Compile Include="../../Assets/Scripts/Net/Message/GameProtocol.cs" />
     <Reference Include="protobuf-net"><HintPath>../protobuf-net.dll</HintPath></Reference>

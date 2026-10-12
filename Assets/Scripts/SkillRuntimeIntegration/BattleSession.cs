@@ -9,7 +9,7 @@ using FinalResult = MatchLifecycle.FinalResult;
 namespace SkillRuntime.Integration
 {
     // Network/result adapter only. No scene objects, animation or presentation consumer required.
-    public sealed class PilotBattleSession : IDisposable
+    public sealed class BattleSession : IDisposable
     {
         readonly BattleWorld world;
         readonly string match, rules;
@@ -25,7 +25,7 @@ namespace SkillRuntime.Integration
         public RoundResult TerminalResult => world.Result;
         public EntityKey? TerminalWinner => world.Winner;
         public string LastStateHash => Latest.StateHash;
-        public PilotBattleSession(BattleConfiguration configuration, IEnumerable<BattleSpawn> spawns, BattleBounds bounds,
+        public BattleSession(BattleConfiguration configuration, IEnumerable<BattleSpawn> spawns, BattleBounds bounds,
             IEnumerable<XzDelta> directions, long sessionKey, string networkMatchId, string ruleVersion)
         {
             Digest = configuration.Digest; session = sessionKey; match = networkMatchId; rules = ruleVersion;

@@ -24,7 +24,7 @@ namespace SkillConfig
             if (data.logicFrameIntervalMs != 33 || data.precision != 10000) error("UNITS", "catalog", "This schema profile requires 33ms and precision 10000.");
             if (!Enum.IsDefined(typeof(CatalogCompleteness), data.completeness) || data.battleReady)
                 error("READINESS", "catalog", "Phase 1 documents cannot declare battleReady.");
-            if (data.completeness == CatalogCompleteness.PartialPilot) warn("PARTIAL_CATALOG", "catalog", "Partial migration; not a complete combat configuration.");
+            if (data.completeness == CatalogCompleteness.Partial) warn("PARTIAL_CATALOG", "catalog", "Partial migration; not a complete combat configuration.");
             if (!data.hurtBoxConfigured)
             {
                 if (data.completeness == CatalogCompleteness.Complete) error("HURTBOX", "catalog", "Complete catalog requires a vertical Capsule HurtBox.");

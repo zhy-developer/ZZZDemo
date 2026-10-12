@@ -171,8 +171,8 @@ Check(!typeof(BattleWorld).Assembly.GetReferencedAssemblies().Any(a => a.Name.St
 var networkConfig = new BattleConfiguration(new[] { Skill() }, new HurtCircle(1000, 0, 0, 0), 10, 1, new string('a', 64));
 var networkSpawns = new[] { new BattleSpawn(1, -1000, 0, 10), new BattleSpawn(2, 1000, 0, 10) };
 var match = "11111111111111111111111111111111";
-using (var clientA = new SkillRuntime.Integration.PilotBattleSession(networkConfig, networkSpawns, bounds, directions, 99, match, "battle-world-v2"))
-using (var clientB = new SkillRuntime.Integration.PilotBattleSession(networkConfig, networkSpawns, bounds, directions, 99, match, "battle-world-v2"))
+using (var clientA = new SkillRuntime.Integration.BattleSession(networkConfig, networkSpawns, bounds, directions, 99, match, "battle-world-v2"))
+using (var clientB = new SkillRuntime.Integration.BattleSession(networkConfig, networkSpawns, bounds, directions, 99, match, "battle-world-v2"))
 {
     var input = new GameProtocol.AllPlayerOperation();
     input.operations.Add(new GameProtocol.PlayerOperation { battleID = 1, move = 121, rightOperation = GameProtocol.RightOpType.rop1, operationID = 1 });
@@ -285,7 +285,7 @@ using (var b = ExpandedWorld())
     }
     Check(true, "400-frame expanded combat replay is independent of renderer and input enumeration order");
 }
-using (var session = new SkillRuntime.Integration.PilotBattleSession(ExpandedConfig(), networkSpawns, bounds, directions, 51, null, "expanded"))
+using (var session = new SkillRuntime.Integration.BattleSession(ExpandedConfig(), networkSpawns, bounds, directions, 51, null, "expanded"))
 {
     var input = new GameProtocol.AllPlayerOperation();
     input.operations.Add(new GameProtocol.PlayerOperation { battleID = 1, move = 0, rightOperation = GameProtocol.RightOpType.rop4, operationID = 1, operationValue1 = 0, operationValue2 = 1 });
@@ -303,6 +303,6 @@ namespace ZZZ
         { if (ThrowOnPose) throw new InvalidOperationException("View destroyed"); Pose = state; Time = time; }
         internal void PlayAttack(PlayerRenderFrame frame) => PlayPose(frame.Animation, frame.NormalizedTime);
         internal void PlayLocomotion(string idle, bool moving) { Pose = idle; Moving = moving; }
-        public void StopPilotPresentation() { Moving = false; }
+        public void StopBattlePresentation() { Moving = false; }
     }
 }

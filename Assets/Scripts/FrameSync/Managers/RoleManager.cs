@@ -19,10 +19,10 @@ public class RoleManager : MonoBehaviour
 
     private Transform roleParent;
     private Dictionary<int, RoleBase> dic_role;
-    public SkillRuntime.Integration.PilotBattleSession Pilot { get; private set; }
+    public SkillRuntime.Integration.BattleSession Session { get; private set; }
     public SkillRuntime.Integration.BattleAuthorityMode AuthorityMode { get; private set; }
-    private SkillRuntime.Integration.PilotConfiguration pilotConfig;
-    private PilotBattleView battleView;
+    private SkillRuntime.Integration.BattleProfileSnapshot battleConfig;
+    private BattleView battleView;
 
     public void InitData(Transform _roleParent)
     {
@@ -30,10 +30,10 @@ public class RoleManager : MonoBehaviour
         roleParent = _roleParent;
 
         dic_role = new Dictionary<int, RoleBase>();
-        var settings = GetComponent<SkillRuntime.Integration.PilotMatchSettings>();
+        var settings = GetComponent<SkillRuntime.Integration.BattleMatchSettings>();
         if (settings == null) throw new InvalidOperationException("Battle scene requires a battle profile.");
-        pilotConfig = settings.Freeze();
-        AuthorityMode = BattleAuthorityMode.DeterministicPilot;
+        battleConfig = settings.Freeze();
+        AuthorityMode = BattleAuthorityMode.Deterministic;
 
         pre_roleBase = Resources.Load<GameObject>("BattleScene/Role/RoleBase");
         pre_roleUI = Resources.Load<GameObject>("BattleScene/Role/RoleUI");
@@ -88,22 +88,22 @@ public class RoleManager : MonoBehaviour
         var data = BattleData.Instance;
         var spawns = dic_role.Values.Select(r => new BattleSpawn(r.Player.BattleID, r.LogicalPosition.x, r.LogicalPosition.y, r.moveSpeed)).ToArray();
         var directions = Enumerable.Range(0, 120).Select(i => { var d = data.GetSpeed(i * 3); return new XzDelta(d.x, d.y); }).ToArray();
-        Pilot = new PilotBattleSession(pilotConfig.CreateLogicConfiguration(), spawns,
+        Session = new BattleSession(battleConfig.CreateLogicConfiguration(), spawns,
             new BattleBounds(data.mapMinX, data.mapMaxX, data.mapMinY, data.mapMaxY), directions,
-            data.SessionKey, data.MatchId, PilotBattleProfile.Rules);
-        foreach (var role in dic_role.Values) role.Player.BindBattleInput(() => Pilot.Latest);
-        try { battleView = new PilotBattleView(pilotConfig, dic_role.Values); battleView.Enqueue(Pilot.Latest); }
+            data.SessionKey, data.MatchId, BattleProfile.Rules);
+        foreach (var role in dic_role.Values) role.Player.BindBattleInput(() => Session.Latest);
+        try { battleView = new BattleView(battleConfig, dic_role.Values); battleView.Enqueue(Session.Latest); }
         catch (Exception e) { Debug.LogException(e); }
         initFinish = true;
     }
 
     public bool ConsumeFrame(long frame, AllPlayerOperation operations)
     {
-        if (!initFinish || Pilot == null || !Pilot.Advance(frame, operations)) return false;
+        if (!initFinish || Session == null || !Session.Advance(frame, operations)) return false;
         foreach (var op in operations.operations)
             if (op.rightOperation != RightOpType.noop && op.operationID > 0)
                 BattleData.Instance.UpdateRightOperationID(op.battleID, op.operationID, op.rightOperation);
-        battleView?.Enqueue(Pilot.Latest);
+        battleView?.Enqueue(Session.Latest);
         return true;
     }
     void LateUpdate() { battleView?.Render(Time.unscaledDeltaTime); }
@@ -129,7 +129,7 @@ public class RoleManager : MonoBehaviour
     void OnDestroy()
     {
         battleView?.Dispose();
-        if (PilotResultFlow.Active == null) Pilot?.Dispose();
+        if (BattleResultFlow.Active == null) Session?.Dispose();
         LocalPlayer = null;
         if (BattleManager.roleManage == this) BattleManager.roleManage = null;
     }

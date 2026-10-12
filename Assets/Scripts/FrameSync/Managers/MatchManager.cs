@@ -1,4 +1,4 @@
-﻿using GameProtocol;
+using GameProtocol;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -40,9 +40,9 @@ public class MatchManager : MonoSingleton<MatchManager>
 
     private void OnResponseEnterBattle(TcpEnterBattle message)
     {
-        if (SkillRuntime.Integration.PilotResultFlow.WasRetired(message.matchId)) return;
+        if (SkillRuntime.Integration.BattleResultFlow.WasRetired(message.matchId)) return;
         if (BattleData.Instance.MatchId == message.matchId) return; // duplicate enter cannot initialize twice
-        if (SkillRuntime.Integration.PilotResultFlow.Active != null)
+        if (SkillRuntime.Integration.BattleResultFlow.Active != null)
         { Debug.LogError("Cannot enter another match while previous result scope is retained."); return; }
         BattleData.Instance.SetScope(message);
         DeLogger.LogNoticeTrace(message.battleUserInfo + "进入战场");

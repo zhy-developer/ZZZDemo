@@ -13,13 +13,13 @@ namespace ZZZ
         public PlayerNetworkInput(Player player) { this.player = player; }
         public void Capture()
         {
-            if (!player.IsLocalPlayer || !player.isActiveAndEnabled || !player.IsDeterministicPilot) return;
+            if (!player.IsLocalPlayer || !player.isActiveAndEnabled || !player.IsBattleBound) return;
             var actions = CharacterInputSystem.Instance.inputActions.Player;
             Vector2 input = actions.Movement.ReadValue<Vector2>();
             Vector3 direction = Quaternion.Euler(0, player.camera.eulerAngles.y, 0) * new Vector3(input.x, 0, input.y);
             WorldMoveDirection = direction;
             BattleData.Instance.UpdateMoveDir(input == Vector2.zero ? 121 : EncodeDirection(direction));
-            int facing = EncodeDirection(input == Vector2.zero ? player.PilotInputAim() : direction);
+            int facing = EncodeDirection(input == Vector2.zero ? player.BattleInputAim() : direction);
             int moving = input == Vector2.zero ? 0 : 1;
             // Capture intent only; cooldowns/cancellation/eligibility are decided after server echo.
             // Stable simultaneous-input order lets Dash + Attack resolve as a dodge attack.
