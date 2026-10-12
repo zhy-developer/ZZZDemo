@@ -9,6 +9,7 @@ try
     Phase3BChecks.Measure(Console.WriteLine);
     Phase3CChecks.Run(Console.WriteLine);
     Phase3CChecks.Measure(Console.WriteLine);
+    Phase4BChecks.Run(Console.WriteLine, Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../../")));
     Console.WriteLine("PHASE3C_ALL_PASS standalone .NET assertions; NOT Unity or battle regression");
     Console.WriteLine("PHASE3B_ALL_PASS standalone .NET assertions; NOT Unity or battle regression");
     return 0;

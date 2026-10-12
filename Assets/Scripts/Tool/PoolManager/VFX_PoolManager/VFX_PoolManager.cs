@@ -3,6 +3,14 @@ using UnityEngine;
 
 public class VFX_PoolManager : MonoSingleton<VFX_PoolManager>
 {
+    private readonly SkillRuntime.Integration.SkillPresentationSlots skillSlots = new SkillRuntime.Integration.SkillPresentationSlots();
+    public SkillRuntime.Integration.SkillPresentationLease RentSkillEffect(GameObject prefab)
+    {
+        SkillRuntime.Integration.SkillPresentationSlots.ValidateVfx(prefab); // before Instantiate / Awake
+        return skillSlots.Rent(prefab, transform, () => {
+            var go = Instantiate(prefab, transform); go.SetActive(false); return go;
+        });
+    }
     [System.Serializable]
     public class effectData
     {

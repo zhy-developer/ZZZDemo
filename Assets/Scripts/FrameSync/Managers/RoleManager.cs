@@ -79,7 +79,7 @@ public class RoleManager : MonoBehaviour
             }
         }
 
-        if (pilotConfig != null) Pilot = new SkillRuntime.Integration.PilotBattleSession(pilotConfig, dic_role.Values, 1L + (uint)BattleData.Instance.randSeed);
+        if (pilotConfig != null) Pilot = new SkillRuntime.Integration.PilotBattleSession(pilotConfig, dic_role.Values, BattleData.Instance.SessionKey, BattleData.Instance.MatchId);
         initFinish = true;
     }
 

@@ -89,9 +89,12 @@ namespace SkillConfig.Editor.Tests
                     }
                     Check(motion.Diagnostics.Any(s => s.Contains("MOTION_METADATA")), "missing provenance warns");
                     owner.rootMotion.endFrameExclusive = 3; motion = new SkillRootMotionPreview(owner);
-                    Check(motion.Position(3).x == motion.Position(motion.Duration).x && motion.Position(3).z == motion.Position(motion.Duration).z, "valid static tail holds last position");
+                    Check(!motion.Supported, "unconfirmed cropped motion coverage is rejected");
+                    owner.skill.animations[0].tailPolicy = MotionTailPolicy.HoldAtCoverageEnd; motion = new SkillRootMotionPreview(owner);
+                    Check(motion.Supported && motion.Position(3).x == motion.Position(motion.Duration).x && motion.Position(3).z == motion.Position(motion.Duration).z, "valid static tail holds last position");
+                    var held = motion.Position(motion.Duration);
                     owner.skill.animations[0].speedPermille = 2000; SkillEditCommands.Reflow(owner); motion = new SkillRootMotionPreview(owner);
-                    Check(!motion.Supported && motion.Position(motion.Duration).x == 0 && motion.Position(motion.Duration).z == 0, "unsupported speed mapping disables trajectory");
+                    Check(motion.Supported && motion.Position(motion.Duration).x == held.x && motion.Position(motion.Duration).z == held.z, "Phase4B speed mapping preserves explicitly confirmed stationary tail");
                 }
                 finally { UnityEngine.Object.DestroyImmediate(owner); }
             }

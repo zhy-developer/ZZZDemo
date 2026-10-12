@@ -14,6 +14,7 @@ using UnityEngine.InputSystem;
 public sealed class PilotNetworkAcceptanceDriver : MonoBehaviour
 {
     string client;
+    bool phase4B, dryRunStarted;
     float started;
     bool loggedIn, matched, joined, complete;
     long observedFrame = -1, lastAttack = -100, stageOneCast = -1, stageTwoCast = -1;
@@ -30,11 +31,14 @@ public sealed class PilotNetworkAcceptanceDriver : MonoBehaviour
         var go = new GameObject("Network acceptance OUTBOUND input driver");
         DontDestroyOnLoad(go);
         var driver = go.AddComponent<PilotNetworkAcceptanceDriver>(); driver.client = args[i + 1];
+        driver.phase4B = Array.IndexOf(args, "-pilotPhase4B") >= 0;
     }
     IEnumerator Start()
     {
         started = Time.realtimeSinceStartup;
         Application.runInBackground = true; Application.targetFrameRate = 60;
+        // Test-process graphics only; never change network tick, timeScale, authority or saved project settings.
+        if (phase4B) { QualitySettings.SetQualityLevel(0, true); QualitySettings.vSyncCount = 0; }
         Application.SetStackTraceLogType(LogType.Log, StackTraceLogType.None);
         var uiShader = Shader.Find("UI/Wavy Slant Fill");
         if (uiShader == null || !uiShader.isSupported) { Fail("Blood-bar shader missing or unsupported in player build"); yield break; }
@@ -105,6 +109,14 @@ public sealed class PilotNetworkAcceptanceDriver : MonoBehaviour
             // One attempted attack from the dead client verifies logical rejection.
             if (f >= terminalAt + 5 && lastAttack < terminalAt && pilot.Health(id).IsDead && BattleData.Instance.PendingActionCount == 0) Attack(id, f, 0, "dead-input");
         }
+        else if (phase4B && f >= 40 && f < 230)
+        {
+            // Both real clients traverse Normal1-5 facing away before the damage scenario.
+            // Only outbound inputs; same authored HP, geometry and motion as the actual build.
+            if (!dryRunStarted && cast == null && BattleData.Instance.PendingActionCount == 0)
+            { dryRunStarted = true; Attack(id, f, id == 1 ? 60 : 0, "4b-away-normal1"); }
+            BufferNext(pilot, id, f, self);
+        }
         else if (f >= 40)
         {
             int active = f < 300 ? 1 : f < 550 ? 2 : 1;
@@ -122,7 +134,8 @@ public sealed class PilotNetworkAcceptanceDriver : MonoBehaviour
                     if (f < 300) stageOneCast = f; else if (f < 550) stageTwoCast = f;
                 }
             }
-            if (cast != null && cast.Skill.SkillId == "miyabi-normal-1" && cast.SkillFrame >= 8 && cast.SkillFrame <= 12
+            if (phase4B) BufferNext(pilot, id, f, self);
+            else if (cast != null && cast.Skill.SkillId == "miyabi-normal-1" && cast.SkillFrame >= 8 && cast.SkillFrame <= 12
                 && bufferedOwner != cast.Key.ToString() && BattleData.Instance.PendingActionCount == 0)
             {
                 bufferedOwner = cast.Key.ToString();
@@ -135,7 +148,8 @@ public sealed class PilotNetworkAcceptanceDriver : MonoBehaviour
         InputSystem.QueueDeltaStateEvent(movementDevice.leftStick, new Vector2(localMove.x, localMove.z));
         if (f == observedFrame) return;
         observedFrame = f;
-        if (f % 100 == 0) Debug.Log("[NetworkAcceptance] PROGRESS client=" + client + " F=" + f + " HP=" + pilot.Health(1).ReadPilotHealth() + "," + pilot.Health(2).ReadPilotHealth());
+        if (f % 100 == 0) Debug.Log("[NetworkAcceptance] PROGRESS client=" + client + " F=" + f + " HP=" + pilot.Health(1).ReadPilotHealth() + "," + pilot.Health(2).ReadPilotHealth()
+            + " renderDelta=" + Time.unscaledDeltaTime + " queuedFrames=" + BattleData.Instance.GetFrameDataNum() + " timeScale=" + Time.timeScale);
         if (f >= 1300)
         {
             complete = true;
@@ -144,6 +158,14 @@ public sealed class PilotNetworkAcceptanceDriver : MonoBehaviour
         }
     }
     static int Direction(int x, int z) => Mathf.Min(119, (int)(Mathf.Repeat(Mathf.Atan2(z, x) * Mathf.Rad2Deg, 360) / 3));
+    void BufferNext(PilotBattleSession pilot, int id, long frame, RoleBase role)
+    {
+        var cast = pilot.Cast(id);
+        if (cast == null || cast.Skill.SkillId == "miyabi-normal-5" || bufferedOwner == cast.Key.ToString() || BattleData.Instance.PendingActionCount != 0) return;
+        foreach (var gate in cast.Skill.Events)
+            if (gate.EventId == "combo.preinput" && cast.SkillFrame >= gate.Frame)
+            { bufferedOwner = cast.Key.ToString(); Attack(id, frame, role.LogicalFacing / 3, "4b-next-preinput"); return; }
+    }
     void Attack(int id, long frame, int facing, string phase)
     {
         lastAttack = frame;

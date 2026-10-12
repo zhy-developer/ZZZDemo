@@ -183,6 +183,51 @@ namespace GameProtocol
       get { return _battleUserInfo; }
     }
   
+
+    private string _matchId = "";
+    [global::ProtoBuf.ProtoMember(100, IsRequired = false, Name=@"matchId", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    [global::System.ComponentModel.DefaultValue("")]
+    public string matchId
+    {
+      get { return _matchId; }
+      set { _matchId = value; }
+    }
+
+    private long _sessionKey = default(long);
+    [global::ProtoBuf.ProtoMember(101, IsRequired = false, Name=@"sessionKey", DataFormat = global::ProtoBuf.DataFormat.TwosComplement)]
+    [global::System.ComponentModel.DefaultValue(default(long))]
+    public long sessionKey
+    {
+      get { return _sessionKey; }
+      set { _sessionKey = value; }
+    }
+
+    private int _roundId = default(int);
+    [global::ProtoBuf.ProtoMember(102, IsRequired = false, Name=@"roundId", DataFormat = global::ProtoBuf.DataFormat.TwosComplement)]
+    [global::System.ComponentModel.DefaultValue(default(int))]
+    public int roundId
+    {
+      get { return _roundId; }
+      set { _roundId = value; }
+    }
+
+    private int _protocolVersion = default(int);
+    [global::ProtoBuf.ProtoMember(103, IsRequired = false, Name=@"protocolVersion", DataFormat = global::ProtoBuf.DataFormat.TwosComplement)]
+    [global::System.ComponentModel.DefaultValue(default(int))]
+    public int protocolVersion
+    {
+      get { return _protocolVersion; }
+      set { _protocolVersion = value; }
+    }
+
+    private string _joinTicket = "";
+    [global::ProtoBuf.ProtoMember(104, IsRequired = false, Name=@"joinTicket", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    [global::System.ComponentModel.DefaultValue("")]
+    public string joinTicket
+    {
+      get { return _joinTicket; }
+      set { _joinTicket = value; }
+    }
     private global::ProtoBuf.IExtension extensionObject;
     global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
       { return global::ProtoBuf.Extensible.GetExtensionObject(ref extensionObject, createIfMissing); }
@@ -207,6 +252,78 @@ namespace GameProtocol
       get { return _battleID; }
       set { _battleID = value; }
     }
+
+    private bool _isRecon = default(bool);
+    [global::ProtoBuf.ProtoMember(3, IsRequired = false, Name=@"isRecon", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    [global::System.ComponentModel.DefaultValue(default(bool))]
+    public bool isRecon
+    {
+      get { return _isRecon; }
+      set { _isRecon = value; }
+    }
+
+    private string _matchId = "";
+    [global::ProtoBuf.ProtoMember(100, IsRequired = false, Name=@"matchId", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    [global::System.ComponentModel.DefaultValue("")]
+    public string matchId
+    {
+      get { return _matchId; }
+      set { _matchId = value; }
+    }
+
+    private int _roundId = default(int);
+    [global::ProtoBuf.ProtoMember(101, IsRequired = false, Name=@"roundId", DataFormat = global::ProtoBuf.DataFormat.TwosComplement)]
+    [global::System.ComponentModel.DefaultValue(default(int))]
+    public int roundId
+    {
+      get { return _roundId; }
+      set { _roundId = value; }
+    }
+
+    private int _protocolVersion = default(int);
+    [global::ProtoBuf.ProtoMember(102, IsRequired = false, Name=@"protocolVersion", DataFormat = global::ProtoBuf.DataFormat.TwosComplement)]
+    [global::System.ComponentModel.DefaultValue(default(int))]
+    public int protocolVersion
+    {
+      get { return _protocolVersion; }
+      set { _protocolVersion = value; }
+    }
+
+    private int _authorityMode = default(int);
+    [global::ProtoBuf.ProtoMember(103, IsRequired = false, Name=@"authorityMode", DataFormat = global::ProtoBuf.DataFormat.TwosComplement)]
+    [global::System.ComponentModel.DefaultValue(default(int))]
+    public int authorityMode
+    {
+      get { return _authorityMode; }
+      set { _authorityMode = value; }
+    }
+
+    private string _rules = "";
+    [global::ProtoBuf.ProtoMember(104, IsRequired = false, Name=@"rules", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    [global::System.ComponentModel.DefaultValue("")]
+    public string rules
+    {
+      get { return _rules; }
+      set { _rules = value; }
+    }
+
+    private string _configHash = "";
+    [global::ProtoBuf.ProtoMember(105, IsRequired = false, Name=@"configHash", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    [global::System.ComponentModel.DefaultValue("")]
+    public string configHash
+    {
+      get { return _configHash; }
+      set { _configHash = value; }
+    }
+
+    private string _joinTicket = "";
+    [global::ProtoBuf.ProtoMember(106, IsRequired = false, Name=@"joinTicket", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    [global::System.ComponentModel.DefaultValue("")]
+    public string joinTicket
+    {
+      get { return _joinTicket; }
+      set { _joinTicket = value; }
+    }
     private global::ProtoBuf.IExtension extensionObject;
     global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
       { return global::ProtoBuf.Extensible.GetExtensionObject(ref extensionObject, createIfMissing); }
@@ -217,6 +334,69 @@ namespace GameProtocol
   {
     public UdpBattleStart() {}
     
+
+    private string _matchId = "";
+    [global::ProtoBuf.ProtoMember(100, IsRequired = false, Name=@"matchId", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    [global::System.ComponentModel.DefaultValue("")]
+    public string matchId
+    {
+      get { return _matchId; }
+      set { _matchId = value; }
+    }
+
+    private int _roundId = default(int);
+    [global::ProtoBuf.ProtoMember(101, IsRequired = false, Name=@"roundId", DataFormat = global::ProtoBuf.DataFormat.TwosComplement)]
+    [global::System.ComponentModel.DefaultValue(default(int))]
+    public int roundId
+    {
+      get { return _roundId; }
+      set { _roundId = value; }
+    }
+
+    private int _protocolVersion = default(int);
+    [global::ProtoBuf.ProtoMember(102, IsRequired = false, Name=@"protocolVersion", DataFormat = global::ProtoBuf.DataFormat.TwosComplement)]
+    [global::System.ComponentModel.DefaultValue(default(int))]
+    public int protocolVersion
+    {
+      get { return _protocolVersion; }
+      set { _protocolVersion = value; }
+    }
+
+    private int _authorityMode = default(int);
+    [global::ProtoBuf.ProtoMember(103, IsRequired = false, Name=@"authorityMode", DataFormat = global::ProtoBuf.DataFormat.TwosComplement)]
+    [global::System.ComponentModel.DefaultValue(default(int))]
+    public int authorityMode
+    {
+      get { return _authorityMode; }
+      set { _authorityMode = value; }
+    }
+
+    private string _rules = "";
+    [global::ProtoBuf.ProtoMember(104, IsRequired = false, Name=@"rules", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    [global::System.ComponentModel.DefaultValue("")]
+    public string rules
+    {
+      get { return _rules; }
+      set { _rules = value; }
+    }
+
+    private string _configHash = "";
+    [global::ProtoBuf.ProtoMember(105, IsRequired = false, Name=@"configHash", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    [global::System.ComponentModel.DefaultValue("")]
+    public string configHash
+    {
+      get { return _configHash; }
+      set { _configHash = value; }
+    }
+
+    private string _error = "";
+    [global::ProtoBuf.ProtoMember(106, IsRequired = false, Name=@"error", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    [global::System.ComponentModel.DefaultValue("")]
+    public string error
+    {
+      get { return _error; }
+      set { _error = value; }
+    }
     private global::ProtoBuf.IExtension extensionObject;
     global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
       { return global::ProtoBuf.Extensible.GetExtensionObject(ref extensionObject, createIfMissing); }
@@ -301,6 +481,24 @@ namespace GameProtocol
       get { return _operation; }
       set { _operation = value; }
     }
+
+    private string _matchId = "";
+    [global::ProtoBuf.ProtoMember(100, IsRequired = false, Name=@"matchId", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    [global::System.ComponentModel.DefaultValue("")]
+    public string matchId
+    {
+      get { return _matchId; }
+      set { _matchId = value; }
+    }
+
+    private int _roundId = default(int);
+    [global::ProtoBuf.ProtoMember(101, IsRequired = false, Name=@"roundId", DataFormat = global::ProtoBuf.DataFormat.TwosComplement)]
+    [global::System.ComponentModel.DefaultValue(default(int))]
+    public int roundId
+    {
+      get { return _roundId; }
+      set { _roundId = value; }
+    }
     private global::ProtoBuf.IExtension extensionObject;
     global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
       { return global::ProtoBuf.Extensible.GetExtensionObject(ref extensionObject, createIfMissing); }
@@ -342,6 +540,24 @@ namespace GameProtocol
       get { return _operations; }
       set { _operations = value; }
     }
+
+    private string _matchId = "";
+    [global::ProtoBuf.ProtoMember(100, IsRequired = false, Name=@"matchId", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    [global::System.ComponentModel.DefaultValue("")]
+    public string matchId
+    {
+      get { return _matchId; }
+      set { _matchId = value; }
+    }
+
+    private int _roundId = default(int);
+    [global::ProtoBuf.ProtoMember(101, IsRequired = false, Name=@"roundId", DataFormat = global::ProtoBuf.DataFormat.TwosComplement)]
+    [global::System.ComponentModel.DefaultValue(default(int))]
+    public int roundId
+    {
+      get { return _roundId; }
+      set { _roundId = value; }
+    }
     private global::ProtoBuf.IExtension extensionObject;
     global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
       { return global::ProtoBuf.Extensible.GetExtensionObject(ref extensionObject, createIfMissing); }
@@ -366,6 +582,24 @@ namespace GameProtocol
       get { return _frames; }
     }
   
+
+    private string _matchId = "";
+    [global::ProtoBuf.ProtoMember(100, IsRequired = false, Name=@"matchId", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    [global::System.ComponentModel.DefaultValue("")]
+    public string matchId
+    {
+      get { return _matchId; }
+      set { _matchId = value; }
+    }
+
+    private int _roundId = default(int);
+    [global::ProtoBuf.ProtoMember(101, IsRequired = false, Name=@"roundId", DataFormat = global::ProtoBuf.DataFormat.TwosComplement)]
+    [global::System.ComponentModel.DefaultValue(default(int))]
+    public int roundId
+    {
+      get { return _roundId; }
+      set { _roundId = value; }
+    }
     private global::ProtoBuf.IExtension extensionObject;
     global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
       { return global::ProtoBuf.Extensible.GetExtensionObject(ref extensionObject, createIfMissing); }
@@ -400,6 +634,33 @@ namespace GameProtocol
       get { return _battleID; }
       set { _battleID = value; }
     }
+
+    private GameProtocol.FinalResult _result = null;
+    [global::ProtoBuf.ProtoMember(100, IsRequired = false, Name=@"result", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    [global::System.ComponentModel.DefaultValue(null)]
+    public GameProtocol.FinalResult result
+    {
+      get { return _result; }
+      set { _result = value; }
+    }
+
+    private bool _retire = default(bool);
+    [global::ProtoBuf.ProtoMember(101, IsRequired = false, Name=@"retire", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    [global::System.ComponentModel.DefaultValue(default(bool))]
+    public bool retire
+    {
+      get { return _retire; }
+      set { _retire = value; }
+    }
+
+    private string _confirmationId = "";
+    [global::ProtoBuf.ProtoMember(102, IsRequired = false, Name=@"confirmationId", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    [global::System.ComponentModel.DefaultValue("")]
+    public string confirmationId
+    {
+      get { return _confirmationId; }
+      set { _confirmationId = value; }
+    }
     private global::ProtoBuf.IExtension extensionObject;
     global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
       { return global::ProtoBuf.Extensible.GetExtensionObject(ref extensionObject, createIfMissing); }
@@ -410,6 +671,142 @@ namespace GameProtocol
   {
     public UdpDownGameOver() {}
     
+
+    private GameProtocol.FinalResult _result = null;
+    [global::ProtoBuf.ProtoMember(100, IsRequired = false, Name=@"result", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    [global::System.ComponentModel.DefaultValue(null)]
+    public GameProtocol.FinalResult result
+    {
+      get { return _result; }
+      set { _result = value; }
+    }
+
+    private int _status = default(int);
+    [global::ProtoBuf.ProtoMember(101, IsRequired = false, Name=@"status", DataFormat = global::ProtoBuf.DataFormat.TwosComplement)]
+    [global::System.ComponentModel.DefaultValue(default(int))]
+    public int status
+    {
+      get { return _status; }
+      set { _status = value; }
+    }
+
+    private string _diagnostic = "";
+    [global::ProtoBuf.ProtoMember(102, IsRequired = false, Name=@"diagnostic", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    [global::System.ComponentModel.DefaultValue("")]
+    public string diagnostic
+    {
+      get { return _diagnostic; }
+      set { _diagnostic = value; }
+    }
+
+    private string _matchId = "";
+    [global::ProtoBuf.ProtoMember(103, IsRequired = false, Name=@"matchId", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    [global::System.ComponentModel.DefaultValue("")]
+    public string matchId
+    {
+      get { return _matchId; }
+      set { _matchId = value; }
+    }
+
+    private int _roundId = default(int);
+    [global::ProtoBuf.ProtoMember(104, IsRequired = false, Name=@"roundId", DataFormat = global::ProtoBuf.DataFormat.TwosComplement)]
+    [global::System.ComponentModel.DefaultValue(default(int))]
+    public int roundId
+    {
+      get { return _roundId; }
+      set { _roundId = value; }
+    }
+
+    private string _confirmationId = "";
+    [global::ProtoBuf.ProtoMember(105, IsRequired = false, Name=@"confirmationId", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    [global::System.ComponentModel.DefaultValue("")]
+    public string confirmationId
+    {
+      get { return _confirmationId; }
+      set { _confirmationId = value; }
+    }
+    private global::ProtoBuf.IExtension extensionObject;
+    global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
+      { return global::ProtoBuf.Extensible.GetExtensionObject(ref extensionObject, createIfMissing); }
+  }
+  
+  [global::System.Serializable, global::ProtoBuf.ProtoContract(Name=@"FinalResult")]
+  public partial class FinalResult : global::ProtoBuf.IExtensible
+  {
+    public FinalResult() {}
+    
+    private string _matchId;
+    [global::ProtoBuf.ProtoMember(1, IsRequired = true, Name=@"matchId", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    public string matchId
+    {
+      get { return _matchId; }
+      set { _matchId = value; }
+    }
+    private long _sessionKey;
+    [global::ProtoBuf.ProtoMember(2, IsRequired = true, Name=@"sessionKey", DataFormat = global::ProtoBuf.DataFormat.TwosComplement)]
+    public long sessionKey
+    {
+      get { return _sessionKey; }
+      set { _sessionKey = value; }
+    }
+    private int _roundId;
+    [global::ProtoBuf.ProtoMember(3, IsRequired = true, Name=@"roundId", DataFormat = global::ProtoBuf.DataFormat.TwosComplement)]
+    public int roundId
+    {
+      get { return _roundId; }
+      set { _roundId = value; }
+    }
+    private int _terminalFrame;
+    [global::ProtoBuf.ProtoMember(4, IsRequired = true, Name=@"terminalFrame", DataFormat = global::ProtoBuf.DataFormat.TwosComplement)]
+    public int terminalFrame
+    {
+      get { return _terminalFrame; }
+      set { _terminalFrame = value; }
+    }
+    private GameProtocol.FinalOutcome _outcome;
+    [global::ProtoBuf.ProtoMember(5, IsRequired = true, Name=@"outcome", DataFormat = global::ProtoBuf.DataFormat.TwosComplement)]
+    public GameProtocol.FinalOutcome outcome
+    {
+      get { return _outcome; }
+      set { _outcome = value; }
+    }
+
+    private int _winnerSlot = default(int);
+    [global::ProtoBuf.ProtoMember(6, IsRequired = false, Name=@"winnerSlot", DataFormat = global::ProtoBuf.DataFormat.TwosComplement)]
+    [global::System.ComponentModel.DefaultValue(default(int))]
+    public int winnerSlot
+    {
+      get { return _winnerSlot; }
+      set { _winnerSlot = value; }
+    }
+    private string _stateHash;
+    [global::ProtoBuf.ProtoMember(7, IsRequired = true, Name=@"stateHash", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    public string stateHash
+    {
+      get { return _stateHash; }
+      set { _stateHash = value; }
+    }
+    private string _rules;
+    [global::ProtoBuf.ProtoMember(8, IsRequired = true, Name=@"rules", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    public string rules
+    {
+      get { return _rules; }
+      set { _rules = value; }
+    }
+    private string _configHash;
+    [global::ProtoBuf.ProtoMember(9, IsRequired = true, Name=@"configHash", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    public string configHash
+    {
+      get { return _configHash; }
+      set { _configHash = value; }
+    }
+    private int _protocolVersion;
+    [global::ProtoBuf.ProtoMember(10, IsRequired = true, Name=@"protocolVersion", DataFormat = global::ProtoBuf.DataFormat.TwosComplement)]
+    public int protocolVersion
+    {
+      get { return _protocolVersion; }
+      set { _protocolVersion = value; }
+    }
     private global::ProtoBuf.IExtension extensionObject;
     global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
       { return global::ProtoBuf.Extensible.GetExtensionObject(ref extensionObject, createIfMissing); }
@@ -559,6 +956,20 @@ namespace GameProtocol
             
       [global::ProtoBuf.ProtoEnum(Name=@"rop7", Value=7)]
       rop7 = 7
+    }
+  
+    [global::ProtoBuf.ProtoContract(Name=@"FinalOutcome")]
+    public enum FinalOutcome
+    {
+            
+      [global::ProtoBuf.ProtoEnum(Name=@"Unset", Value=0)]
+      Unset = 0,
+            
+      [global::ProtoBuf.ProtoEnum(Name=@"Winner", Value=1)]
+      Winner = 1,
+            
+      [global::ProtoBuf.ProtoEnum(Name=@"Draw", Value=2)]
+      Draw = 2
     }
   
 }

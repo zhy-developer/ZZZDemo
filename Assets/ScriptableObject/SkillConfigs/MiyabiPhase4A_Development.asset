@@ -17,9 +17,12 @@ MonoBehaviour:
   allowedCombos:
   - {fileID: 11400000, guid: 3608c4587e7146d4b8b9f78174009635, type: 2}
   - {fileID: 11400000, guid: e79851970ca93f64f9a3ebb0c13b8c3e, type: 2}
+  - {fileID: 11400000, guid: 8579d1164b67cd7439dd77f4146fcd5c, type: 2}
+  - {fileID: 11400000, guid: 327735ee4e0e41042833fb639b2b68f9, type: 2}
+  - {fileID: 11400000, guid: 085b138412fcbab4cbc766472f398fb3, type: 2}
   exportedJson: {fileID: 4900000, guid: 93561b110967280488f28ec259a6bd31, type: 3}
-  sealedJsonHash: b51f7d2e1c441f30f8c179a7c30911759e74960f2fc20569482c19d782b771eb
-  sealedSourceHash: 0da3e782477fe0eecd60e5607878ef0367aceffc7c77fad6ac1a07c111f291a7
+  sealedJsonHash: 1497367377daa4ae9cba77f347b345af22f33903b51a436bbddca8a992a26259
+  sealedSourceHash: c8907f6c4b22669856cfc18153ec4c4e6ec5425bb4ea645031076b2357c97484
   testHP: 100
   testHurtRadius: 5000
   testHurtOffset:

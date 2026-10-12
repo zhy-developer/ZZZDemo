@@ -29,11 +29,12 @@ public sealed class NetworkAcceptanceBuild : IProcessSceneWithReport
         {
             CheckDesktopReader();
             AssetDatabase.LoadAssetAtPath<PilotBattleProfile>(PilotArenaSetup.ProfilePath).ValidateAndFreeze();
-            Directory.CreateDirectory("Builds/Phase4A-Network");
+            string folder = Array.IndexOf(Environment.GetCommandLineArgs(), "-pilotPhase4B") >= 0 ? "Builds/Phase4B-Network" : "Builds/Phase4A-Network";
+            Directory.CreateDirectory(folder);
             armed = true;
             var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions {
                 scenes = EditorBuildSettings.scenes.Where(s => s.enabled).Select(s => s.path).ToArray(),
-                locationPathName = "Builds/Phase4A-Network/PilotNetwork.exe",
+                locationPathName = folder + "/PilotNetwork.exe",
                 target = BuildTarget.StandaloneWindows64, options = BuildOptions.Development
             });
             armed = false;

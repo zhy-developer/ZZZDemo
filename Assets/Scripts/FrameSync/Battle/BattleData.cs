@@ -4,6 +4,18 @@ using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
 public class BattleData{
+    public string MatchId { get; private set; }
+    public string JoinTicket { get; private set; }
+    public long SessionKey { get; private set; }
+    public int RoundId { get; private set; }
+    public void SetScope(TcpEnterBattle message)
+    {
+        if (message.protocolVersion != 1 || message.sessionKey <= 0 || message.roundId != 1 ||
+            !System.Guid.TryParseExact(message.matchId, "N", out _) || string.IsNullOrEmpty(message.joinTicket))
+            throw new System.InvalidOperationException("Incompatible server match scope; no protocol downgrade.");
+        MatchId = message.matchId; SessionKey = message.sessionKey; RoundId = message.roundId; JoinTicket = message.joinTicket;
+    }
+    public bool InScope(string match, int round) => MatchId != null && match == MatchId && round == RoundId;
 
 	public int randSeed; //随机种子
 	public int battleID;
@@ -110,6 +122,7 @@ public class BattleData{
 	/// </summary>
 	public void ClearData ()
 	{
+        MatchId = null; JoinTicket = null; SessionKey = 0; RoundId = 0;
 		actionQueue.Clear();
 		selfOperation.move = 121;
 		ResetRightOperation ();

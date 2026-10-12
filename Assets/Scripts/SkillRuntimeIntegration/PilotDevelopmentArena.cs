@@ -14,6 +14,9 @@ namespace SkillRuntime.Integration
         public BattleAuthorityMode mode = BattleAuthorityMode.DeterministicPilot;
         public bool produceLoopbackFrames = true;
         public bool automatedChecks;
+#if UNITY_EDITOR
+        public bool phase4BChecks;
+#endif
         public RoleManager Roles { get; private set; }
         public RoleBase[] Players { get; private set; }
         public PilotConfiguration Configuration { get; private set; }
@@ -34,7 +37,8 @@ namespace SkillRuntime.Integration
             if (automatedChecks)
             {
                 if (!Ready) { UnityEditor.EditorApplication.Exit(1); yield break; }
-                yield return PilotSceneVerification.Run(this);
+                if (phase4BChecks) yield return Phase4BSceneVerification.Run(this);
+                else yield return PilotSceneVerification.Run(this);
             }
 #endif
         }
@@ -105,7 +109,7 @@ namespace SkillRuntime.Integration
         void OnGUI()
         {
             GUILayout.BeginArea(new Rect(10, 10, 680, 220), GUI.skin.box);
-            GUILayout.Label("Phase 4A DEVELOPMENT / loopback server / " + mode + " (not a two-client test)");
+            GUILayout.Label("Restricted DEVELOPMENT / loopback server / " + mode + " (not a two-client test)");
             if (!Ready) GUILayout.Label(StartupError ?? "Loading...");
             else
             {

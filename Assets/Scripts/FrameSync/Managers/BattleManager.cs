@@ -13,6 +13,8 @@ public class BattleManager : MonoSingleton<BattleManager>
 
     private bool isBattleStart;
     private bool isBattleFinish;
+    private bool destroyed;
+    private SkillRuntime.Integration.PilotResultFlow resultFlow;
 
     [HideInInspector]
     public static RoleManager roleManage;
@@ -24,7 +26,7 @@ public class BattleManager : MonoSingleton<BattleManager>
         UdpMessageDispatcher.Instance.mes_battle_start = Message_Battle_Start;
         UdpMessageDispatcher.Instance.mes_frame_operation = Message_Frame_Operation;
         UdpMessageDispatcher.Instance.mes_delta_frame_data = Message_Delta_Frame_Data;
-        UdpMessageDispatcher.Instance.mes_down_game_over = Message_Down_Game_Over;
+        UdpMessageDispatcher.Instance.mes_down_game_over += Message_Down_Game_Over;
 
         isBattleStart = false;
         StartCoroutine("WaitInitData");
@@ -36,6 +38,9 @@ public class BattleManager : MonoSingleton<BattleManager>
         yield return new WaitUntil(() => {
             return roleManage.initFinish;
         });
+        if (roleManage.Pilot != null) resultFlow = SkillRuntime.Integration.PilotResultFlow.Open(roleManage.Pilot,
+            () => { if (!destroyed) delegate_gameOver?.Invoke(); },
+            () => { if (this) { destroyed = true; CancelInvoke(); StopAllCoroutines(); } });
         this.InvokeRepeating("Send_BattleReady", 0.5f, 0.2f);
     }
 
@@ -56,6 +61,11 @@ public class BattleManager : MonoSingleton<BattleManager>
 
     void Message_Battle_Start(UdpBattleStart _mes)
     {
+        if (destroyed || !BattleData.Instance.InScope(_mes.matchId, _mes.roundId)) return;
+        int mode = roleManage.Pilot == null ? 0 : 1;
+        if (!string.IsNullOrEmpty(_mes.error) || _mes.protocolVersion != 1 || _mes.authorityMode != mode ||
+            mode == 1 && (_mes.configHash != roleManage.Pilot.Digest || _mes.rules != SkillRuntime.Integration.PilotBattleProfile.Rules))
+        { Debug.LogError("[MatchRejected] " + (_mes.error ?? "mode/version mismatch")); CancelInvoke("Send_BattleReady"); return; }
         BattleStart();
     }
 
@@ -78,6 +88,7 @@ public class BattleManager : MonoSingleton<BattleManager>
 
     void Send_operation()
     {
+        if (destroyed || resultFlow != null && resultFlow.Agreement.Local != null) return;
         UdpMessageDispatcher.Instance.SendOperation();
     }
 
@@ -103,6 +114,7 @@ public class BattleManager : MonoSingleton<BattleManager>
     /// <param name="_mes"></param>
     void Message_Frame_Operation(UdpDownFrameOperations _mes)
     {
+        if (destroyed || !BattleData.Instance.InScope(_mes.matchId, _mes.roundId)) return;
         DeLogger.LogTrace("服务器下发帧");
         BattleData.Instance.AddNewFrameData(_mes.frameID, _mes.operations);
         BattleData.Instance.netPack++;
@@ -111,6 +123,7 @@ public class BattleManager : MonoSingleton<BattleManager>
     //逻辑帧更新
     void LogicUpdate()
     {
+        if (destroyed || roleManage == null || roleManage.Pilot?.TerminalSnapshot != null) return;
         AllPlayerOperation _op;
         if (BattleData.Instance.TryGetNextPlayerOp(out _op))
         {
@@ -126,6 +139,7 @@ public class BattleManager : MonoSingleton<BattleManager>
         {
             foreach (var item in _mes.framesData)
             {
+                if (destroyed || !BattleData.Instance.InScope(item.matchId, item.roundId)) continue;
                 BattleData.Instance.AddLackFrameData(item.frameID, item.operations);
             }
         }
@@ -139,7 +153,7 @@ public class BattleManager : MonoSingleton<BattleManager>
     void BeginGameOver()
     {
         if (roleManage != null && roleManage.AuthorityMode == SkillRuntime.Integration.BattleAuthorityMode.DeterministicPilot)
-        { Debug.LogWarning("Pilot result retained locally; Phase4C server result submission is not connected."); return; }
+        { resultFlow?.RequestReturn(); return; }
         this.CancelInvoke("Send_operation");
         this.InvokeRepeating("SendGameOver", 0f, 0.5f);
     }
@@ -161,8 +175,16 @@ public class BattleManager : MonoSingleton<BattleManager>
     }
 
 
-    void OnDestroy()
+    protected override void OnDestroy()
     {
+        base.OnDestroy();
+        destroyed = true; CancelInvoke(); StopAllCoroutines();
+        UdpMessageDispatcher.Instance.mes_down_game_over -= Message_Down_Game_Over;
+        UdpMessageDispatcher.Instance.mes_battle_start = null;
+        UdpMessageDispatcher.Instance.mes_frame_operation = null;
+        UdpMessageDispatcher.Instance.mes_delta_frame_data = null;
+        // Persistent result owner keeps retries/network alive across an unexpected scene unload.
+        if (resultFlow != null && !resultFlow.Retired) return;
         //	Debug.Log("清理之前 "  + BattleData.dic_frameDate_Static.Count);
         BattleData.Instance.ClearData();
         //	Debug.Log("清理之后 " + BattleData.dic_frameDate_Static.Count);

@@ -43,7 +43,7 @@ public static class PilotArenaSetup
         EditorSceneManager.SaveScene(scene, ScenePath);
         Debug.Log("[PilotSetup] Ready scene=" + ScenePath + " profile=" + ProfilePath + " gates are saved in the ORIGINAL ComboData.skill; no parallel definitions.");
     }
-    static void SeedVerifiedGates(ComboData combo)
+    internal static void SeedVerifiedGates(ComboData combo)
     {
         if (!combo || combo.skill == null || combo.skill.animations.Count != 1) throw new InvalidOperationException("Invalid pilot source");
         var animation = combo.skill.animations[0];

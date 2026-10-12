@@ -5,7 +5,7 @@ $index=@{}
     if ($_ -match '^(.*[.]meta):[0-9]+:guid: ([a-f0-9]+)') {$index[$matches[2]]=$matches[1].Substring(0,$matches[1].Length-5)}
 }
 $queue=New-Object 'System.Collections.Generic.Queue[string]'
-$queue.Enqueue((Join-Path $Repo 'Assets/Third Parts/VFX_Klaus/Prefabs/Stylized Hit & Slash/FX_slash_01.prefab'))
+$queue.Enqueue((Join-Path $Repo 'Assets/Resources/Prefabs/VFX/FX_slash_01.prefab'))
 $queue.Enqueue((Join-Path $Repo 'Assets/Resources/Audio/Combo/Hit/IMPT-punch-1.wav'))
 $seen=@{}
 while($queue.Count -gt 0) {

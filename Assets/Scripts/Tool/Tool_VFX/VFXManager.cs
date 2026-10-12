@@ -14,6 +14,7 @@ public class VFXManager : MonoSingleton<VFXManager>
     }
 
     public List<ParticleSystem> allParticleSystems => particleSystems;
+    public void RemoveVFX(ParticleSystem particleSystem) => particleSystems.Remove(particleSystem);
 
     public void PauseVFX()
     {

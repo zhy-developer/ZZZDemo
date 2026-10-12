@@ -1,0 +1,124 @@
+package PBBattle;
+
+message BattleUserInfo {
+    required int32 uid = 1;
+    required int32 battleID = 2;
+    required int32 roleID = 3;
+}
+
+message TcpEnterBattle {
+    required int32 randSeed = 1;
+    repeated BattleUserInfo battleUserInfo = 2;
+    optional string matchId = 100;
+    optional int64 sessionKey = 101;
+    optional int32 roundId = 102;
+    optional int32 protocolVersion = 103;
+    optional string joinTicket = 104;
+}
+
+message UdpBattleReady {
+    required int32 uid = 1;
+    required int32 battleID = 2;
+    optional bool isRecon = 3;
+    optional string matchId = 100;
+    optional int32 roundId = 101;
+    optional int32 protocolVersion = 102;
+    optional int32 authorityMode = 103;
+    optional string rules = 104;
+    optional string configHash = 105;
+    optional string joinTicket = 106;
+}
+
+message UdpBattleStart {
+    optional string matchId = 100;
+    optional int32 roundId = 101;
+    optional int32 protocolVersion = 102;
+    optional int32 authorityMode = 103;
+    optional string rules = 104;
+    optional string configHash = 105;
+    optional string error = 106;
+}
+
+enum RightOpType {
+    noop = 0;
+    rop1 = 1;
+    rop2 = 2;
+    rop3 = 3;
+    rop4 = 4;
+    rop5 = 5;
+    rop6 = 6;
+    rop7 = 7;
+}
+
+message PlayerOperation {
+    required int32 battleID = 1;
+    required int32 move = 2;
+    optional int32 operationID = 3 [default = 0];
+    optional RightOpType rightOperation = 4 [default = noop];
+    optional int32 operationValue1 = 5 [default = 0];
+    optional int32 operationValue2 = 6 [default = 0];
+}
+
+message UdpUpPlayerOperations {
+    required int32 mesID = 1;
+    required PlayerOperation operation = 2;
+    optional string matchId = 100;
+    optional int32 roundId = 101;
+}
+
+message AllPlayerOperation {
+    repeated PlayerOperation operations = 1;
+}
+
+message UdpDownFrameOperations {
+    required int32 frameID = 1;
+    required AllPlayerOperation operations = 2;
+    optional string matchId = 100;
+    optional int32 roundId = 101;
+}
+
+message UdpUpDeltaFrames {
+    required int32 battleID = 1;
+    repeated int32 frames = 2 [packed = false];
+    optional string matchId = 100;
+    optional int32 roundId = 101;
+}
+
+message UdpDownDeltaFrames {
+    repeated UdpDownFrameOperations framesData = 1;
+}
+
+message UdpUpGameOver {
+    required int32 battleID = 1;
+    optional FinalResult result = 100;
+    optional bool retire = 101;
+    optional string confirmationId = 102;
+}
+
+message UdpDownGameOver {
+    optional FinalResult result = 100;
+    optional int32 status = 101; // 0 waiting, 1 confirmed, 2 conflict, 3 retired, 4 rejected
+    optional string diagnostic = 102;
+    optional string matchId = 103;
+    optional int32 roundId = 104;
+    optional string confirmationId = 105;
+}
+
+enum FinalOutcome {
+    Unset = 0;
+    Winner = 1;
+    Draw = 2;
+}
+
+message FinalResult {
+    required string matchId = 1;
+    required int64 sessionKey = 2;
+    required int32 roundId = 3;
+    required int32 terminalFrame = 4;
+    required FinalOutcome outcome = 5;
+    optional int32 winnerSlot = 6;
+    required string stateHash = 7;
+    required string rules = 8;
+    required string configHash = 9;
+    required int32 protocolVersion = 10;
+}

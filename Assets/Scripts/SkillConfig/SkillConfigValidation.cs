@@ -96,7 +96,7 @@ namespace SkillConfig
                         error("MOTION_COVERAGE", aloc, "Active motion coverage exceeds the available source animation time (1ms quantization tolerance).");
                     bool remap = a.trimStartUs != 0 || a.trimEndUs != a.sourceLengthUs || a.speedPermille != 1000;
                     if (m.requiresTimeRemap != remap) error("MOTION_REMAP_FLAG", aloc, "Remap flag does not match trim/speed.");
-                    if (remap) warn("MOTION_REMAP_REQUIRED", aloc, "Requires future integer time sampler; legacy player does not support this mapping.");
+                    if (remap) warn("MOTION_REMAP_REQUIRED", aloc, "Requires the Phase4B integer sampler and runtime binding validation; the legacy player does not support this mapping.");
                     if (!m.provenanceVerified) warn("MOTION_METADATA", aloc, "Legacy bake lacks source GUID/version/scale provenance; association is not proof of bake equivalence.");
                     if (Math.Abs((long)m.sourceClipLengthMs * 1000 - a.sourceLengthUs) > 1000)
                     {

@@ -2,7 +2,7 @@ param([string]$Method = 'SkillConfig.Editor.Tests.SkillEditorPhase2CChecks.Safet
 $ErrorActionPreference = 'Stop'
 $repo = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
 $harness = Join-Path $repo 'Temp/SkillEditorPhase2C'
-if (!(Test-Path (Join-Path $harness 'ProjectSettings/ProjectVersion.txt'))) { & (Join-Path $repo 'Tests/SkillConfig/PrepareUnityHarness.ps1') -Destination $harness }
+& (Join-Path $repo 'Tests/SkillConfig/PrepareUnityHarness.ps1') -Destination $harness
 function CopySource([string]$relative) {
     $source = Join-Path $repo $relative
     $target = Join-Path $harness $relative
@@ -24,6 +24,8 @@ Get-ChildItem -LiteralPath $mirrorRoot -Recurse -Filter '*.cs' | ForEach-Object 
 CopySource 'Assets/Editor/SkillConfig/ComboDataSkillInspector.cs'
 CopySource 'Assets/Editor/SkillConfig/SkillAssetValidator.cs'
 CopySource 'Assets/Scripts/FrameSync/RootMotionBake/RootMotionPlayback.cs'
+Get-ChildItem (Join-Path $repo 'Assets/Scripts/SkillRuntime') -Filter '*.cs' | ForEach-Object { CopySource $_.FullName.Substring($repo.Length + 1) }
+Get-ChildItem (Join-Path $repo 'Assets/Scripts/SkillConfig') -Filter '*.cs' | ForEach-Object { CopySource $_.FullName.Substring($repo.Length + 1) }
 CopySource 'Assets/Art/Model/雅/Model/星见雅.fbx'
 # Preserve the real project's global Tools namespace collision in the reduced harness.
 [IO.File]::WriteAllText((Join-Path $harness 'Assets/ToolsNamespaceCompileProbe.cs'), 'namespace Tools { internal static class NamespaceCompileProbe {} }')

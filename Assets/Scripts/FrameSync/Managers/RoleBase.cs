@@ -23,6 +23,9 @@ public class RoleBase : MonoBehaviour {
     public int LogicalFacing => roleDirection;
     public GameVector2 LogicalPosition => objShape.GetPosition();
     private SkillRuntime.CastKey? pilotMotionOwner;
+    private SkillRuntime.SkillMotionTimeline pilotTimeline;
+    private int pilotBoundary, pilotForwardX, pilotForwardZ;
+    private SkillRuntime.SkillMotionPosition pilotPrevious;
 	// Keep input buffered, but do not let it move or turn an active attack/skill.
 	private bool IsInputMovementBlocked => player != null
 		&& (player.comboStateMachine.currentState.Value == player.comboStateMachine.ATKIngState
@@ -37,7 +40,7 @@ public class RoleBase : MonoBehaviour {
 	private readonly RootMotionPlayback rootMotion = new RootMotionPlayback();
 	private int rootMotionHandle;
 	private System.Action rootMotionCompleted;
-	public bool IsPlayingRootMotion => rootMotion.IsPlaying;
+	public bool IsPlayingRootMotion => rootMotion.IsPlaying || (pilotTimeline != null && pilotBoundary < pilotTimeline.Duration);
 	[HideInInspector]
 	public ShapeBase objShape; // 角色的shapeBase
 	public void InitData(GameObject _ui,GameObject _modle,int _roleID,GameVector2 _logicPos){
@@ -175,6 +178,7 @@ public class RoleBase : MonoBehaviour {
 	public void CancelRootMotion()
 	{
 		rootMotion.Stop();
+		pilotTimeline = null; pilotMotionOwner = null;
 		rootMotionCompleted = null;
 	}
 
@@ -209,19 +213,33 @@ public class RoleBase : MonoBehaviour {
         var facing = BattleData.Instance.GetSpeed(roleDirection);
         if (!rootMotion.TryStart(clip, end, scale, facing.x, facing.y, DirectionTableScale)) throw new System.InvalidOperationException("Validated pilot motion rejected.");
         pilotMotionOwner = cast; rootMotionCompleted = null;
+        pilotTimeline = null;
+    }
+    public void PilotStartMotion(SkillRuntime.CastKey cast, SkillRuntime.SkillMotionTimeline timeline)
+    {
+        if (!player.IsDeterministicPilot || timeline == null) throw new System.InvalidOperationException("Validated pilot timeline required.");
+        var facing = BattleData.Instance.GetSpeed(roleDirection);
+        pilotTimeline = timeline; pilotBoundary = 0; pilotPrevious = default;
+        pilotForwardX = facing.x; pilotForwardZ = facing.y;
+        pilotMotionOwner = cast; rootMotionCompleted = null; rootMotion.Stop();
     }
     public void PilotStopMotion(SkillRuntime.CastKey cast)
     {
         if (!pilotMotionOwner.HasValue || !pilotMotionOwner.Value.Equals(cast)) return;
-        rootMotion.Stop(); pilotMotionOwner = null;
+        rootMotion.Stop(); pilotTimeline = null; pilotMotionOwner = null;
     }
     public void PilotMove(long frame, bool ordinaryMovement, SkillRuntime.KnockbackPlan knockback)
     {
         if (!player.IsDeterministicPilot) throw new System.InvalidOperationException("Pilot match required.");
         if (knockback != null && frame >= knockback.StartFrame && frame < knockback.EndFrame)
         {
-            if (rootMotion.IsPlaying) throw new System.InvalidOperationException("Two authoritative motion owners.");
+            if (IsPlayingRootMotion) throw new System.InvalidOperationException("Two authoritative motion owners.");
             var d = knockback.DeltaAt(frame); PilotDisplace(d.X, d.Z); return;
+        }
+        if (pilotTimeline != null && pilotBoundary < pilotTimeline.Duration)
+        {
+            var next = pilotTimeline.Position(++pilotBoundary, pilotForwardX, pilotForwardZ, DirectionTableScale);
+            PilotDisplace(checked(next.X - pilotPrevious.X), checked(next.Z - pilotPrevious.Z)); pilotPrevious = next; return;
         }
         if (rootMotion.TryAdvance(out int x, out int z)) { PilotDisplace(x, z); return; }
         if (ordinaryMovement && inputDirection >= 0 && inputDirection < 120)

@@ -44,6 +44,11 @@ MonoBehaviour:
       group: 
       kind: 3
       displayOrder: 0
+    - id: legacy-vfx
+      name: Original PlayVFX events
+      group: 
+      kind: 4
+      displayOrder: 0
     hitGroups:
     - id: 517d10c1642e4495b1dfcfde612a0448
       mode: 0
@@ -116,7 +121,26 @@ MonoBehaviour:
         text: 
       comboGate:
         enabled: 1
-    vfx: []
+    vfx:
+    - id: legacy-vfx-0
+      trackId: legacy-vfx
+      resourceId: miyabi-legacy-slash06
+      bone: 
+      startFrame: 7
+      endFrame: 8
+      classification: 1
+      lifetime: 1
+      attachment: 0
+      offset:
+        x: 0
+        y: 0
+        z: 0
+      rotationMilliDegrees:
+        x: 0
+        y: 0
+        z: 0
+      scalePermille: 1000
+      maxLifetimeFrames: 242
     sfx: []
   characterName: 1
   _attackStyle: 0

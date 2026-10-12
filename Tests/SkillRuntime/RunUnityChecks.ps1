@@ -1,4 +1,4 @@
-param([string]$Unity = 'C:/Program Files/Unity/Hub/Editor/2022.3.62f2c1/Editor/Unity.exe', [string]$LogName = 'Unity', [ValidateSet('3B', '3C')][string]$Phase = '3C')
+param([string]$Unity = 'C:/Program Files/Unity/Hub/Editor/2022.3.62f2c1/Editor/Unity.exe', [string]$LogName = 'Unity', [ValidateSet('3B', '3C', '4B')][string]$Phase = '3C')
 $ErrorActionPreference = 'Stop'
 $repo = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
 $harness = [IO.Path]::GetFullPath((Join-Path $repo ('Temp/SkillRuntimePhase' + $Phase)))
@@ -9,8 +9,12 @@ foreach ($dir in @('Assets/Runtime/SkillConfig', 'Assets/Runtime/SkillRuntime', 
 Copy-Item -LiteralPath (Join-Path $repo 'ProjectSettings/ProjectVersion.txt') -Destination (Join-Path $harness 'ProjectSettings/ProjectVersion.txt') -Force
 Get-ChildItem -LiteralPath (Join-Path $repo 'Assets/Scripts/SkillConfig') -Filter '*.cs' | ForEach-Object { Copy-Item -LiteralPath $_.FullName -Destination (Join-Path $harness 'Assets/Runtime/SkillConfig') -Force }
 Get-ChildItem -LiteralPath (Join-Path $repo 'Assets/Scripts/SkillRuntime') -Filter '*.cs' | ForEach-Object { Copy-Item -LiteralPath $_.FullName -Destination (Join-Path $harness 'Assets/Runtime/SkillRuntime') -Force }
+foreach ($file in @('RootMotionBakeData.cs', 'RootMotionClip.cs', 'RootMotionPlayback.cs')) {
+    Copy-Item -LiteralPath (Join-Path $repo ('Assets/Scripts/FrameSync/RootMotionBake/' + $file)) -Destination (Join-Path $harness 'Assets/Runtime') -Force
+}
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'Phase3BChecks.cs') -Destination (Join-Path $harness 'Assets/Editor/Phase3BChecks.cs') -Force
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'Phase3CChecks.cs') -Destination (Join-Path $harness 'Assets/Editor/Phase3CChecks.cs') -Force
+Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'Phase4BChecks.cs') -Destination (Join-Path $harness 'Assets/Editor/Phase4BChecks.cs') -Force
 Copy-Item -LiteralPath (Join-Path $repo 'Assets/Scripts/Config/Net/NetConfig.cs') -Destination (Join-Path $harness 'Assets/Runtime/NetConfig.cs') -Force
 [IO.File]::WriteAllText((Join-Path $harness 'Assets/Runtime/ComboData.cs'), 'public sealed class ComboData : UnityEngine.ScriptableObject { public SkillConfig.SkillAuthoringData skill; }')
 [IO.File]::WriteAllText((Join-Path $harness 'Packages/manifest.json'), '{"dependencies":{"com.unity.modules.jsonserialize":"1.0.0","com.unity.modules.animation":"1.0.0","com.unity.modules.audio":"1.0.0","com.unity.modules.particlesystem":"1.0.0"}}')
@@ -35,6 +39,21 @@ foreach ($skill in $json.skills) { foreach ($animation in $skill.animations) {
         Copy-Item -LiteralPath (Join-Path $repo $relative) -Destination (Join-Path $harness $relative) -Force
     }
 } }
+# Resources Prefab Variants require their original prefab during import. This is
+# Loader/type validation only; no third-party component is instantiated here.
+foreach ($prefab in @(Get-ChildItem -LiteralPath (Join-Path $harness 'Assets/Resources') -Recurse -Filter '*.prefab')) {
+    $yaml = Get-Content -LiteralPath $prefab.FullName -Raw
+    foreach ($reference in [regex]::Matches($yaml, 'm_SourcePrefab: \{fileID: [^,]+, guid: ([a-f0-9]{32})')) {
+        $guid = $reference.Groups[1].Value
+        $meta = @(& rg -l --fixed-strings ('guid: ' + $guid) (Join-Path $repo 'Assets') -g '*.prefab.meta')
+        if ($meta.Count -ne 1) { throw ('Unresolved variant parent ' + $guid) }
+        $source = $meta[0].Substring(0,$meta[0].Length - 5)
+        $target = Join-Path $harness $source.Substring($repo.Length + 1)
+        New-Item -ItemType Directory -Force -Path (Split-Path $target) | Out-Null
+        Copy-Item -LiteralPath $source -Destination $target -Force
+        Copy-Item -LiteralPath $meta[0] -Destination ($target + '.meta') -Force
+    }
+}
 $entry = @'
 using System;
 using UnityEngine;
@@ -54,14 +73,17 @@ public static class Phase3BUnityEntry {
    Debug.Log("PHASE3B_UNITY_PASS actual Resources loader, motion content hashes, NetConfig interval and formal guard");
    SkillRuntimeChecks.Phase3BChecks.Measure(Debug.Log);
    PHASE3C_ENTRY
+   PHASE4B_ENTRY
    Debug.Log("PHASE3B_UNITY_ALL_PASS Unity=" + Application.unityVersion + "; isolated real Unity execution; not formal scene/Player regression");
    EditorApplication.Exit(0);
   } catch (Exception e) { Debug.LogError("PHASE3B_UNITY_FAIL " + e); EditorApplication.Exit(1); }
  }
 }
 '@
-$phase3cEntry = if ($Phase -eq '3C') { 'SkillRuntimeChecks.Phase3CChecks.Run(Debug.Log); SkillRuntimeChecks.Phase3CChecks.Measure(Debug.Log); Debug.Log("PHASE3C_UNITY_ALL_PASS Unity=" + Application.unityVersion + "; isolated real Unity assertions; NOT NUnit or formal scene/Player regression");' } else { '' }
+$phase3cEntry = if ($Phase -ne '3B') { 'SkillRuntimeChecks.Phase3CChecks.Run(Debug.Log); SkillRuntimeChecks.Phase3CChecks.Measure(Debug.Log); Debug.Log("PHASE3C_UNITY_ALL_PASS Unity=" + Application.unityVersion + "; isolated real Unity assertions; NOT NUnit or formal scene/Player regression");' } else { '' }
 $entry = $entry.Replace('PHASE3C_ENTRY', $phase3cEntry)
+$phase4bEntry = if ($Phase -eq '4B') { 'SkillRuntimeChecks.Phase4BChecks.Run(Debug.Log, @"' + $repo + '"); Debug.Log("PHASE4B_UNITY_ALL_PASS Unity=" + Application.unityVersion + "; isolated Unity script assertions; NOT NUnit or real Player regression");' } else { '' }
+$entry = $entry.Replace('PHASE4B_ENTRY', $phase4bEntry)
 [IO.File]::WriteAllText((Join-Path $harness 'Assets/Editor/Phase3BUnityEntry.cs'), $entry)
 New-Item -ItemType Directory -Force -Path (Join-Path $repo 'Logs') | Out-Null
 if ($LogName -notmatch '^[A-Za-z0-9_-]+$') { throw 'Invalid log name' }

@@ -33,7 +33,8 @@ public class GameManager : MonoBehaviour {
 	}
 
 	void ReadyFinish(){
-		uiReady.SetActive (false);
+		// Waiting UI is optional and may have been removed by the existing persistent UI manager.
+		if (uiReady) uiReady.SetActive (false);
 	}
 
 	void GameOver(){

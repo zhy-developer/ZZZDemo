@@ -14,8 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   characterId: miyabi
   completeness: 0
-  migrationNotes: 'Phase 1 data pilot: only Normal1/Normal2. Other skills and all
-    combat integration are not migrated.'
+  migrationNotes: 'Phase4B partial migration: Normal1-5; Normal6/Rush_ATK await source
+    events. Skill/FinishSkill and full presentation readiness remain pending. HP/HurtBox
+    remain explicit test values.'
   animatorController: {fileID: 9100000, guid: c36c63ee783b10942a52a9b3fb87c705, type: 2}
   hurtBoxConfigured: 0
   hurtBox:
@@ -29,6 +30,9 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 3608c4587e7146d4b8b9f78174009635, type: 2}
   - {fileID: 11400000, guid: e79851970ca93f64f9a3ebb0c13b8c3e, type: 2}
   - {fileID: 11400000, guid: e9c658a028c2ea14c81a8e5121f600ea, type: 2}
+  - {fileID: 11400000, guid: 8579d1164b67cd7439dd77f4146fcd5c, type: 2}
+  - {fileID: 11400000, guid: 327735ee4e0e41042833fb639b2b68f9, type: 2}
+  - {fileID: 11400000, guid: 085b138412fcbab4cbc766472f398fb3, type: 2}
   resources:
   - id: slash_1
     kind: 0
@@ -36,3 +40,6 @@ MonoBehaviour:
   - id: hit_1
     kind: 1
     asset: {fileID: 8300000, guid: b97ffed8c0171224f91bb0a6dd0e00f2, type: 3}
+  - id: miyabi-legacy-slash06
+    kind: 0
+    asset: {fileID: 2157654376139965993, guid: 582593d77dac7d4479c0a8d13797b44e, type: 3}

@@ -1,0 +1,100 @@
+using System;
+using System.Linq;
+using System.Threading;
+using PBBattle;
+using PBCommon;
+using MatchLifecycle;
+using UnityEngine;
+
+public partial class BattleService
+{
+    public readonly string MatchId = Guid.NewGuid().ToString("N");
+    public readonly long SessionKey = (BitConverter.ToInt64(Guid.NewGuid().ToByteArray(), 0) & long.MaxValue) | 1;
+    RoundAgreement agreement;
+    UdpBattleReady acceptedReady;
+    Timer retiredExpiry;
+    readonly System.Collections.Generic.Dictionary<int, string> joinTickets = new System.Collections.Generic.Dictionary<int, string>();
+    RoundAgreement Agreement => agreement ?? (agreement = new RoundAgreement(MatchId, SessionKey));
+    bool Scope(string match, int round) => match == MatchId && round == 1;
+    public void RebindMember(int uid, string ip)
+    {
+        lock (operationLock)
+        {
+            int slot = dic_battleUserUid[uid];
+            dic_udp[slot].EndClientUdp();
+            joinTickets[uid] = Guid.NewGuid().ToString("N");
+            var route = new ClientUdp();
+            route.delegate_analyze_message = (id, bytes) => AnalyzeMember(uid, id, bytes);
+            route.StartClientUdp(ip, uid, joinTickets[uid]);
+            dic_udp[slot] = route;
+        }
+    }
+    public void AnalyzeMember(int uid, CSID id, byte[] bytes)
+    {
+        lock (operationLock)
+        {
+            if (dic_battleUserUid == null || !dic_battleUserUid.TryGetValue(uid, out int slot)) return;
+            try
+            {
+                if (id == CSID.UDP_BATTLE_READY)
+                {
+                    var ready = CSData.DeserializeData<UdpBattleReady>(bytes);
+                    if (!Scope(ready.matchId, ready.roundId) || ready.uid != uid || ready.battleID != slot || ready.joinTicket != joinTickets[uid]) return;
+                    var status = Agreement.Ready(slot, ready.authorityMode, ready.protocolVersion, ready.rules, ready.configHash);
+                    if (status == AgreementStatus.Confirmed)
+                    {
+                        acceptedReady = ready;
+                        CheckBattleBegin(1); CheckBattleBegin(2);
+                    }
+                    else if (status == AgreementStatus.Conflict || status == AgreementStatus.Rejected)
+                        dic_udp[slot].SendMessage(CSData.GetSendMessage(new UdpBattleStart { matchId = MatchId, roundId = 1, protocolVersion = 1,
+                            error = Agreement.Diagnostic ?? "unsupported ready protocol/config" }, SCID.UDP_BATTLE_START));
+                    return;
+                }
+                if (id == CSID.UDP_UP_PLAYER_OPERATIONS)
+                {
+                    var op = CSData.DeserializeData<UdpUpPlayerOperations>(bytes);
+                    if (!Scope(op.matchId, op.roundId) || op.operation == null || op.operation.battleID != slot || !Agreement.Started || Agreement.Confirmed != null) return;
+                    UpdatePlayerOperation(op.operation, op.mesID); return;
+                }
+                if (id == CSID.UDP_UP_DELTA_FRAMES)
+                {
+                    var request = CSData.DeserializeData<UdpUpDeltaFrames>(bytes);
+                    if (!Scope(request.matchId, request.roundId) || request.battleID != slot || request.frames.Count != 2 || request.frames[0] < 1 || request.frames[1] < request.frames[0] || request.frames[1] - request.frames[0] > 512) return;
+                    GetRequestFrames(slot, request.frames[0], Math.Min(lastFrame, request.frames[1])); return;
+                }
+                if (id != CSID.UDP_UP_GAME_OVER) return;
+                var up = CSData.DeserializeData<UdpUpGameOver>(bytes);
+                if (up.battleID != slot) return;
+                if (Agreement.Mode == 0) { dic_udp[slot].SendMessage(CSData.GetSendMessage(new UdpDownGameOver(), SCID.UDP_DOWN_GAME_OVER)); return; }
+                var result = ResultWire.Read(up.result);
+                if (result == null || !Scope(result.Match, result.Round) || result.Session != SessionKey) return;
+                AgreementStatus response;
+                if (up.retire)
+                {
+                    response = Agreement.Confirmed != null && Agreement.Confirmed.Equals(result) ? Agreement.Retire(slot, up.confirmationId) : AgreementStatus.Rejected;
+                    if (response == AgreementStatus.Retired)
+                    {
+                        UserManage.Instance.ClearMatch(uid, battleID);
+                        if (Agreement.AllRetired && retiredExpiry == null)
+                            retiredExpiry = new Timer(_ => { DestroyBattle(); ServerGlobal.Instance.AddAction(() => BattleManage.Instance.FinishBattle(battleID)); }, null, 300000, Timeout.Infinite);
+                    }
+                }
+                else response = Agreement.Report(slot, result, lastFrame);
+                var down = new UdpDownGameOver { matchId = MatchId, roundId = 1, status = (int)response,
+                    result = ResultWire.Write(Agreement.Confirmed ?? result), confirmationId = Agreement.Confirmed?.ConfirmationId ?? "",
+                    diagnostic = Agreement.Diagnostic ?? response.ToString() };
+                var packet = CSData.GetSendMessage(down, SCID.UDP_DOWN_GAME_OVER);
+                if (response == AgreementStatus.Confirmed || response == AgreementStatus.Conflict)
+                    foreach (var route in dic_udp.Values) route.SendMessage(packet);
+                else dic_udp[slot].SendMessage(packet);
+                if (Agreement.Confirmed != null) _isRun = false;
+                Debug.Log("[RoundServer] match=" + MatchId + " round=1 reporter=" + slot + " frame=" + result.Frame + " status=" + response +
+                    " result=" + result.Result + " winner=" + result.Winner + " hash=" + result.Hash + " confirmations=" + Agreement.ConfirmationCount);
+            }
+            catch (Exception e) { Debug.LogWarning("[RoundServer] rejected malformed report: " + e.Message); }
+        }
+    }
+    UdpBattleStart ScopedStart() => new UdpBattleStart { matchId = MatchId, roundId = 1, protocolVersion = 1,
+        authorityMode = acceptedReady.authorityMode, rules = acceptedReady.rules, configHash = acceptedReady.configHash };
+}

@@ -1,0 +1,180 @@
+Phase 4C 实施与验收报告
+日期：2026-10-12
+客户端 D:/GitHub/ARPGDEMO；真实服务端 D:/GitHub/ZZZServer。
+基线：原 PRD v1.0、已验收 3B/3C/4A、当前 4B 实现与用户“基本验收”反馈。
+
+1. 交付状态
+
+已接通：完整帧提交 -> 不可变本地终局 -> UDP 业务报告/重试 -> 服务端双方一致性确认 -> 客户端核对并应用一次 -> 明确点击返回 -> 服务端退役 ACK -> 清理 -> 原 MainScene 匹配入口 -> 新对局。
+已执行最终真实服务端 + 两个 Standalone Development 客户端、实际 BattleScene、原 TCP 登录匹配及 UDP 帧消费。连续三场分别 Winner1、Winner2、Draw，双方终局帧、摘要和确认身份相同，完成六次离场。未上线部署。
+重要区分：这是服务端比对双方报告，不是服务端重算碰撞/伤害，也不等于反作弊验证。
+本批没有新增 BO3、胜场积分、自动重赛、掉线判负、争议选边或处罚。
+Phase 4C 交付供用户验收；不进入 Phase 5。
+
+2. 4B 定向收尾
+
+保留原报告 docs/SkillRuntime_Phase4B_Report.txt，不改写历史失败为通过。
+用户人工反馈：基本正常，动画较低帧率、缺行走/跑步表现。两者仍是 4B 待办，本批未改采样/Animator 混合或运动规则。
+Normal1～5 白名单、整数位移映射、预输入/连招及表现消费者保留；本批真实 Unity 场景回归重新通过 437 项 4B + 73 项保留 4A 检查。
+历史完整五连招双端自动化失败仍保留；用户后续人工反馈不替代该历史自动化结果。
+Normal6、Rush_ATK、Skill 缺事件、FinishSkill 显式类型/映射、Normal1～5 空语音/音效按用户要求暂不配置，仍不在新模式白名单中。
+目录 PartialPilot、正式 BattleReady=false、正式 HurtBox 缺失均未解除；原开发配置 HP100/Hurt5000 仍为测试参数。
+
+本批相关最小修复：
+- 原实时路径用 randSeed 推导 EntityKey 会话身份，只有100个种子值；改用服务端为真实对局分配的正63位随机 sessionKey，并以独立 GUID matchId 识别业务作用域。
+- 终局后原调度仍可能继续推进；现在网络 Pilot 在完整提交点锁定 TerminalSnapshot，拒绝后续权威帧/动作，表现收尾独立推进。
+- 第一次真实连续对局发现离场后 Send_operation 仍被调度：在关闭 UDP 之前，持久结果所有者先停止自己对应 BattleManager 的 Invoke/协程。
+- 现有持久 UIManager 在再次入场时可能移除重复等待界面；ReadyFinish 对可选 uiReady 做存在检查，不让界面影响权威开局。
+- 旧预加载 EffectItem 的计时回收可能在场景卸载后运行：停用/销毁时取消自身计时器，回调前释放计时器引用，销毁时解除自身粒子注册，避免取消已被另一个对象复用的计时器。
+- UDP 回调固定绑定创建时的代次；已退役的迟到 TCP 入场消息拒绝；服务端匹配请求校验登录连接，队列出队到异步创建期间保留成员名额，阻止重复匹配建房。
+
+3. 当前产品与服务端职责
+
+真实依据：
+D:/GitHub/ZZZServer/Assets/Scripts/BattleService.cs::Thread_SendFrameData 只采样/记录/转发输入，不含权威 HP 或战斗模拟。
+D:/GitHub/ARPGDEMO/Assets/Scripts/FrameSync/GameManager.cs::GameOver 原本仅归档帧数据，正式结算 UI 调用被注释；未找到计分/BO3/自动下一回合实现。
+MatchManage.NewMatchUser -> BattleManage.BeginBattle -> BattleService.CreatBattle 建立单局；客户端 MatchManager.OnResponseEnterBattle -> ClearSceneData.LoadScene(BattleScene)。
+本批据此每个真实 match 仅 round=1。再次匹配获得新 matchId/sessionKey，网络帧从1开始、施放技能帧从0开始。没有在原活动对局中随意重置可靠操作队列/网络游标。
+UserManage.UserLogout 的原分支为空，旧服务端并无可复用的断线裁决或超时判负规则；这些分支保留诊断/待确认，不创造赛制。
+
+4. 调用链和固定提交点
+
+BattleManager.LogicUpdate
+  -> RoleManager.ConsumeFrame -> PilotBattleSession.Advance
+  -> 原输入/移动 -> 同一移动后快照 -> CombatResolver.Resolve
+  -> 原 CombatBatch.TryCommit / ICombatStateAdapter.TryApply / 完整 receipt
+  -> Runtime.CompleteFrame
+  -> DescribeState + 已提交命中 + exits，保存 TerminalState 并 SHA256，构造不可变 TerminalSnapshot
+  -> 原宿主退出清理及纯表现回调
+  -> 终局停止活动 Cast、缓存动作及运动计划，标记 Player.PilotRoundClosed；不清共享可靠队列/帧历史
+  -> PilotResultFlow.Update LockLocal，按未缩放墙钟每0.5秒报告
+  -> 服务端 AnalyzeMember（真实 UDP 路由绑定登录成员、IP和独立joinTicket）
+  -> RoundAgreement.Report 等双方同作用域/版本/终结帧/结果/摘要
+  -> Confirmed 广播同一业务身份
+  -> ClientAgreement 暂存/对比本端不可变终局，ApplyCount最多一次
+  -> GameManager.GameOver 归档；独立结果面板显示已确认结果
+  -> 用户 RequestReturn -> 反复发送 retire -> 服务端身份/结果校验、ClearMatch(expectedBattle)
+  -> Retired ACK -> 先停对局调度，再 Dispose 表现/运动/网络订阅，再销毁UDP并清本作用域数据 -> 原清场/MainScene入口。
+
+单个角色死亡、Bindable HP 通知和 Animator/VFX 都不提交胜者。Draw来自完整同帧双方提交。提交失败不会产生 TerminalSnapshot。
+早到确认只暂存，必须等本端实际处理对应终结帧并完全相等，不能跳帧或写 HP。
+Runtime.CompleteFrame 内部仍使用3C已批准清理语义；外部清理不会重算/覆盖锁定摘要。
+等待确认时不停止 NetGlobal/UDP 分发；只有权威战斗冻结。必要 delta/帧数据仍保留。双方都确认后服务端停止生产新帧，历史仍可用于补帧和重试。
+终局后 UpdateTerminalPresentation 仅推进有界 VFX/SFX 收尾，不改变逻辑帧、HP、Cast或摘要。
+结果会话 DontDestroyOnLoad，订阅和重试不归某个 Player 所有；场景/Player卸载时仍保留已锁定结果。
+
+5. 协议与身份
+
+修改源 Tools/Game.proto；Tools/GeneratePhase4CProtocol.ps1 用现有 protogen 生成两端 C#，服务器子集源另存 Tools/Protocol/PBBattle.proto。并非只手改生成代码。
+现有消息编号保留，新增字段使用100起的扩展号；保留服务器原 isRecon=3。现有技能 JSON Schema、Root Motion JSON、3B几何、3C结算算法未改。
+
+TcpEnterBattle：matchId(GUID N)、正 sessionKey、roundId=1、protocolVersion=1、每成员独立 joinTicket。
+Ready/Start：作用域、协议版本、authorityMode、规则及配置摘要；Ready含票据。双方都匹配才开局；不支持旧版本则明确拒绝，不静默降级。新版本的 Legacy 模式保留旧战斗/旧GameOver路径；未声称旧二进制无升级兼容。
+输入/下行帧/补帧：携带 matchId、roundId，先校验再存储/消费；补帧子包逐一校验。
+FinalResult：match/session/round、terminalFrame、显式 Outcome(Winner/Draw)、winnerSlot、stateHash、rules、configHash、protocolVersion。
+Winner仅允许槽位1/2；Draw的winnerSlot=0仅作无胜者字段值，结果由显式Draw枚举表达，绝不以0推断Draw。
+EntityKey中的session、round、battle槽位、实例代次与CharacterID分开；同角色镜像不混淆身份。
+稳定确认ID：matchId + "/1/result"；唯一范围是对局×回合，不含终结帧/请求号。
+报告者来自真实服务端路由绑定槽位，不能由请求battleID随意冒用；TCP匹配请求也校验登录连接。
+确认要求双方相同规则/配置、同帧、同胜者/Draw、同状态摘要；不允许引用服务端尚未发出的帧。
+规则沿用 phase3c-v1/pilot4b-v1（本批未改变战斗数学规则）；结果/作用域握手协议版本为1；配置快照在开局冻结。
+Waiting/Confirmed/Conflict/Retired/Rejected分别为业务状态；UDP发送成功/传输收到不是最终业务确认。
+重复同报告返回同确认；确认后冲突不覆盖原结果。重复retire不重复退役，ClearMatch检查expectedBattle以免清理新对局。
+双方已退役后原服务端对局保留5分钟用于重试，再释放旧路由/历史。路由注销校验实例引用，不注销已经替换的新对局路由。5分钟边界没有本批真实等待测试，见未执行项。
+
+6. 旧终局入口切换表
+
+入口                         新模式                                      Legacy
+HP/受击/死亡                 3C完整帧批次唯一写入；通知仅表现              原路径保留
+Player旧AnimationEvent       原Pilot门禁仍生效；不能重复伤害或宣布胜者     原回调保留
+死亡动画结束                 不参与结果/切场                              未新增规则
+BattleManager.BeginGameOver  只向结果所有者RequestReturn，未确认无效        原UDP GameOver重试
+UDP GameOver(57)             含FinalResult与作用域，通过新协议              新版Legacy返回原空确认
+GameManager.GameOver         仅最终确认后调用一次并归档                    原调用路径
+积分/胜场                    项目没有现成实现，不新增                      不变
+结算UI返回                   需确认+服务端Retired ACK，再进入MainScene      不替换旧UI体系
+重新匹配                     原TCP入口，新对局/新身份/新帧游标              当前版本旧战斗入口保留
+
+7. 清理表
+
+本地终局：保存不可变最终逻辑摘要；取消未来技能动作，结束活动Cast与运动句柄，冻结权威；保留待确认网络与队列。
+等待确认：保留结果、网络收包、补帧、0.5秒业务重试；15秒仅提示，绝不自动判负/判平。
+正式离场：先取消旧BattleManager调度；对表现租约幂等Dispose；解绑结果回调；退役UDP代次；此后才清BattleData动作队列、帧历史、游标、scope。
+再次入场：新角色/新session，配置的测试初始HP/对称出生位置/朝向、全新Cast序号/HitGroup/硬直/击退/门控；不从死亡动画或UI回调启动权威。
+VFX/SFX：Precast非正常退出立即释放；已创建AttackCritical按4B有界寿命收尾；SFX按各自onInterrupt。离场全部释放，不把死亡表现纳入战斗hash。
+旧EffectItem：停用或销毁取消自己的timer，销毁解除粒子登记；不全局清所有timer或所有声音。
+异步：当前正式消费者为同步Resources加载+独占租约；复用4B旧租约回调不能回收新租约的边界，没有假称已验证不存在的异步加载适配器。
+异常场景卸载后的待确认会话保留；进程真正退出则无法继续重试，只记录无伪造结果，未新增跨进程持久化或重连裁决。
+
+8. 真实执行结果与证据（根目录 Logs/Phase4C）
+
+环境：Windows PowerShell、.NET8、Unity2022.3.62f2c1；两客户端为StandaloneWindows64 Development；真实服务器为ZZZServer构建。
+所有脚本检查是断言日志，未伪装成NUnit/TestRunner XML；场景检查确实进入主项目Unity Play Mode。
+
+PASS 独立结果/协议模块：80项。Modules-02.txt。双方报告顺序反转、Winner1/2/Draw、重复/冲突、只一方、早到确认、作用域、版本、生成protobuf双向二进制互读。
+PASS 独立旧运行时回归：RuntimeRegression.txt；3B日志127条、3C日志104条，以及4B位移39项。仍是.NET隔离断言，不替代Unity/联机。
+PASS 两项目Unity编译与Development构建：ClientCompile.log、ServerCompile.log、ClientBuild.log、ServerBuild.log。
+PASS 真实Player场景回归：SceneRegression.log；PHASE4B_SCENE_COMPLETE checks=437 retained4A=73 realPlayers=true twoClients=false。
+PASS 4C真实Player隔离生命周期：Lifecycle.log；19项。空操作正常推进、缺帧/重复帧不推进、同帧双方死亡、终局快照保持、可靠队列不清、终局停止Cast、表现时钟不推进权威、旧match/错误round原始帧拒收、当前作用域帧仍保留、旧UDP排队回调不能调用新代次订阅者、重复Dispose无会话表现所有权。这里直接注入隔离输入，不冒充真实网络测试。
+PASS 最终真实双端：Network-Real-03-Final/Verification.txt、Client-A.log、Client-B.log、Server.log、OwnedProcesses.json、ExitCodes.json。两个客户端退出码0。
+  场1 match=71abbff49a74447d96d5caa8e1df051f，F6，Winner槽位1。
+  场2 match=e49defb27c5140a3be41f448b11242d6，F6，Winner槽位2。
+  场3 match=6755ab005c4c46628a090927fa0feb70，F6，Draw，双方HP0。
+  六份对应确认摘要逐场相等，每客户端每场RoundConfirmed/Retired恰好一次。
+  A每场丢弃第一次真实业务确认，原上报重试恢复同一确认ID。
+  两端离场延迟1.2秒/0.3秒不同，期间权威帧不变；重复点击返回幂等；双方连续登录会话内再次匹配三场，初始HP、Cast与F0断言通过。
+  同目录双开成功；没有以不同目录绕过方向文件共享读取。
+  终局fixture仅在构建场景副本使用HP20/Hurt100000，原SO/JSON未保存这些数值；完整Hurt半径使原攻击盒在首个有效区间k5命中，因此F6终结。不能把该参数或该击中距离视为正式玩法验收。
+PASS 最终真实服务端协议异常检查：Network-Real-03-Final/WireChecks.txt，16项。真实TCP/UDP、合成结果报告，与上述真实战斗客户端分开统计。
+  首份A报告不投递；错误作用域/冒用槽位不能替代；仅B报告仍Waiting；A原身份重试后确认。
+  首次业务确认丢弃，报告重试取得完全相同结果；冲突帧不能覆盖已确认结果；重复退役返回同ID。
+  同一回合不同帧/相反胜者/不同摘要均Conflict且无确认；模式不一致拒绝开局；当前版本Legacy握手/旧GameOver确认通过。
+  每次重复发送匹配请求，仍形成唯一一对成员及同一个作用域。
+
+失败记录不删除：Network-Real-01三场结果已一致，但因离场空引用整体判失败。修复后Network-Real-02和最终Real-03-Final通过。
+中间一次匹配保护补丁出现括号编译错误：ServerBuild-Reservation-Failed.log；已修正并由最终ServerBuild.log和Real-03-Final重新覆盖验证。
+一般警告仍存在：Unity包asmref/弃用API、场景中非根节点DontDestroyOnLoad及持久UI重复实例警告；服务器向已关闭的UDP端点重发时可能记录ConnectionReset。未把这些警告藏掉或称作无警告工程。
+
+9. 复现命令
+
+先保存退出两个Unity编辑器。不要关闭用户已有进程来抢占端口。
+dotnet run --project Tests/Phase4C/Phase4C.Checks.csproj
+dotnet run --project Tests/SkillRuntime/SkillRuntime.Checks.csproj
+powershell -File Tests/Phase4C/Build.ps1
+powershell -File Tests/Phase4C/Build.ps1 -Server
+powershell -File Tests/Phase4C/RunNetwork.ps1 -RunName 自选未使用的英文标识
+powershell -File Tests/Phase4C/RunSceneRegression.ps1
+powershell -File Tests/Phase4C/RunLifecycle.ps1
+协议重生成：Tools/GeneratePhase4CProtocol.ps1 -InstallServer（两工程一起更新）。
+Tests/Phase4C/InstallServer.ps1只同步共享模块、结果partial和匹配队列实现，不是针对任意旧服务端的一键迁移器；其他服务端改动见文件清单/实际diff。
+Build脚本临时放入验收构建器/驱动，finally删除；不保存BattleScene。RunNetwork检查13001空闲，只启动并清理自己持有的进程。
+日志/Builds属于本机测试产物；脚本/协议/源代码保留在工程，正式运行不带测试驱动。
+
+10. 用户人工验收（待执行，不算通过）
+
+1) 两工程同时使用本批协议，服务器人数2。客户端实际登录匹配BattleScene临时配置PilotMatchSettings=DeterministicPilot、原MiyabiPhase4A_Development，测完撤销该开发设置。
+2) 用原HP100/Hurt5000和真实操作，Normal1/Normal2直至一方死亡，双方先显示本地等待、后显示相同Winner；等待期间不能继续攻击。读取RoundLocal/RoundConfirmed的match、F、hash相同。
+3) 反过来令另一方获胜；检查死亡/受击动画和血条视觉，尤其不同窗口焦点/低帧率时不应改变结果。
+4) 需要稳定Draw时使用Tests/Phase4C明确fixture构建；正式参数下可人工同时攻击观察，但不能用UI结束时间推断双KO。
+5) 一端立即返回，另一端停留收尾后再返回，双方重新匹配。检查原出生、HP、动作/连招、无旧Cast或音效；重复点击返回不能重复转场。
+6) 关闭/丢失一端时另一端只能等待/提示，无自动判负；此处需要产品确认恢复/退出规则，不把未决分支当成功结算。
+7) 结果等待时意外卸载战斗场景的持久会话重试、5分钟服务端退役保留边界、进程退出重连恢复、长期对象/内存数量均未做完整真实场景验收。
+8) Legacy目前只执行了实际服务端协议路径及保留4A/4B旧角色隔离检查；完整Legacy双客户端人工对战仍待确认。
+
+11. 限制、未决项、Phase 5准备（尚未实施）
+
+未决玩法：Draw是否计分/消耗回合/重打；单局之外赛制；断线/主动退出/一方不上报；报告冲突的裁决；等待超时允许哪些玩家操作；是否引入下一回合准备。当前一律不擅自选边、计分或推进。
+等待15秒只诊断且持续重试；没有跨重启服务端持久结果或跨进程客户端结果恢复，没有新的重连玩法。当前随机GUID/票据通过现有开发TCP发送，不声称生产级加密认证/反作弊。
+正式HurtBox和非白名单技能仍缺，未解除BattleReady=false。不能以三场测试fixture证明完整角色技能已经全部完成。
+Phase5待授权矩阵：PRD AT01～AT24编辑器/数据/RootMotion/判定/事件/退出的完整重跑；正式参数人工双端Normal1～5/闪避白名单边界；可复现延迟/丢包/乱序/重复/补帧跨终局矩阵；早确认与过期帧跨新对局；同帧死亡/打断优先级回放；不同硬件/帧率/窗口焦点与长时间状态hash；多次退出再进和对象/音源/timer/路由数量；5分钟过期回收；多场并发匹配；服务端重启与未决分支的产品方案；Editor/DevelopmentBuild/Legacy兼容；资源缺失/构建包含性；原始技能/Prefab/Scene无污染与导出封印。
+准备材料：本批自动脚本、真实日志、失败记录、生成协议源、最终双端构建、显式fixture说明、双方match/round/F/result/id/hash对照均已保留。
+
+12. 文件、差异与回退
+
+详见 docs/SkillRuntime_Phase4C_Files.txt；本批开始前客户端存在大量未提交4B及更早编辑器改动，记录在Logs/Phase4C/Preexisting-Changes.txt，不应将全部git diff当作4C工作。
+服务端本批开始前干净；最终跟踪文件差异记录在Logs/Phase4C/Server-DiffStat.txt、Server-Tracked.patch；新增文件另列清单。
+Unity自动改写的服务端UnityConnectSettings与本批无关；在完整备份并核对hash后已撤销，备份Logs/Phase4C/ServerUnityConnectSettings-AutoGenerated.asset。自动审批最初拒绝无备份撤销，核对并备份后才批准执行，没有绕过拒绝。
+未提交Git、未部署线上。
+回退必须成对回退客户端/服务端生成协议和作用域接入。先保存当前工作/导出diff，再按本批文件清单撤销4C新增模块与接入hunk，保留4B所在同文件的技能/表现/位移改动；不要对工作区执行整体reset或清空未跟踪文件。
+服务端可审查并反向应用本批Server-Tracked.patch，再移除仅属于本批的新文件及对应.meta；未来有额外修改时先解决补丁冲突，不能强制覆盖。
+回到旧模式时使用对应旧协议客户端/服务端与原Legacy配置；不能把新版本的一端直接连接旧版本另一端。测试构建和日志可保留为证据。

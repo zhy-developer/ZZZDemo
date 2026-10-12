@@ -41,7 +41,8 @@ namespace SkillRuntime.Integration
         {
             var c = arena.profile.ValidateAndFreeze();
             var dto = JsonUtility.FromJson<SkillConfigDto>(arena.profile.exportedJson.text);
-            foreach (var s in dto.skills.Where(s => c.Skills.Any(p => p.Skill.SkillId == s.skillId))) edit(s);
+            foreach (var s in dto.skills.Where(s => c.Skills.Any(p => p.Skill.SkillId == s.skillId)))
+            { s.vfx.Clear(); s.sfx.Clear(); edit(s); } // Synthetic combat-only fixtures may extend interrupt windows through D.
             if (!SkillConfigLoader.TryParse(JsonUtility.ToJson(dto), out var snapshot, out var diagnostics)) throw new Exception(string.Join("\n", diagnostics));
             if (!RuntimeSkillCatalog.TryCreateIsolated(snapshot, 33, 10000, out var index, out var error)) throw new Exception(error);
             return new PilotConfiguration(c.Skills.Select(s => new PilotSkill(s.Source, index.Skill(s.Skill.SkillId), s.Clip, s.State, s.Motion, s.MotionEnd, s.DistancePermille,
@@ -61,7 +62,8 @@ namespace SkillRuntime.Integration
             s.tracks.Add(new SkillTrack { id = id + "-track", kind = invincible ? TrackKind.Invincibility : TrackKind.Interrupt });
             (invincible ? s.invincibility : s.interrupts).Add(new FrameWindow { id = id, trackId = id + "-track", startFrame = 0, endFrame = s.durationFrames });
         }
-        static IEnumerator Cases(PilotDevelopmentArena a)
+        internal static int PassedChecks => checks;
+        internal static IEnumerator Cases(PilotDevelopmentArena a)
         {
             yield return null;
             Check(a.Ready && a.Players.All(p => p.Player && p.Player.IsDeterministicPilot), "two real prefab Players bound");

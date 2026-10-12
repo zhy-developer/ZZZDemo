@@ -14,9 +14,11 @@ public class UdpMessageDispatcher : Singleton<UdpMessageDispatcher>
 
     private UdpClientTransport _upd;
     private int mesNum = 0; // 计数器
+    private int generation;
 
     public void Destory()
     {
+        generation++;
         if (_upd != null)
         {
             _upd.EndClientUdp();
@@ -24,6 +26,7 @@ public class UdpMessageDispatcher : Singleton<UdpMessageDispatcher>
         }
 
         mes_frame_operation = null;
+        mes_battle_start = null;
         mes_delta_frame_data = null;
         mes_down_game_over = null;
     }
@@ -40,11 +43,12 @@ public class UdpMessageDispatcher : Singleton<UdpMessageDispatcher>
 
     public void StartClientUdp()
     {
+        generation++;
         mesNum = 0;
         _upd = new UdpClientTransport();
+        int epoch = generation;
+        _upd.delegate_analyze_message = (id, bytes) => AnalyzeMessage(epoch, id, bytes);
         _upd.StartClientUdp(NetGlobal.Instance.serverIP);
-
-        _upd.delegate_analyze_message = AnalyzeMessage;
     }
 
 
@@ -53,6 +57,12 @@ public class UdpMessageDispatcher : Singleton<UdpMessageDispatcher>
         UdpBattleReady _ready = new UdpBattleReady();
         _ready.uid = _uid;
         _ready.battleID = _battleID;
+        var data = BattleData.Instance;
+        _ready.matchId = data.MatchId; _ready.roundId = data.RoundId; _ready.protocolVersion = 1; _ready.joinTicket = data.JoinTicket;
+        var pilot = BattleManager.roleManage?.Pilot;
+        _ready.authorityMode = pilot == null ? 0 : 1;
+        _ready.rules = pilot == null ? "legacy" : SkillRuntime.Integration.PilotBattleProfile.Rules;
+        _ready.configHash = pilot?.Digest ?? "legacy";
         Debug.Log("SendBattleReady   _upd== " + _upd);
         _upd.SendMessage(PackageHandler.PackSendMessage<UdpBattleReady>(_ready, CSID.UDP_BATTLE_READY));
     }
@@ -66,6 +76,7 @@ public class UdpMessageDispatcher : Singleton<UdpMessageDispatcher>
         _up.mesID = mesNum;  // 操作序列号
 
         _up.operation = BattleData.Instance.selfOperation;
+        _up.matchId = BattleData.Instance.MatchId; _up.roundId = BattleData.Instance.RoundId;
 
         _upd.SendMessage(PackageHandler.PackSendMessage<UdpUpPlayerOperations>(_up, CSID.UDP_UP_PLAYER_OPERATIONS));
     }
@@ -90,6 +101,7 @@ public class UdpMessageDispatcher : Singleton<UdpMessageDispatcher>
         UdpUpDeltaFrames _framespb = new UdpUpDeltaFrames();
 
         _framespb.battleID = _battleID;
+        _framespb.matchId = BattleData.Instance.MatchId; _framespb.roundId = BattleData.Instance.RoundId;
         _framespb.frames.AddRange(_frames);
 
         _upd.SendMessage(PackageHandler.PackSendMessage<UdpUpDeltaFrames>(_framespb, CSID.UDP_UP_DELTA_FRAMES));
@@ -102,11 +114,16 @@ public class UdpMessageDispatcher : Singleton<UdpMessageDispatcher>
         _gameOver.battleID = _battleID;
         _upd.SendMessage(PackageHandler.PackSendMessage<UdpUpGameOver>(_gameOver, CSID.UDP_UP_GAME_OVER));
     }
+    public void SendFinal(UdpUpGameOver result) => _upd?.SendMessage(PackageHandler.PackSendMessage(result, CSID.UDP_UP_GAME_OVER));
 
 
     public void AnalyzeMessage(SCID messageId, byte[] bodyData)
     {
-
+        AnalyzeMessage(generation, messageId, bodyData);
+    }
+    void AnalyzeMessage(int epoch, SCID messageId, byte[] bodyData)
+    {
+        if (epoch != generation) return;
 
         switch (messageId)
         {
@@ -115,7 +132,7 @@ public class UdpMessageDispatcher : Singleton<UdpMessageDispatcher>
                     UdpBattleStart pb_ReceiveMes = PackageHandler.DeserializeData<UdpBattleStart>(bodyData);
                     NetGlobal.Instance.AddAction(() =>
                     {
-                        mes_battle_start(pb_ReceiveMes);
+                        if (epoch == generation) mes_battle_start?.Invoke(pb_ReceiveMes);
                     });
                 }
                 break;
@@ -124,7 +141,7 @@ public class UdpMessageDispatcher : Singleton<UdpMessageDispatcher>
                     UdpDownFrameOperations pb_ReceiveMes = PackageHandler.DeserializeData<UdpDownFrameOperations>(bodyData);
                     NetGlobal.Instance.AddAction(() =>
                     {
-                        mes_frame_operation(pb_ReceiveMes);
+                        if (epoch == generation) mes_frame_operation?.Invoke(pb_ReceiveMes);
                     });
                 }
                 break;
@@ -133,7 +150,7 @@ public class UdpMessageDispatcher : Singleton<UdpMessageDispatcher>
                     UdpDownDeltaFrames pb_ReceiveMes = PackageHandler.DeserializeData<UdpDownDeltaFrames>(bodyData);
                     NetGlobal.Instance.AddAction(() =>
                     {
-                        mes_delta_frame_data(pb_ReceiveMes);
+                        if (epoch == generation) mes_delta_frame_data?.Invoke(pb_ReceiveMes);
                     });
                 }
                 break;
@@ -142,7 +159,7 @@ public class UdpMessageDispatcher : Singleton<UdpMessageDispatcher>
                     UdpDownGameOver pb_ReceiveMes = PackageHandler.DeserializeData<UdpDownGameOver>(bodyData);
                     NetGlobal.Instance.AddAction(() =>
                     {
-                        mes_down_game_over(pb_ReceiveMes);
+                        if (epoch == generation) mes_down_game_over?.Invoke(pb_ReceiveMes);
                     });
                 }
                 break;

@@ -4,6 +4,10 @@
     <Compile Include="Program.cs" />
     <Compile Include="Phase3BChecks.cs" />
     <Compile Include="Phase3CChecks.cs" />
+    <Compile Include="Phase4BChecks.cs" />
+    <Compile Include="../../Assets/Scripts/FrameSync/RootMotionBake/RootMotionBakeData.cs" />
+    <Compile Include="../../Assets/Scripts/FrameSync/RootMotionBake/RootMotionClip.cs" />
+    <Compile Include="../../Assets/Scripts/FrameSync/RootMotionBake/RootMotionPlayback.cs" />
     <Compile Include="../SkillConfig/UnityStubs.cs" />
     <Compile Include="../../Assets/Scripts/SkillConfig/*.cs" />
     <Compile Include="../../Assets/Scripts/SkillRuntime/*.cs" />

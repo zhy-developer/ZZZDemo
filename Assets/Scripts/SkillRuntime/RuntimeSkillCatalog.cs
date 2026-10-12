@@ -120,7 +120,7 @@ namespace SkillRuntime
             else new HurtCircle(data.hurtBox.radius, data.hurtBox.offset.x, data.hurtBox.offset.y, data.hurtBox.offset.z);
             foreach (var s in data.skills) foreach (var a in s.animations.Where(a => a.rootMotionBound))
             {
-                if (a.rootMotion.requiresTimeRemap) issues.Add(new RuntimeReadinessIssue("MOTION_REMAP_UNSUPPORTED", s.skillId + "/" + a.id, "No production time remapper is implemented."));
+                if (a.rootMotion.requiresTimeRemap) issues.Add(new RuntimeReadinessIssue("MOTION_REMAP_BINDING_REQUIRED", s.skillId + "/" + a.id, "Host must validate the actual motion resource with the Phase4B integer sampler before binding.", DiagnosticSeverity.Warning));
                 if (!a.rootMotion.provenanceVerified) issues.Add(new RuntimeReadinessIssue("MOTION_PROVENANCE", s.skillId + "/" + a.id, "Source provenance remains unverified.", DiagnosticSeverity.Warning));
             }
             ReadinessIssues = Array.AsReadOnly(issues.OrderBy(i => i.Location, StringComparer.Ordinal).ThenBy(i => i.Code, StringComparer.Ordinal).ToArray());

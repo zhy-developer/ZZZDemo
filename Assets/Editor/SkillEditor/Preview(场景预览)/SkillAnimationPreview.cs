@@ -22,9 +22,9 @@ namespace SkillConfig.Editor
             long sourceLength = (long)Math.Round(segment.clip.length * 1000000.0);
             if (segment.speedPermille <= 0 || segment.speedPermille > 100000 || segment.trimStartUs < 0 || segment.trimEndUs <= segment.trimStartUs || segment.trimEndUs > sourceLength || segment.endFrame <= segment.startFrame)
                 throw new ArgumentException("Invalid animation trim, speed or frame interval.");
-            // Decimal avoids overflow even on malformed large frame input; the saved unit remains microseconds.
-            decimal us = segment.trimStartUs + (decimal)Math.Max(0L, (long)frame - segment.startFrame) * 33000 * segment.speedPermille / 1000;
-            return (double)Math.Min(segment.trimEndUs, us) / 1000000.0;
+            var time = new SkillRuntime.SkillClipTime(new AnimationDto { id = segment.id, startFrame = segment.startFrame, endFrame = segment.endFrame,
+                trimStartUs = segment.trimStartUs, trimEndUs = segment.trimEndUs, speedPermille = segment.speedPermille, sourceLengthUs = sourceLength });
+            return time.SourceNs(Math.Max(segment.startFrame, Math.Min(segment.endFrame, frame))) / 1000000000.0;
         }
         public void Sample(AnimationSegment segment, int frame)
         {

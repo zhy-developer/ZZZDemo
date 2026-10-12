@@ -10,14 +10,17 @@ public class EffectItem : PoolItemBase
 
     private ParticleSystem[] ParticleSystem;
     private GameTimer recycleTimer;
+    private TimerManager timerOwner;
+    private VFXManager vfxOwner;
 
     private void Awake()
     {
         ParticleSystem =GetComponentsInChildren<ParticleSystem>();
+        vfxOwner = VFXManager.Instance;
        
         for (int i = 0; i < ParticleSystem.Length; i++) 
         {
-            VFXManager.Instance.AddVFX(ParticleSystem[i], playSpeed);
+            vfxOwner.AddVFX(ParticleSystem[i], playSpeed);
         }
        
     }
@@ -39,7 +42,7 @@ public class EffectItem : PoolItemBase
 
     private void StartPlay()
     {
-        TimerManager.Instance.UnregisterTimer(recycleTimer);
+        CancelRecycle();
 
         for (int i = 0;i < ParticleSystem.Length;i++) 
         {
@@ -47,18 +50,32 @@ public class EffectItem : PoolItemBase
             ParticleSystem[i].Play(true);
         }
       
-        recycleTimer = TimerManager.Instance.GetTimer(playTime, StartReCycle);
+        timerOwner = TimerManager.Instance;
+        recycleTimer = timerOwner.GetTimer(playTime, StartReCycle);
     }
     private void StartReCycle()
     { 
-       this.gameObject.SetActive(false);  
+       // Release the reference before the pooled timer can be rented by another effect.
+       recycleTimer = null;
+       if (this) gameObject.SetActive(false);
     }
     protected override void ReSycle()
     {
-
+        CancelRecycle();
         for (int i = 0; i < ParticleSystem.Length; i++)
         {
-            ParticleSystem[i].Stop();
+            if (ParticleSystem[i]) ParticleSystem[i].Stop();
         }
+    }
+    private void CancelRecycle()
+    {
+        var timer = recycleTimer; recycleTimer = null;
+        if (timerOwner) timerOwner.UnregisterTimer(timer);
+    }
+    private void OnDestroy()
+    {
+        CancelRecycle();
+        if (vfxOwner && ParticleSystem != null)
+            foreach (var particle in ParticleSystem) vfxOwner.RemoveVFX(particle);
     }
 }

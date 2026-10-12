@@ -28,9 +28,15 @@ namespace SkillRuntime.Integration
         }
         readonly Actor[] actors;
         readonly PilotConfiguration config;
+        readonly PilotPresentation presentation;
         CombatFrameSnapshot baseline;
         long revision;
         bool disposed;
+        readonly string networkMatch;
+        public MatchLifecycle.FinalResult TerminalSnapshot { get; private set; }
+        public string TerminalState { get; private set; }
+        double tailSeconds;
+        long tailFrame;
         public readonly SkillFrameRuntime Runtime;
         public bool Faulted { get; private set; }
         public string Fault { get; private set; }
@@ -40,8 +46,11 @@ namespace SkillRuntime.Integration
         public EntityKey? TerminalWinner { get; private set; }
         public string LastStateHash { get; private set; }
         public int FeedbackCount { get; private set; }
-        public PilotBattleSession(PilotConfiguration configuration, IEnumerable<RoleBase> roles, long sessionKey)
+        public int ActiveVfx => presentation?.ActiveVfx ?? 0;
+        public int ActiveSfx => presentation?.ActiveSfx ?? 0;
+        public PilotBattleSession(PilotConfiguration configuration, IEnumerable<RoleBase> roles, long sessionKey, string networkMatchId = null)
         {
+            networkMatch = networkMatchId;
             config = configuration ?? throw new ArgumentNullException(nameof(configuration));
             var ordered = roles.OrderBy(r => r.Player.BattleID).ToArray();
             if (ordered.Length != 2 || ordered.Any(r => !r || !r.Player || r.Player.IsDeterministicPilot)
@@ -49,7 +58,7 @@ namespace SkillRuntime.Integration
             foreach (var r in ordered)
             {
                 if (r.Player.playerSO.ComboData.comboData.lightCombo != config.Container) throw new InvalidOperationException("Real Player combo container differs from validated pilot.");
-                foreach (string state in config.Skills.Select(s => s.State).Concat(new[] { config.Idle, config.Hit, config.Death }))
+                foreach (string state in config.Skills.SelectMany(s => s.Animations.Count == 0 ? new[] { s.State } : s.Animations.Select(a => a.State)).Concat(new[] { config.Idle, config.Hit, config.Death }))
                     if (string.IsNullOrEmpty(state) || !r.Player.characterAnimator.HasState(0, Animator.StringToHash(state))) throw new InvalidOperationException("Required Animator state missing: " + state);
             }
             actors = ordered.Select(r => new Actor { Key = new EntityKey(sessionKey, 1, r.Player.BattleID, 1), Role = r }).ToArray();
@@ -62,6 +71,7 @@ namespace SkillRuntime.Integration
                 a.Role.PilotFace(a.Key.BattleId == 1 ? 0 : 60);
                 a.Role.Player.PilotDestroyed += Dispose;
             }
+            presentation = new PilotPresentation(config, ordered);
             Debug.Log("[PilotMatch] mode=DeterministicPilot rules=" + PilotBattleProfile.Rules + " digest=" + Digest + " entity=" + actors[0].Key + "," + actors[1].Key);
         }
         public CharacterHealthBase Health(int battleId) => actors.Single(a => a.Key.BattleId == battleId).Health;
@@ -76,7 +86,8 @@ namespace SkillRuntime.Integration
             var skill = config.Skills[index]; a.Role.PilotFace(facing);
             var key = Runtime.StartAccepted(a.Key, skill.Skill);
             Runtime.OwnHandle(key, "root/" + key);
-            a.Role.PilotStartMotion(key, skill.Motion, skill.MotionEnd, skill.DistancePermille);
+            if (skill.TimelineMotion != null) a.Role.PilotStartMotion(key, skill.TimelineMotion);
+            else a.Role.PilotStartMotion(key, skill.Motion, skill.MotionEnd, skill.DistancePermille);
             a.PendingIndex = -1; a.PendingOwner = null;
             Debug.Log("[PilotCast] F=" + Runtime.OpenFrame + " " + key + " skill=" + skill.Skill.SkillId + " k=0");
         }
@@ -88,7 +99,7 @@ namespace SkillRuntime.Integration
             if (cast == null) { Start(a, 0, facing); return; }
             var bound = Binding(cast); int k = cast.SkillFrame;
             if (k < bound.PreInput) { Reject(a, "pre-input closed"); return; }
-            int index = k < bound.LinkEnd ? config.Skills.IndexOf(bound) + 1 : 0;
+            int index = k < bound.LinkEnd ? (config.Skills.IndexOf(bound) + 1) % config.ContainerCount : 0;
             if (index >= config.Skills.Count) { Reject(a, "next combo is outside pilot allowlist"); return; }
             if (k >= bound.Ready) Start(a, index, facing);
             else if (a.PendingIndex < 0) { a.PendingIndex = index; a.PendingFacing = facing; a.PendingOwner = cast.Key; }
@@ -96,7 +107,7 @@ namespace SkillRuntime.Integration
         static void Reject(Actor a, string why) => Debug.Log("[PilotReject] entity=" + a.Key + " reason=" + why);
         public bool Advance(long frame, AllPlayerOperation operations)
         {
-            if (disposed || Faulted) return false;
+            if (disposed || Faulted || networkMatch != null && TerminalSnapshot != null) return false;
             try
             {
                 if (operations == null || operations.operations.Any(o => o == null || o.battleID < 1 || o.battleID > 2)
@@ -130,12 +141,22 @@ namespace SkillRuntime.Integration
                 var geometry = actors.Select(a => new EntityGeometrySnapshot(a.Key,
                     new LogicPose(a.Role.LogicalPosition.x, 0, a.Role.LogicalPosition.y, a.Role.LogicalFacing * 1000), config.Hurt)).ToArray();
                 Runtime.CapturePostMove(geometry);
+                var capturedCasts = actors.Select(a => Runtime.Current(a.Key)).Where(c => c != null).ToArray();
                 baseline = new CombatFrameSnapshot(frame, revision, actors.Select((a, i) => new CombatantSnapshot(geometry[i], Runtime.Current(a.Key)?.Key, a.Health.ReadPilotHealth(), a.Stun, a.Knockback)));
                 var batch = CombatResolver.Resolve(Runtime, baseline);
                 if (!batch.TryCommit(this, out var receipt, out var error)) throw new InvalidOperationException("Atomic combat commit refused: " + error);
                 LastReceipt = receipt;
                 if (receipt.Round != RoundResult.None) { TerminalResult = receipt.Round; TerminalWinner = receipt.Winner; } // Never send legacy game-over.
                 Runtime.CompleteFrame();
+                // Freeze immediately after the complete transaction, before host cleanup or presentation callbacks.
+                if (networkMatch != null && TerminalResult != RoundResult.None && TerminalSnapshot == null)
+                {
+                    TerminalState = DescribeState() + "\naccepted=" + string.Join(";", Runtime.Committed.Select(c => c.ToString())) +
+                        "\nexits=" + string.Join(";", Runtime.Exits.Select(e => e.Cast + ":" + e.Reason));
+                    TerminalSnapshot = new MatchLifecycle.FinalResult(networkMatch, actors[0].Key.Session, 1, frame,
+                        TerminalResult == RoundResult.Draw ? MatchLifecycle.Outcome.Draw : MatchLifecycle.Outcome.Winner,
+                        TerminalWinner?.BattleId ?? 0, SkillConfigHash.Sha256(TerminalState), PilotBattleProfile.Rules, Digest);
+                }
                 foreach (var exit in Runtime.Exits)
                 {
                     var a = actors.Single(v => v.Key.Equals(exit.Cast.Entity)); a.Role.PilotStopMotion(exit.Cast);
@@ -145,14 +166,40 @@ namespace SkillRuntime.Integration
                 Debug.Log("[PilotFrame] F=" + frame + " hash=" + LastStateHash + " " + DescribePlayers());
                 Debug.Log("[PilotSettlement] F=" + frame + " records=" + Runtime.RecordCount + " accepted=" + string.Join(";", Runtime.Committed.Select(c => c.ToString()))
                     + " exits=" + string.Join(";", Runtime.Exits.Select(e => e.Cast + ":" + e.Reason)) + " result=" + TerminalResult + " winner=" + TerminalWinner);
+                Debug.Log("[PilotTimeline] F=" + frame + " clips=" + string.Join(";", actors.Select(a => {
+                    var c = Runtime.Current(a.Key); return a.Key + ":" + (c == null ? "none" : c.Key + "/" + c.Skill.SegmentAt(c.SkillFrame).Id + "/" + c.SkillFrame);
+                })) + " events=" + string.Join(";", Runtime.Events.Select(e => e.ToString()))
+                    + " feedback=" + string.Join(";", receipt.Feedback.Select(h => h.Source.ToString())));
                 // All authority writes, ledger and exit cleanup are complete before any external presentation callback.
                 foreach (var a in actors)
                 {
                     try { Present(a, receipt); } catch (Exception ex) { Debug.LogException(ex); }
                 }
+                try { presentation.Tick(frame, capturedCasts, Runtime.Exits, receipt.Feedback); Debug.Log("[PilotEffects] F=" + frame + " requests=" + presentation.LastRequests); }
+                catch (Exception ex) { Debug.LogWarning("[PilotPresentation] Frame=" + frame + " " + ex.Message + "; authority already committed."); }
+                if (TerminalSnapshot != null)
+                {
+                    foreach (var cast in capturedCasts) presentation.Exit(cast.Key, CastExitReason.Interrupted, frame);
+                    foreach (var a in actors)
+                    { a.PendingIndex = -1; a.PendingOwner = null; a.Role.CancelRootMotion(); a.Role.Player.PilotRoundClosed = true; }
+                    Runtime.Dispose(); tailFrame = frame;
+                    Debug.Log("[RoundLocal] match=" + networkMatch + " round=1 F=" + frame + " result=" + TerminalSnapshot.Result +
+                        " winner=" + TerminalSnapshot.Winner + " hash=" + TerminalSnapshot.Hash);
+                }
                 return true;
             }
             catch (Exception ex) { Faulted = true; Fault = ex.ToString(); Debug.LogError("[PilotHalt] No legacy fallback; reinitialize match. " + Fault); return false; }
+        }
+        // Presentation tail clock only. Authority and terminal snapshot never advance here.
+        public void UpdateTerminalPresentation(double elapsedSeconds)
+        {
+            if (disposed || TerminalSnapshot == null) return;
+            tailSeconds += Math.Max(0, Math.Min(elapsedSeconds, .25));
+            while (tailSeconds >= .033)
+            {
+                tailSeconds -= .033;
+                presentation.Tick(++tailFrame, new CastFrame[0], new CastExit[0], new HitFeedback[0]);
+            }
         }
         public bool TryApply(CombatFrameSnapshot expected, ReadOnlyCollection<TargetResolution> results, out string error)
         {
@@ -184,7 +231,13 @@ namespace SkillRuntime.Integration
             var cast = Runtime.Current(a.Key); var hit = receipt.Feedback.Any(f => f.Source.Target.Equals(a.Key));
             FeedbackCount += receipt.Feedback.Count(f => f.Source.Target.Equals(a.Key));
             if (a.Health.IsDead) { a.VisualHitStart = -1; a.Role.Player.PilotVisual(config.Death, .95f); }
-            else if (cast != null) { a.VisualHitStart = -1; var skill = Binding(cast); a.Role.Player.PilotVisual(skill.State, (float)(cast.SkillFrame * NetConfig.frameTime / 1000.0 / skill.Clip.length)); }
+            else if (cast != null)
+            {
+                a.VisualHitStart = -1; var skill = Binding(cast);
+                var segment = skill.Animations.FirstOrDefault(s => s.Time.Start <= cast.SkillFrame && cast.SkillFrame < s.Time.End);
+                if (segment == null) a.Role.Player.PilotVisual(skill.State, (float)(cast.SkillFrame * NetConfig.frameTime / 1000.0 / skill.Clip.length));
+                else a.Role.Player.PilotVisual(segment.State, (float)(segment.Time.SourceNs(cast.SkillFrame) / 1000000000.0 / segment.Clip.length));
+            }
             else
             {
                 if (hit)
@@ -213,6 +266,7 @@ namespace SkillRuntime.Integration
         {
             if (disposed) return; disposed = true;
             Runtime.Dispose();
+            presentation?.Dispose();
             foreach (var a in actors)
             {
                 if (!a.Role) continue;

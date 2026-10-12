@@ -1,12 +1,12 @@
 {
     "schemaVersion": 1,
     "characterId": "miyabi",
-    "sourceFingerprint": "545f5a81e0d1ccba0236106aae609bcbc38ac9160fc1139031401b18fd25f832",
+    "sourceFingerprint": "1800c3ff39f74600765260d26d0bccee2bcd136b642002d9b9b3b95c7b016e82",
     "logicFrameIntervalMs": 33,
     "precision": 10000,
     "completeness": 0,
     "battleReady": false,
-    "migrationNotes": "Phase 1 data pilot: only Normal1/Normal2. Other skills and all combat integration are not migrated.",
+    "migrationNotes": "Phase4B partial migration: Normal1-5; Normal6/Rush_ATK await source events. Skill/FinishSkill and full presentation readiness remain pending. HP/HurtBox remain explicit test values.",
     "hurtBoxConfigured": false,
     "hurtBox": {
         "offset": {
@@ -22,6 +22,11 @@
             "id": "hit_1",
             "path": "Audio/Combo/ATK/IMPT-blocks-1",
             "kind": 1
+        },
+        {
+            "id": "miyabi-legacy-slash06",
+            "path": "Prefabs/VFX/Miyabi_LegacySlash06",
+            "kind": 0
         },
         {
             "id": "slash_1",
@@ -242,6 +247,13 @@
                     "group": "",
                     "kind": 3,
                     "displayOrder": 0
+                },
+                {
+                    "id": "legacy-vfx",
+                    "name": "Original PlayVFX events",
+                    "group": "",
+                    "kind": 4,
+                    "displayOrder": 0
                 }
             ],
             "hitGroups": [
@@ -354,7 +366,31 @@
                     }
                 }
             ],
-            "vfx": [],
+            "vfx": [
+                {
+                    "id": "legacy-vfx-0",
+                    "trackId": "legacy-vfx",
+                    "resourceId": "miyabi-legacy-slash06",
+                    "bone": "",
+                    "startFrame": 8,
+                    "endFrame": 9,
+                    "classification": 1,
+                    "lifetime": 1,
+                    "attachment": 0,
+                    "offset": {
+                        "x": 0,
+                        "y": 0,
+                        "z": 0
+                    },
+                    "rotationMilliDegrees": {
+                        "x": 0,
+                        "y": 0,
+                        "z": 0
+                    },
+                    "scalePermille": 1000,
+                    "maxLifetimeFrames": 242
+                }
+            ],
             "sfx": []
         },
         {
@@ -409,6 +445,13 @@
                     "name": "Imported logic gates (33ms)",
                     "group": "",
                     "kind": 3,
+                    "displayOrder": 0
+                },
+                {
+                    "id": "legacy-vfx",
+                    "name": "Original PlayVFX events",
+                    "group": "",
+                    "kind": 4,
                     "displayOrder": 0
                 }
             ],
@@ -506,7 +549,818 @@
                     }
                 }
             ],
-            "vfx": [],
+            "vfx": [
+                {
+                    "id": "legacy-vfx-0",
+                    "trackId": "legacy-vfx",
+                    "resourceId": "miyabi-legacy-slash06",
+                    "bone": "",
+                    "startFrame": 7,
+                    "endFrame": 8,
+                    "classification": 1,
+                    "lifetime": 1,
+                    "attachment": 0,
+                    "offset": {
+                        "x": 0,
+                        "y": 0,
+                        "z": 0
+                    },
+                    "rotationMilliDegrees": {
+                        "x": 0,
+                        "y": 0,
+                        "z": 0
+                    },
+                    "scalePermille": 1000,
+                    "maxLifetimeFrames": 242
+                }
+            ],
+            "sfx": []
+        },
+        {
+            "skillId": "miyabi-normal-3",
+            "displayName": "Unagi_Normal_3",
+            "category": "Normal",
+            "legacyEntryState": "Unagi_Normal_3",
+            "skillType": 1,
+            "baseDamage": 20,
+            "durationFrames": 34,
+            "animations": [
+                {
+                    "id": "animation-1",
+                    "clipName": "Avatar_Female_Size02_Unagi_Ani_Attack_03",
+                    "clipGuid": "3d9757a43f4c1d14ebf43cbec50dcda5",
+                    "clipLocalId": -1079517053937398311,
+                    "sourceLengthUs": 1100000,
+                    "trimStartUs": 0,
+                    "trimEndUs": 1100000,
+                    "startFrame": 0,
+                    "endFrame": 34,
+                    "speedPermille": 1000,
+                    "statePaths": [
+                        "Base Layer.Combo.Normal Attack.Unagi_Normal_3"
+                    ],
+                    "rootMotionBound": true,
+                    "rootMotion": {
+                        "resourcesPath": "RootMotion/Avatar_Female_Size02_Unagi_Ani_Attack_03_RootMotion",
+                        "contentHash": "d6936acdea5112103142e30e4bc916930c800fcd03495490d9a3f7c730abd422",
+                        "clipName": "Avatar_Female_Size02_Unagi_Ani_Attack_03",
+                        "endFrameExclusive": 0,
+                        "distancePermille": 1000,
+                        "sampleCount": 34,
+                        "sourceClipLengthMs": 1100,
+                        "coverageEndMs": 1100,
+                        "requiresTimeRemap": false,
+                        "provenanceVerified": false,
+                        "tailPolicy": 0
+                    }
+                }
+            ],
+            "tracks": [
+                {
+                    "id": "imported-atk",
+                    "name": "Approved legacy ATK points (XZ)",
+                    "group": "",
+                    "kind": 0,
+                    "displayOrder": 0
+                },
+                {
+                    "id": "pilot-gates",
+                    "name": "Imported logic gates (33ms)",
+                    "group": "",
+                    "kind": 3,
+                    "displayOrder": 0
+                },
+                {
+                    "id": "legacy-vfx",
+                    "name": "Original PlayVFX events",
+                    "group": "",
+                    "kind": 4,
+                    "displayOrder": 0
+                }
+            ],
+            "hitGroups": [
+                {
+                    "id": "atk-group-0",
+                    "mode": 0,
+                    "repeatIntervalFrames": 1,
+                    "damageSource": 0,
+                    "explicitDamage": 0,
+                    "hitStunFrames": 0,
+                    "knockback": {
+                        "x": 0,
+                        "y": 0,
+                        "z": 0
+                    },
+                    "knockbackFrames": 0,
+                    "hitVfxResourceId": "",
+                    "hitSfxResourceId": ""
+                }
+            ],
+            "hitBoxes": [
+                {
+                    "id": "atk-box-0",
+                    "trackId": "imported-atk",
+                    "hitGroupId": "atk-group-0",
+                    "startFrame": 7,
+                    "endFrame": 8,
+                    "shape": 3,
+                    "offset": {
+                        "x": 0,
+                        "y": 0,
+                        "z": 0
+                    },
+                    "size": {
+                        "x": 0,
+                        "y": 0,
+                        "z": 0
+                    },
+                    "yawMilliDegrees": 0,
+                    "radius": 25000,
+                    "height": 1,
+                    "sectorAngleMilliDegrees": 200000
+                }
+            ],
+            "invincibility": [],
+            "interrupts": [],
+            "events": [
+                {
+                    "id": "pilot-gate-0",
+                    "trackId": "pilot-gates",
+                    "eventId": "combo.preinput",
+                    "frame": 10,
+                    "order": 0,
+                    "version": 1,
+                    "execution": 1,
+                    "parameterKind": 2,
+                    "marker": {
+                        "text": ""
+                    },
+                    "comboGate": {
+                        "enabled": true
+                    }
+                },
+                {
+                    "id": "pilot-gate-1",
+                    "trackId": "pilot-gates",
+                    "eventId": "combo.attack-ready",
+                    "frame": 15,
+                    "order": 1,
+                    "version": 1,
+                    "execution": 1,
+                    "parameterKind": 2,
+                    "marker": {
+                        "text": ""
+                    },
+                    "comboGate": {
+                        "enabled": true
+                    }
+                },
+                {
+                    "id": "pilot-gate-3",
+                    "trackId": "pilot-gates",
+                    "eventId": "combo.move-interrupt",
+                    "frame": 15,
+                    "order": 3,
+                    "version": 1,
+                    "execution": 1,
+                    "parameterKind": 2,
+                    "marker": {
+                        "text": ""
+                    },
+                    "comboGate": {
+                        "enabled": true
+                    }
+                },
+                {
+                    "id": "pilot-gate-2",
+                    "trackId": "pilot-gates",
+                    "eventId": "combo.link",
+                    "frame": 27,
+                    "order": 2,
+                    "version": 1,
+                    "execution": 1,
+                    "parameterKind": 2,
+                    "marker": {
+                        "text": ""
+                    },
+                    "comboGate": {
+                        "enabled": false
+                    }
+                }
+            ],
+            "vfx": [
+                {
+                    "id": "legacy-vfx-0",
+                    "trackId": "legacy-vfx",
+                    "resourceId": "miyabi-legacy-slash06",
+                    "bone": "",
+                    "startFrame": 8,
+                    "endFrame": 9,
+                    "classification": 1,
+                    "lifetime": 1,
+                    "attachment": 0,
+                    "offset": {
+                        "x": 0,
+                        "y": 0,
+                        "z": 0
+                    },
+                    "rotationMilliDegrees": {
+                        "x": 0,
+                        "y": 0,
+                        "z": 0
+                    },
+                    "scalePermille": 1000,
+                    "maxLifetimeFrames": 242
+                }
+            ],
+            "sfx": []
+        },
+        {
+            "skillId": "miyabi-normal-4",
+            "displayName": "Unagi_Normal_4",
+            "category": "Normal",
+            "legacyEntryState": "Unagi_Normal_4",
+            "skillType": 1,
+            "baseDamage": 20,
+            "durationFrames": 19,
+            "animations": [
+                {
+                    "id": "animation-1",
+                    "clipName": "Avatar_Female_Size02_Unagi_Ani_Attack_04",
+                    "clipGuid": "3d9757a43f4c1d14ebf43cbec50dcda5",
+                    "clipLocalId": 4539272939920189602,
+                    "sourceLengthUs": 616667,
+                    "trimStartUs": 0,
+                    "trimEndUs": 616667,
+                    "startFrame": 0,
+                    "endFrame": 19,
+                    "speedPermille": 1000,
+                    "statePaths": [
+                        "Base Layer.Combo.Normal Attack.Unagi_Normal_4"
+                    ],
+                    "rootMotionBound": true,
+                    "rootMotion": {
+                        "resourcesPath": "RootMotion/Avatar_Female_Size02_Unagi_Ani_Attack_04_RootMotion",
+                        "contentHash": "f799acf2a24923e5f8d7904f465d529938a5ca7d72201276420c846fb5c89e06",
+                        "clipName": "Avatar_Female_Size02_Unagi_Ani_Attack_04",
+                        "endFrameExclusive": 0,
+                        "distancePermille": 1000,
+                        "sampleCount": 19,
+                        "sourceClipLengthMs": 617,
+                        "coverageEndMs": 617,
+                        "requiresTimeRemap": false,
+                        "provenanceVerified": false,
+                        "tailPolicy": 0
+                    }
+                }
+            ],
+            "tracks": [
+                {
+                    "id": "imported-atk",
+                    "name": "Approved legacy ATK points (XZ)",
+                    "group": "",
+                    "kind": 0,
+                    "displayOrder": 0
+                },
+                {
+                    "id": "pilot-gates",
+                    "name": "Imported logic gates (33ms)",
+                    "group": "",
+                    "kind": 3,
+                    "displayOrder": 0
+                },
+                {
+                    "id": "legacy-vfx",
+                    "name": "Original PlayVFX events",
+                    "group": "",
+                    "kind": 4,
+                    "displayOrder": 0
+                }
+            ],
+            "hitGroups": [
+                {
+                    "id": "atk-group-0",
+                    "mode": 0,
+                    "repeatIntervalFrames": 1,
+                    "damageSource": 0,
+                    "explicitDamage": 0,
+                    "hitStunFrames": 0,
+                    "knockback": {
+                        "x": 0,
+                        "y": 0,
+                        "z": 0
+                    },
+                    "knockbackFrames": 0,
+                    "hitVfxResourceId": "",
+                    "hitSfxResourceId": ""
+                }
+            ],
+            "hitBoxes": [
+                {
+                    "id": "atk-box-0",
+                    "trackId": "imported-atk",
+                    "hitGroupId": "atk-group-0",
+                    "startFrame": 8,
+                    "endFrame": 9,
+                    "shape": 3,
+                    "offset": {
+                        "x": 0,
+                        "y": 0,
+                        "z": 0
+                    },
+                    "size": {
+                        "x": 0,
+                        "y": 0,
+                        "z": 0
+                    },
+                    "yawMilliDegrees": 0,
+                    "radius": 25000,
+                    "height": 1,
+                    "sectorAngleMilliDegrees": 200000
+                }
+            ],
+            "invincibility": [],
+            "interrupts": [],
+            "events": [
+                {
+                    "id": "pilot-gate-0",
+                    "trackId": "pilot-gates",
+                    "eventId": "combo.preinput",
+                    "frame": 12,
+                    "order": 0,
+                    "version": 1,
+                    "execution": 1,
+                    "parameterKind": 2,
+                    "marker": {
+                        "text": ""
+                    },
+                    "comboGate": {
+                        "enabled": true
+                    }
+                },
+                {
+                    "id": "pilot-gate-1",
+                    "trackId": "pilot-gates",
+                    "eventId": "combo.attack-ready",
+                    "frame": 17,
+                    "order": 1,
+                    "version": 1,
+                    "execution": 1,
+                    "parameterKind": 2,
+                    "marker": {
+                        "text": ""
+                    },
+                    "comboGate": {
+                        "enabled": true
+                    }
+                },
+                {
+                    "id": "pilot-gate-3",
+                    "trackId": "pilot-gates",
+                    "eventId": "combo.move-interrupt",
+                    "frame": 17,
+                    "order": 3,
+                    "version": 1,
+                    "execution": 1,
+                    "parameterKind": 2,
+                    "marker": {
+                        "text": ""
+                    },
+                    "comboGate": {
+                        "enabled": true
+                    }
+                }
+            ],
+            "vfx": [
+                {
+                    "id": "legacy-vfx-0",
+                    "trackId": "legacy-vfx",
+                    "resourceId": "miyabi-legacy-slash06",
+                    "bone": "",
+                    "startFrame": 10,
+                    "endFrame": 11,
+                    "classification": 1,
+                    "lifetime": 1,
+                    "attachment": 0,
+                    "offset": {
+                        "x": 0,
+                        "y": 0,
+                        "z": 0
+                    },
+                    "rotationMilliDegrees": {
+                        "x": 0,
+                        "y": 0,
+                        "z": 0
+                    },
+                    "scalePermille": 1000,
+                    "maxLifetimeFrames": 242
+                }
+            ],
+            "sfx": []
+        },
+        {
+            "skillId": "miyabi-normal-5",
+            "displayName": "Unagi_Normal_5",
+            "category": "Normal",
+            "legacyEntryState": "Unagi_Normal_5",
+            "skillType": 1,
+            "baseDamage": 20,
+            "durationFrames": 41,
+            "animations": [
+                {
+                    "id": "animation-1",
+                    "clipName": "Avatar_Female_Size02_Unagi_Ani_Attack_05",
+                    "clipGuid": "3d9757a43f4c1d14ebf43cbec50dcda5",
+                    "clipLocalId": 7774278636591444631,
+                    "sourceLengthUs": 1350000,
+                    "trimStartUs": 0,
+                    "trimEndUs": 1350000,
+                    "startFrame": 0,
+                    "endFrame": 41,
+                    "speedPermille": 1000,
+                    "statePaths": [
+                        "Base Layer.Combo.Normal Attack.Unagi_Normal_5"
+                    ],
+                    "rootMotionBound": true,
+                    "rootMotion": {
+                        "resourcesPath": "RootMotion/Avatar_Female_Size02_Unagi_Ani_Attack_05_RootMotion",
+                        "contentHash": "9ea30c2de7f491035649c64db67dfbf0591ffd331b91cd4cdd9476f341aa171d",
+                        "clipName": "Avatar_Female_Size02_Unagi_Ani_Attack_05",
+                        "endFrameExclusive": 0,
+                        "distancePermille": 1000,
+                        "sampleCount": 41,
+                        "sourceClipLengthMs": 1350,
+                        "coverageEndMs": 1350,
+                        "requiresTimeRemap": false,
+                        "provenanceVerified": false,
+                        "tailPolicy": 0
+                    }
+                }
+            ],
+            "tracks": [
+                {
+                    "id": "imported-atk",
+                    "name": "Approved legacy ATK points (XZ)",
+                    "group": "",
+                    "kind": 0,
+                    "displayOrder": 0
+                },
+                {
+                    "id": "pilot-gates",
+                    "name": "Imported logic gates (33ms)",
+                    "group": "",
+                    "kind": 3,
+                    "displayOrder": 0
+                },
+                {
+                    "id": "legacy-vfx",
+                    "name": "Original PlayVFX events",
+                    "group": "",
+                    "kind": 4,
+                    "displayOrder": 0
+                }
+            ],
+            "hitGroups": [
+                {
+                    "id": "atk-group-0",
+                    "mode": 0,
+                    "repeatIntervalFrames": 1,
+                    "damageSource": 0,
+                    "explicitDamage": 0,
+                    "hitStunFrames": 0,
+                    "knockback": {
+                        "x": 0,
+                        "y": 0,
+                        "z": 0
+                    },
+                    "knockbackFrames": 0,
+                    "hitVfxResourceId": "",
+                    "hitSfxResourceId": ""
+                },
+                {
+                    "id": "atk-group-1",
+                    "mode": 0,
+                    "repeatIntervalFrames": 1,
+                    "damageSource": 0,
+                    "explicitDamage": 0,
+                    "hitStunFrames": 0,
+                    "knockback": {
+                        "x": 0,
+                        "y": 0,
+                        "z": 0
+                    },
+                    "knockbackFrames": 0,
+                    "hitVfxResourceId": "",
+                    "hitSfxResourceId": ""
+                },
+                {
+                    "id": "atk-group-2",
+                    "mode": 0,
+                    "repeatIntervalFrames": 1,
+                    "damageSource": 0,
+                    "explicitDamage": 0,
+                    "hitStunFrames": 0,
+                    "knockback": {
+                        "x": 0,
+                        "y": 0,
+                        "z": 0
+                    },
+                    "knockbackFrames": 0,
+                    "hitVfxResourceId": "",
+                    "hitSfxResourceId": ""
+                },
+                {
+                    "id": "atk-group-3",
+                    "mode": 0,
+                    "repeatIntervalFrames": 1,
+                    "damageSource": 0,
+                    "explicitDamage": 0,
+                    "hitStunFrames": 0,
+                    "knockback": {
+                        "x": 0,
+                        "y": 0,
+                        "z": 0
+                    },
+                    "knockbackFrames": 0,
+                    "hitVfxResourceId": "",
+                    "hitSfxResourceId": ""
+                }
+            ],
+            "hitBoxes": [
+                {
+                    "id": "atk-box-0",
+                    "trackId": "imported-atk",
+                    "hitGroupId": "atk-group-0",
+                    "startFrame": 5,
+                    "endFrame": 6,
+                    "shape": 3,
+                    "offset": {
+                        "x": 0,
+                        "y": 0,
+                        "z": 0
+                    },
+                    "size": {
+                        "x": 0,
+                        "y": 0,
+                        "z": 0
+                    },
+                    "yawMilliDegrees": 0,
+                    "radius": 25000,
+                    "height": 1,
+                    "sectorAngleMilliDegrees": 200000
+                },
+                {
+                    "id": "atk-box-1",
+                    "trackId": "imported-atk",
+                    "hitGroupId": "atk-group-1",
+                    "startFrame": 12,
+                    "endFrame": 13,
+                    "shape": 3,
+                    "offset": {
+                        "x": 0,
+                        "y": 0,
+                        "z": 0
+                    },
+                    "size": {
+                        "x": 0,
+                        "y": 0,
+                        "z": 0
+                    },
+                    "yawMilliDegrees": 0,
+                    "radius": 25000,
+                    "height": 1,
+                    "sectorAngleMilliDegrees": 200000
+                },
+                {
+                    "id": "atk-box-2",
+                    "trackId": "imported-atk",
+                    "hitGroupId": "atk-group-2",
+                    "startFrame": 14,
+                    "endFrame": 15,
+                    "shape": 3,
+                    "offset": {
+                        "x": 0,
+                        "y": 0,
+                        "z": 0
+                    },
+                    "size": {
+                        "x": 0,
+                        "y": 0,
+                        "z": 0
+                    },
+                    "yawMilliDegrees": 0,
+                    "radius": 25000,
+                    "height": 1,
+                    "sectorAngleMilliDegrees": 200000
+                },
+                {
+                    "id": "atk-box-3",
+                    "trackId": "imported-atk",
+                    "hitGroupId": "atk-group-3",
+                    "startFrame": 17,
+                    "endFrame": 18,
+                    "shape": 3,
+                    "offset": {
+                        "x": 0,
+                        "y": 0,
+                        "z": 0
+                    },
+                    "size": {
+                        "x": 0,
+                        "y": 0,
+                        "z": 0
+                    },
+                    "yawMilliDegrees": 0,
+                    "radius": 25000,
+                    "height": 1,
+                    "sectorAngleMilliDegrees": 200000
+                }
+            ],
+            "invincibility": [],
+            "interrupts": [],
+            "events": [
+                {
+                    "id": "pilot-gate-0",
+                    "trackId": "pilot-gates",
+                    "eventId": "combo.preinput",
+                    "frame": 19,
+                    "order": 0,
+                    "version": 1,
+                    "execution": 1,
+                    "parameterKind": 2,
+                    "marker": {
+                        "text": ""
+                    },
+                    "comboGate": {
+                        "enabled": true
+                    }
+                },
+                {
+                    "id": "pilot-gate-1",
+                    "trackId": "pilot-gates",
+                    "eventId": "combo.attack-ready",
+                    "frame": 22,
+                    "order": 1,
+                    "version": 1,
+                    "execution": 1,
+                    "parameterKind": 2,
+                    "marker": {
+                        "text": ""
+                    },
+                    "comboGate": {
+                        "enabled": true
+                    }
+                },
+                {
+                    "id": "pilot-gate-3",
+                    "trackId": "pilot-gates",
+                    "eventId": "combo.move-interrupt",
+                    "frame": 22,
+                    "order": 3,
+                    "version": 1,
+                    "execution": 1,
+                    "parameterKind": 2,
+                    "marker": {
+                        "text": ""
+                    },
+                    "comboGate": {
+                        "enabled": true
+                    }
+                },
+                {
+                    "id": "pilot-gate-2",
+                    "trackId": "pilot-gates",
+                    "eventId": "combo.link",
+                    "frame": 39,
+                    "order": 2,
+                    "version": 1,
+                    "execution": 1,
+                    "parameterKind": 2,
+                    "marker": {
+                        "text": ""
+                    },
+                    "comboGate": {
+                        "enabled": false
+                    }
+                }
+            ],
+            "vfx": [
+                {
+                    "id": "legacy-vfx-0",
+                    "trackId": "legacy-vfx",
+                    "resourceId": "miyabi-legacy-slash06",
+                    "bone": "",
+                    "startFrame": 5,
+                    "endFrame": 6,
+                    "classification": 1,
+                    "lifetime": 1,
+                    "attachment": 0,
+                    "offset": {
+                        "x": 0,
+                        "y": 0,
+                        "z": 0
+                    },
+                    "rotationMilliDegrees": {
+                        "x": 0,
+                        "y": 0,
+                        "z": 0
+                    },
+                    "scalePermille": 1000,
+                    "maxLifetimeFrames": 242
+                },
+                {
+                    "id": "legacy-vfx-1",
+                    "trackId": "legacy-vfx",
+                    "resourceId": "miyabi-legacy-slash06",
+                    "bone": "",
+                    "startFrame": 9,
+                    "endFrame": 10,
+                    "classification": 1,
+                    "lifetime": 1,
+                    "attachment": 0,
+                    "offset": {
+                        "x": 0,
+                        "y": 0,
+                        "z": 0
+                    },
+                    "rotationMilliDegrees": {
+                        "x": 0,
+                        "y": 0,
+                        "z": 0
+                    },
+                    "scalePermille": 1000,
+                    "maxLifetimeFrames": 242
+                },
+                {
+                    "id": "legacy-vfx-2",
+                    "trackId": "legacy-vfx",
+                    "resourceId": "miyabi-legacy-slash06",
+                    "bone": "",
+                    "startFrame": 12,
+                    "endFrame": 13,
+                    "classification": 1,
+                    "lifetime": 1,
+                    "attachment": 0,
+                    "offset": {
+                        "x": 0,
+                        "y": 0,
+                        "z": 0
+                    },
+                    "rotationMilliDegrees": {
+                        "x": 0,
+                        "y": 0,
+                        "z": 0
+                    },
+                    "scalePermille": 1000,
+                    "maxLifetimeFrames": 242
+                },
+                {
+                    "id": "legacy-vfx-3",
+                    "trackId": "legacy-vfx",
+                    "resourceId": "miyabi-legacy-slash06",
+                    "bone": "",
+                    "startFrame": 14,
+                    "endFrame": 15,
+                    "classification": 1,
+                    "lifetime": 1,
+                    "attachment": 0,
+                    "offset": {
+                        "x": 0,
+                        "y": 0,
+                        "z": 0
+                    },
+                    "rotationMilliDegrees": {
+                        "x": 0,
+                        "y": 0,
+                        "z": 0
+                    },
+                    "scalePermille": 1000,
+                    "maxLifetimeFrames": 242
+                },
+                {
+                    "id": "legacy-vfx-4",
+                    "trackId": "legacy-vfx",
+                    "resourceId": "miyabi-legacy-slash06",
+                    "bone": "",
+                    "startFrame": 16,
+                    "endFrame": 17,
+                    "classification": 1,
+                    "lifetime": 1,
+                    "attachment": 0,
+                    "offset": {
+                        "x": 0,
+                        "y": 0,
+                        "z": 0
+                    },
+                    "rotationMilliDegrees": {
+                        "x": 0,
+                        "y": 0,
+                        "z": 0
+                    },
+                    "scalePermille": 1000,
+                    "maxLifetimeFrames": 242
+                }
+            ],
             "sfx": []
         }
     ],
@@ -516,6 +1370,12 @@
             "code": "MOTION_METADATA",
             "location": "0ab1b995cf9e4721b6c379be082fff76/animation/animation-1",
             "message": "Legacy bake lacks source GUID/version/scale provenance; association is not proof of bake equivalence."
+        },
+        {
+            "severity": 0,
+            "code": "COMBO_TIMING_UNVERIFIED",
+            "location": "MiyabiPhase1",
+            "message": "Early combo cancellation timing must be approved before critical effects are battle-ready."
         },
         {
             "severity": 0,
@@ -539,6 +1399,24 @@
             "severity": 0,
             "code": "MOTION_METADATA",
             "location": "miyabi-normal-2/animation/animation-1",
+            "message": "Legacy bake lacks source GUID/version/scale provenance; association is not proof of bake equivalence."
+        },
+        {
+            "severity": 0,
+            "code": "MOTION_METADATA",
+            "location": "miyabi-normal-3/animation/animation-1",
+            "message": "Legacy bake lacks source GUID/version/scale provenance; association is not proof of bake equivalence."
+        },
+        {
+            "severity": 0,
+            "code": "MOTION_METADATA",
+            "location": "miyabi-normal-4/animation/animation-1",
+            "message": "Legacy bake lacks source GUID/version/scale provenance; association is not proof of bake equivalence."
+        },
+        {
+            "severity": 0,
+            "code": "MOTION_METADATA",
+            "location": "miyabi-normal-5/animation/animation-1",
             "message": "Legacy bake lacks source GUID/version/scale provenance; association is not proof of bake equivalence."
         }
     ]

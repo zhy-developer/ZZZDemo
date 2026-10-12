@@ -15,6 +15,7 @@ public class UdpClientTransport {
 	private bool isRun;
 
 	private bool isRecv;
+    private Thread receiver;
 	public void StartClientUdp(string _ip){
 			
 		if (isRun) {
@@ -28,8 +29,8 @@ public class UdpClientTransport {
 	}
 		
 	private void StartRecvMessage(){
-		Thread t = new Thread(new ThreadStart(RecvThread));
-		t.Start();
+        receiver = new Thread(new ThreadStart(RecvThread)) { IsBackground = true };
+        receiver.Start();
 	}
 
 	public void StopRecvMessage(){
@@ -41,7 +42,7 @@ public class UdpClientTransport {
 			isRun = false;
 			isRecv = false;
 			
-			Debug.LogError ("udp连接关闭  "  );
+			Debug.Log ("udp连接关闭  "  );
 			UdpManager.Instance.CloseUdpClient();
 			sendClient = null;
 			delegate_analyze_message = null;	
@@ -93,12 +94,13 @@ public class UdpClientTransport {
 				byte[] bodyData = new byte[bodyDataLenth];
 				Array.Copy(buf, PackageConstant.PacketHeadLength, bodyData, 0, bodyDataLenth);
 			//	Debug.Log(" 收到 packMessageId: " + packMessageId);
-				delegate_analyze_message((SCID)packMessageId,bodyData);
+				delegate_analyze_message?.Invoke((SCID)packMessageId,bodyData);
 
 				//是客户端,统计接收量
 				BattleData.Instance.recvNum+=buf.Length;
  	
 			} catch (Exception ex) {
+				if (!isRecv || !isRun) break;
 				Debug.LogError ("udpClient接收数据异常:" + ex.Message);
 			}
 		}

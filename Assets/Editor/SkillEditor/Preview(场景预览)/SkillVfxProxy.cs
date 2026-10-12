@@ -48,7 +48,7 @@ namespace SkillConfig.Editor
                 var so=new SerializedObject(p); var it=so.GetIterator();
                 while(it.Next(true)) if(it.propertyType==SerializedPropertyType.ObjectReference && it.objectReferenceValue is Component component && !components.Contains(component))
                     throw new ArgumentException("External component dependency: "+it.propertyPath);
-                for(int i=0;i<p.subEmitters.subEmittersCount;i++)
+                for(int i=0;p.subEmitters.enabled && i<p.subEmitters.subEmittersCount;i++)
                 {
                     var sub=p.subEmitters.GetSubEmitterSystem(i);
                     if(!sub || !sub.transform.IsChildOf(p.transform) || sub==p)

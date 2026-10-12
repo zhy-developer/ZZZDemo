@@ -31,6 +31,7 @@ namespace SkillConfig.Editor
             if (e.type == EventType.KeyDown && e.keyCode == KeyCode.Escape && edit.Active) { Cancel(); e.Use(); }
             if (!string.IsNullOrEmpty(session.Error)) { Cancel(); Handles.Label(Vector3.zero, session.Error); return; }
             DrawTrajectory(session);
+            DrawLogicOutline(session);
             using (new Handles.DrawingScope(Matrix4x4.TRS(session.Proxy.Root.transform.position, Quaternion.identity, Vector3.one)))
             {
                 if (!session.Interrupted)
@@ -142,6 +143,34 @@ namespace SkillConfig.Editor
             int step = Math.Max(1, end / 2000);
             using (new Handles.DrawingScope(Color.green))
                 for (int f = 0; f < end; f += step) Handles.DrawLine(motion.Position(f).World, motion.Position(Math.Min(end, f + step)).World);
+        }
+        static void DrawLogicOutline(SkillPreviewSession session)
+        {
+            if (!session.Motion.Supported || session.Interrupted || session.Frame >= session.Motion.Duration) return;
+            var after = session.Motion.Position(session.Frame + 1);
+            // The proxy faces +Z (logic 90 degrees); frame k hits use position AFTER step k.
+            var pose = new SkillRuntime.LogicPose(after.x, 0, after.z, 90000);
+            try
+            {
+                using (new Handles.DrawingScope(new Color(1, .55f, 0), Matrix4x4.identity))
+                {
+                    foreach (var box in session.Owner.skill.hitBoxes.Where(b => b != null && session.Active(b)))
+                        DrawOutline(SkillRuntime.XzOutline.Attack(box, pose));
+                    Handles.Label(after.World, "XZ 判定轮廓：帧后位置；双方 Y / 偏移 Y / 高度均不参与命中");
+                }
+                if (session.Catalog.hurtBoxConfigured)
+                {
+                    var h = session.Catalog.hurtBox;
+                    using (new Handles.DrawingScope(Color.cyan, Matrix4x4.identity))
+                        DrawOutline(SkillRuntime.XzOutline.Hurt(new SkillRuntime.HurtCircle(h.radius, h.offset.x, h.offset.y, h.offset.z), pose));
+                }
+            }
+            catch (ArgumentException ex) { Handles.Label(after.World, "XZ outline unavailable: " + ex.Message); }
+        }
+        static void DrawOutline(System.Collections.Generic.IReadOnlyList<SkillRuntime.XzOutlinePoint> points)
+        {
+            var line = points.Select(p => new Vector3((float)(p.X / 10000), .005f, (float)(p.Z / 10000))).ToArray();
+            Handles.DrawAAPolyLine(2, line);
         }
     }
 }

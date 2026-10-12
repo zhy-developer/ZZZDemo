@@ -124,8 +124,8 @@ namespace SkillConfig.Editor
             int start = Math.Max(0, session.Frame - 3), end = Math.Min(session.Duration, session.Frame + 3);
             for (int f = start; f <= end; f++)
             {
-                var p = session.Motion.Position(f); var d = session.Motion.Delta(f);
-                EditorGUILayout.LabelField("F" + f + "  Δ(" + d.x + ", " + d.z + ")  Σ[0,F)(" + p.x + ", " + p.z + ")  sampleEnd=" + session.Motion.SampleEndMs(f) + "ms", EditorStyles.miniLabel);
+                var p = session.Motion.Position(f); var d = session.Motion.Delta(f); var q = session.Motion.Position(f + 1);
+                EditorGUILayout.LabelField("F" + f + "  Δ(" + d.x + ", " + d.z + ")  帧前(" + p.x + ", " + p.z + ")  帧后/命中(" + q.x + ", " + q.z + ")  sourceEnd=" + session.Motion.SampleEndMs(f) + "ms", EditorStyles.miniLabel);
             }
             EditorGUILayout.EndScrollView();
         }

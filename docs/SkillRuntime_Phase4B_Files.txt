@@ -1,0 +1,120 @@
+Phase 4B 当前工作区文件清单
+根目录 D:/GitHub/ARPGDEMO
+
+已跟踪文件的内容变更（排除仅工作区标记而内容无diff）:
+M D:/GitHub/ARPGDEMO/Assets/Editor/SkillEditor/Preview(场景预览)/SkillAnimationPreview.cs
+M D:/GitHub/ARPGDEMO/Assets/Editor/SkillEditor/Preview(场景预览)/SkillPreviewPanel.cs
+M D:/GitHub/ARPGDEMO/Assets/Editor/SkillEditor/Preview(场景预览)/SkillRootMotionPreview.cs
+M D:/GitHub/ARPGDEMO/Assets/Editor/SkillEditor/Preview(场景预览)/SkillVfxProxy.cs
+M D:/GitHub/ARPGDEMO/Assets/Editor/SkillEditor/SceneHitBox/SkillShapeHandles.cs
+M D:/GitHub/ARPGDEMO/Assets/Editor/SkillEditor/Tests/SkillEditorPhase2CChecks.cs
+M D:/GitHub/ARPGDEMO/Assets/Editor/SkillRuntime/PilotArenaSetup.cs
+M D:/GitHub/ARPGDEMO/Assets/Resources/SkillConfigs/Character_miyabi_Skills.json
+M D:/GitHub/ARPGDEMO/Assets/ScriptableObject/ComboData/星见雅/Unagi_Normal_1.asset
+M D:/GitHub/ARPGDEMO/Assets/ScriptableObject/ComboData/星见雅/Unagi_Normal_2.asset
+M D:/GitHub/ARPGDEMO/Assets/ScriptableObject/ComboData/星见雅/Unagi_Normal_3.asset
+M D:/GitHub/ARPGDEMO/Assets/ScriptableObject/ComboData/星见雅/Unagi_Normal_4.asset
+M D:/GitHub/ARPGDEMO/Assets/ScriptableObject/ComboData/星见雅/Unagi_Normal_5.asset
+M D:/GitHub/ARPGDEMO/Assets/ScriptableObject/SkillConfigs/MiyabiPhase1.asset
+M D:/GitHub/ARPGDEMO/Assets/ScriptableObject/SkillConfigs/MiyabiPhase4A_Development.asset
+M D:/GitHub/ARPGDEMO/Assets/Scripts/FrameSync/Managers/RoleBase.cs
+M D:/GitHub/ARPGDEMO/Assets/Scripts/Game/Fsm/Player/Player.cs
+M D:/GitHub/ARPGDEMO/Assets/Scripts/SkillConfig/SkillConfigValidation.cs
+M D:/GitHub/ARPGDEMO/Assets/Scripts/SkillRuntime/RuntimeSkillCatalog.cs
+M D:/GitHub/ARPGDEMO/Assets/Scripts/SkillRuntimeIntegration/PilotBattleProfile.cs
+M D:/GitHub/ARPGDEMO/Assets/Scripts/SkillRuntimeIntegration/PilotBattleSession.cs
+M D:/GitHub/ARPGDEMO/Assets/Scripts/SkillRuntimeIntegration/PilotDevelopmentArena.cs
+M D:/GitHub/ARPGDEMO/Assets/Scripts/SkillRuntimeIntegration/PilotSceneVerification.cs
+M D:/GitHub/ARPGDEMO/Assets/Scripts/Tool/PoolManager/SFX_PoolManager/SFX_PoolManager.cs
+M D:/GitHub/ARPGDEMO/Assets/Scripts/Tool/PoolManager/VFX_PoolManager/VFX_PoolManager.cs
+M D:/GitHub/ARPGDEMO/Tests/SkillEditor/PreparePresentationHarness.ps1
+M D:/GitHub/ARPGDEMO/Tests/SkillEditor/RunPhase2CChecks.ps1
+M D:/GitHub/ARPGDEMO/Tests/SkillRuntime/BuildNetworkAcceptance.ps1
+M D:/GitHub/ARPGDEMO/Tests/SkillRuntime/NetworkAcceptanceBuild.cs.txt
+M D:/GitHub/ARPGDEMO/Tests/SkillRuntime/PilotNetworkAcceptanceDriver.cs.txt
+M D:/GitHub/ARPGDEMO/Tests/SkillRuntime/Program.cs
+M D:/GitHub/ARPGDEMO/Tests/SkillRuntime/RunRealPilotClients.ps1
+M D:/GitHub/ARPGDEMO/Tests/SkillRuntime/RunUnityChecks.ps1
+M D:/GitHub/ARPGDEMO/Tests/SkillRuntime/SkillRuntime.Checks.csproj
+
+新增文件:
+A D:/GitHub/ARPGDEMO/Assets/Editor/SkillRuntime/Phase4BResourceAudit.cs
+A D:/GitHub/ARPGDEMO/Assets/Editor/SkillRuntime/Phase4BResourceAudit.cs.meta
+A D:/GitHub/ARPGDEMO/Assets/Editor/SkillRuntime/Phase4BSetup.cs
+A D:/GitHub/ARPGDEMO/Assets/Editor/SkillRuntime/Phase4BSetup.cs.meta
+A D:/GitHub/ARPGDEMO/Assets/Resources/Prefabs/VFX/Miyabi_LegacySlash06.prefab
+A D:/GitHub/ARPGDEMO/Assets/Resources/Prefabs/VFX/Miyabi_LegacySlash06.prefab.meta
+A D:/GitHub/ARPGDEMO/Assets/Scripts/SkillRuntime/SkillMotionTimeline.cs
+A D:/GitHub/ARPGDEMO/Assets/Scripts/SkillRuntime/SkillMotionTimeline.cs.meta
+A D:/GitHub/ARPGDEMO/Assets/Scripts/SkillRuntime/XzOutline.cs
+A D:/GitHub/ARPGDEMO/Assets/Scripts/SkillRuntime/XzOutline.cs.meta
+A D:/GitHub/ARPGDEMO/Assets/Scripts/SkillRuntimeIntegration/Phase4BSceneVerification.cs
+A D:/GitHub/ARPGDEMO/Assets/Scripts/SkillRuntimeIntegration/Phase4BSceneVerification.cs.meta
+A D:/GitHub/ARPGDEMO/Assets/Scripts/SkillRuntimeIntegration/PilotPresentation.cs
+A D:/GitHub/ARPGDEMO/Assets/Scripts/SkillRuntimeIntegration/PilotPresentation.cs.meta
+A D:/GitHub/ARPGDEMO/Assets/Scripts/SkillRuntimeIntegration/SkillPresentationLease.cs
+A D:/GitHub/ARPGDEMO/Assets/Scripts/SkillRuntimeIntegration/SkillPresentationLease.cs.meta
+A D:/GitHub/ARPGDEMO/Tests/SkillRuntime/Phase4BChecks.cs
+A D:/GitHub/ARPGDEMO/Tests/SkillRuntime/RunPhase4BScene.ps1
+A D:/GitHub/ARPGDEMO/Tests/SkillRuntime/VerifyPhase4BLogs.ps1
+A D:/GitHub/ARPGDEMO/docs/SkillRuntime_Phase4B_Report.txt
+A D:/GitHub/ARPGDEMO/docs/SkillRuntime_Phase4B_Files.txt
+
+已跟踪文件 diff stat:
+ .../Preview(场景预览)/SkillAnimationPreview.cs |   6 +-
+ .../Preview(场景预览)/SkillPreviewPanel.cs     |   4 +-
+ .../SkillRootMotionPreview.cs                      |  26 +-
+ .../Preview(场景预览)/SkillVfxProxy.cs         |   2 +-
+ .../SkillEditor/SceneHitBox/SkillShapeHandles.cs   |  29 +
+ .../SkillEditor/Tests/SkillEditorPhase2CChecks.cs  |   7 +-
+ Assets/Editor/SkillRuntime/PilotArenaSetup.cs      |   2 +-
+ .../SkillConfigs/Character_miyabi_Skills.json      | 940 ++++++++++++++++++++-
+ .../ComboData/星见雅/Unagi_Normal_1.asset       |  26 +-
+ .../ComboData/星见雅/Unagi_Normal_2.asset       |  26 +-
+ .../ComboData/星见雅/Unagi_Normal_3.asset       | 150 +++-
+ .../ComboData/星见雅/Unagi_Normal_4.asset       | 138 ++-
+ .../ComboData/星见雅/Unagi_Normal_5.asset       | 319 ++++++-
+ .../SkillConfigs/MiyabiPhase1.asset                |  11 +-
+ .../SkillConfigs/MiyabiPhase4A_Development.asset   |   7 +-
+ Assets/Scripts/FrameSync/Managers/RoleBase.cs      |  24 +-
+ Assets/Scripts/Game/Fsm/Player/Player.cs           |   8 +
+ .../Scripts/SkillConfig/SkillConfigValidation.cs   |   2 +-
+ Assets/Scripts/SkillRuntime/RuntimeSkillCatalog.cs |   2 +-
+ .../SkillRuntimeIntegration/PilotBattleProfile.cs  |  95 ++-
+ .../SkillRuntimeIntegration/PilotBattleSession.cs  |  27 +-
+ .../PilotDevelopmentArena.cs                       |   8 +-
+ .../PilotSceneVerification.cs                      |   6 +-
+ .../PoolManager/SFX_PoolManager/SFX_PoolManager.cs |   8 +
+ .../PoolManager/VFX_PoolManager/VFX_PoolManager.cs |   8 +
+ Tests/SkillEditor/PreparePresentationHarness.ps1   |   2 +-
+ Tests/SkillEditor/RunPhase2CChecks.ps1             |   4 +-
+ Tests/SkillRuntime/BuildNetworkAcceptance.ps1      |   6 +-
+ Tests/SkillRuntime/NetworkAcceptanceBuild.cs.txt   |   5 +-
+ .../PilotNetworkAcceptanceDriver.cs.txt            |  26 +-
+ Tests/SkillRuntime/Program.cs                      |   1 +
+ Tests/SkillRuntime/RunRealPilotClients.ps1         |  11 +-
+ Tests/SkillRuntime/RunUnityChecks.ps1              |  26 +-
+ Tests/SkillRuntime/SkillRuntime.Checks.csproj      |   4 +
+ 34 files changed, 1848 insertions(+), 118 deletions(-)
+
+新增文件行数:
+52 Assets/Editor/SkillRuntime/Phase4BResourceAudit.cs
+11 Assets/Editor/SkillRuntime/Phase4BResourceAudit.cs.meta
+123 Assets/Editor/SkillRuntime/Phase4BSetup.cs
+11 Assets/Editor/SkillRuntime/Phase4BSetup.cs.meta
+59 Assets/Resources/Prefabs/VFX/Miyabi_LegacySlash06.prefab
+7 Assets/Resources/Prefabs/VFX/Miyabi_LegacySlash06.prefab.meta
+157 Assets/Scripts/SkillRuntime/SkillMotionTimeline.cs
+11 Assets/Scripts/SkillRuntime/SkillMotionTimeline.cs.meta
+49 Assets/Scripts/SkillRuntime/XzOutline.cs
+11 Assets/Scripts/SkillRuntime/XzOutline.cs.meta
+155 Assets/Scripts/SkillRuntimeIntegration/Phase4BSceneVerification.cs
+11 Assets/Scripts/SkillRuntimeIntegration/Phase4BSceneVerification.cs.meta
+247 Assets/Scripts/SkillRuntimeIntegration/PilotPresentation.cs
+11 Assets/Scripts/SkillRuntimeIntegration/PilotPresentation.cs.meta
+49 Assets/Scripts/SkillRuntimeIntegration/SkillPresentationLease.cs
+11 Assets/Scripts/SkillRuntimeIntegration/SkillPresentationLease.cs.meta
+120 Tests/SkillRuntime/Phase4BChecks.cs
+15 Tests/SkillRuntime/RunPhase4BScene.ps1
+38 Tests/SkillRuntime/VerifyPhase4BLogs.ps1
+189 docs/SkillRuntime_Phase4B_Report.txt

@@ -4,6 +4,14 @@ using UnityEngine;
 
 public class SFX_PoolManager : MonoSingleton<SFX_PoolManager>
 {
+    private readonly SkillRuntime.Integration.SkillPresentationSlots skillSlots = new SkillRuntime.Integration.SkillPresentationSlots();
+    public SkillRuntime.Integration.SkillPresentationLease RentSkillSound(AudioClip clip)
+    {
+        return skillSlots.Rent(clip, transform, () => {
+            var go = new GameObject("Owned skill audio"); go.transform.SetParent(transform, false);
+            var source = go.AddComponent<AudioSource>(); source.playOnAwake = false; source.spatialBlend = 0; go.SetActive(false); return go;
+        });
+    }
     //有SoundName的代表分的更细的音频
     [System.Serializable]
     public class SoundItem

@@ -73,6 +73,7 @@ namespace ZZZ
         private PlayerActionController actions;
         private RoleBase motionRole;
         public bool IsDeterministicPilot { get; private set; }
+        public bool PilotRoundClosed { get; internal set; }
         public event System.Action PilotDestroyed;
         public void BindDeterministicPilot()
         {
@@ -135,7 +136,7 @@ namespace ZZZ
         }
         protected override void Update()
         {
-            if (IsDeterministicPilot) { if (IsLocalPlayer) networkInput.Capture(); return; }
+            if (IsDeterministicPilot) { if (IsLocalPlayer && !PilotRoundClosed) networkInput.Capture(); return; }
             if (!statesStarted) return;
             if (IsLocalPlayer)
             {
@@ -409,39 +410,47 @@ namespace ZZZ
 
         public void PlayFootSound()
         {
+            if (IsDeterministicPilot) return;
             //Debug.Log("播放脚步声");
             SFX_PoolManager.Instance.TryGetSoundPool(SoundStyle.FOOT,transform.position,Quaternion.identity);
         }
         public void PlayFootBackSound()
         {
+            if (IsDeterministicPilot) return;
             SFX_PoolManager.Instance.TryGetSoundPool(SoundStyle.FOOTBACK,transform.position,Quaternion.identity);
         }
 
         public void PlayWeaponBackSound()
         {
+            if (IsDeterministicPilot) return;
             SFX_PoolManager.Instance.TryGetSoundPool(SoundStyle.WeaponBack, characterName.ToString(), transform.position);
         }
 
         public void PlayWeaponEndSound()
         {
+            if (IsDeterministicPilot) return;
             SFX_PoolManager.Instance.TryGetSoundPool(SoundStyle.WeaponEnd, characterName.ToString(), transform.position);
         }
 
         #endregion
         public void PlayDodgeSound()
         {
+            if (IsDeterministicPilot) return;
             SFX_PoolManager.Instance.TryGetSoundPool(SoundStyle.DodgeSound, transform.position, Quaternion.identity);
         }
         public void PlaySwitchWindSound()
         {
+            if (IsDeterministicPilot) return;
             SFX_PoolManager.Instance.TryGetSoundPool(SoundStyle.SwitchInWindSound, transform.position, Quaternion.identity);
         }
         public void PlaySwitchInVoice()
         {
+            if (IsDeterministicPilot) return;
             SFX_PoolManager.Instance.TryGetSoundPool(SoundStyle.SwitchInVoice, characterName.ToString(), transform.position);
         }
 
         public void PlayFinishSkillTimeline() {
+            if (IsDeterministicPilot) return;
             if (!IsLocalPlayer || finishSkillTimeline == null) return;
             finishSkillTimeline.time = 0;
             finishSkillTimeline.Play();

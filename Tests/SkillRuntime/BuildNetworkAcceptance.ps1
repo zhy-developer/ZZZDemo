@@ -1,4 +1,4 @@
-param([string]$Unity = 'C:/Program Files/Unity/Hub/Editor/2022.3.62f2c1/Editor/Unity.exe')
+param([string]$Unity = 'C:/Program Files/Unity/Hub/Editor/2022.3.62f2c1/Editor/Unity.exe', [switch]$Phase4B)
 $ErrorActionPreference = 'Stop'
 $repo = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
 $editor = @(Get-CimInstance Win32_Process -Filter "Name = 'Unity.exe'" | Where-Object {
@@ -16,12 +16,14 @@ foreach ($item in $staged) {
 $generated = @('Assets/Resources/PerformanceTestRunInfo.json','Assets/Resources/PerformanceTestRunSettings.json') |
     ForEach-Object { (Join-Path $repo $_); (Join-Path $repo ($_ + '.meta')) } |
     Where-Object { !(Test-Path -LiteralPath $_) }
-$logDirectory = Join-Path $repo ('Logs/Phase4A-Network/Build-' + (Get-Date -Format 'yyyyMMdd-HHmmss'))
+$phase = if ($Phase4B) { 'Phase4B' } else { 'Phase4A' }
+$logDirectory = Join-Path $repo ('Logs/' + $phase + '-Network/Build-' + (Get-Date -Format 'yyyyMMdd-HHmmss'))
 New-Item -ItemType Directory -Path $logDirectory | Out-Null
 $log = Join-Path $logDirectory 'Build.log'
 try {
     foreach ($item in $staged) { Copy-Item -LiteralPath (Join-Path $PSScriptRoot $item.Source) -Destination (Join-Path $repo $item.Target) }
     $arguments = '-batchmode -projectPath "' + $repo + '" -executeMethod NetworkAcceptanceBuild.Run -logFile "' + $log + '"'
+    if ($Phase4B) { $arguments += ' -pilotPhase4B' }
     $process = Start-Process -FilePath $Unity -ArgumentList $arguments -WindowStyle Hidden -PassThru
     $process.WaitForExit()
     if ($process.ExitCode -ne 0 -or !(Select-String -LiteralPath $log -Pattern 'NETWORK_ACCEPTANCE_BUILD_COMPLETE' -Quiet)) { throw "Build failed; inspect $log" }
