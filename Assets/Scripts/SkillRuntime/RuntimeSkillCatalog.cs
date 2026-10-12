@@ -128,14 +128,13 @@ namespace SkillRuntime
         public RuntimeSkill Skill(string id) => skills[id];
         // The explicit isolated entry does not load resources, enable combat or waive existing schema validation.
         // Pass NetConfig.frameTime and ToolMethod.Render2LogicScale from the eventual host; tests declare theirs.
-        public static bool TryCreateIsolated(SkillConfigSnapshot snapshot, int frameIntervalMs, int precision,
+        public static bool TryCreateIsolated(SkillConfigDto data, int frameIntervalMs, int precision,
             out RuntimeSkillCatalog catalog, out string error)
         {
             catalog = null; error = null;
-            if (snapshot == null) { error = "Snapshot is required."; return false; }
+            if (data == null) { error = "Configuration is required."; return false; }
             try
             {
-                var data = snapshot.CopyData();
                 var diagnostics = SkillConfigValidation.Validate(data);
                 if (diagnostics.Any(d => d.severity == DiagnosticSeverity.Error)) throw new ArgumentException(string.Join("\n", diagnostics));
                 if (frameIntervalMs <= 0 || data.logicFrameIntervalMs != frameIntervalMs || data.precision != precision)

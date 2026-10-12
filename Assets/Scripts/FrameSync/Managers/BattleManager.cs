@@ -26,7 +26,6 @@ public class BattleManager : MonoSingleton<BattleManager>
         UdpMessageDispatcher.Instance.mes_battle_start = Message_Battle_Start;
         UdpMessageDispatcher.Instance.mes_frame_operation = Message_Frame_Operation;
         UdpMessageDispatcher.Instance.mes_delta_frame_data = Message_Delta_Frame_Data;
-        UdpMessageDispatcher.Instance.mes_down_game_over += Message_Down_Game_Over;
 
         isBattleStart = false;
         StartCoroutine("WaitInitData");
@@ -62,9 +61,8 @@ public class BattleManager : MonoSingleton<BattleManager>
     void Message_Battle_Start(UdpBattleStart _mes)
     {
         if (destroyed || !BattleData.Instance.InScope(_mes.matchId, _mes.roundId)) return;
-        int mode = roleManage.Pilot == null ? 0 : 1;
-        if (!string.IsNullOrEmpty(_mes.error) || _mes.protocolVersion != 1 || _mes.authorityMode != mode ||
-            mode == 1 && (_mes.configHash != roleManage.Pilot.Digest || _mes.rules != SkillRuntime.Integration.PilotBattleProfile.Rules))
+        if (roleManage?.Pilot == null || !string.IsNullOrEmpty(_mes.error) || _mes.protocolVersion != 1 || _mes.authorityMode != 1 ||
+            _mes.configHash != roleManage.Pilot.Digest || _mes.rules != SkillRuntime.Integration.PilotBattleProfile.Rules)
         { Debug.LogError("[MatchRejected] " + (_mes.error ?? "mode/version mismatch")); CancelInvoke("Send_BattleReady"); return; }
         BattleStart();
     }
@@ -166,26 +164,7 @@ public class BattleManager : MonoSingleton<BattleManager>
 
     void BeginGameOver()
     {
-        if (roleManage != null && roleManage.AuthorityMode == SkillRuntime.Integration.BattleAuthorityMode.DeterministicPilot)
-        { resultFlow?.RequestReturn(); return; }
-        this.CancelInvoke("Send_operation");
-        this.InvokeRepeating("SendGameOver", 0f, 0.5f);
-    }
-
-    void SendGameOver()
-    {
-        UdpMessageDispatcher.Instance.SendGameOver(BattleData.Instance.battleID);
-    }
-
-    void Message_Down_Game_Over(UdpDownGameOver _mes)
-    {
-        if (roleManage != null && roleManage.AuthorityMode == SkillRuntime.Integration.BattleAuthorityMode.DeterministicPilot) return;
-        this.CancelInvoke("SendGameOver");
-        Debug.Log("游戏结束咯～～～～～～");
-        if (delegate_gameOver != null)
-        {
-            delegate_gameOver();
-        }
+        resultFlow?.RequestReturn();
     }
 
 
@@ -193,7 +172,6 @@ public class BattleManager : MonoSingleton<BattleManager>
     {
         base.OnDestroy();
         destroyed = true; CancelInvoke(); StopAllCoroutines();
-        UdpMessageDispatcher.Instance.mes_down_game_over -= Message_Down_Game_Over;
         UdpMessageDispatcher.Instance.mes_battle_start = null;
         UdpMessageDispatcher.Instance.mes_frame_operation = null;
         UdpMessageDispatcher.Instance.mes_delta_frame_data = null;

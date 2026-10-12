@@ -1,0 +1,169 @@
+{
+    "clipName": "Avatar_Female_Size02_Unagi_Ani_Attack_Branch_01_Attack_01",
+    "sourceAnimationFrameRate": 60,
+    "logicFrameIntervalMs": 33,
+    "precision": 10000,
+    "clipLengthMs": 450,
+    "rootMotionEndAnimationFrame": -1,
+    "rootMotionEndTimeMs": 450,
+    "frameCount": 14,
+    "totalX": -1068,
+    "totalY": 0,
+    "totalZ": 32800,
+    "frames": [
+        {
+            "logicFrame": 0,
+            "sampleEndTimeMs": 33,
+            "sampleDurationMs": 33,
+            "deltaX": -113,
+            "deltaY": 0,
+            "deltaZ": 6956,
+            "positionX": -113,
+            "positionY": 0,
+            "positionZ": 6956
+        },
+        {
+            "logicFrame": 1,
+            "sampleEndTimeMs": 66,
+            "sampleDurationMs": 33,
+            "deltaX": -373,
+            "deltaY": 0,
+            "deltaZ": 13180,
+            "positionX": -486,
+            "positionY": 0,
+            "positionZ": 20136
+        },
+        {
+            "logicFrame": 2,
+            "sampleEndTimeMs": 99,
+            "sampleDurationMs": 33,
+            "deltaX": -123,
+            "deltaY": 0,
+            "deltaZ": 4974,
+            "positionX": -609,
+            "positionY": 0,
+            "positionZ": 25110
+        },
+        {
+            "logicFrame": 3,
+            "sampleEndTimeMs": 132,
+            "sampleDurationMs": 33,
+            "deltaX": -212,
+            "deltaY": 0,
+            "deltaZ": 3291,
+            "positionX": -821,
+            "positionY": 0,
+            "positionZ": 28401
+        },
+        {
+            "logicFrame": 4,
+            "sampleEndTimeMs": 165,
+            "sampleDurationMs": 33,
+            "deltaX": -154,
+            "deltaY": 0,
+            "deltaZ": 2118,
+            "positionX": -975,
+            "positionY": 0,
+            "positionZ": 30519
+        },
+        {
+            "logicFrame": 5,
+            "sampleEndTimeMs": 198,
+            "sampleDurationMs": 33,
+            "deltaX": -117,
+            "deltaY": 0,
+            "deltaZ": 966,
+            "positionX": -1092,
+            "positionY": 0,
+            "positionZ": 31485
+        },
+        {
+            "logicFrame": 6,
+            "sampleEndTimeMs": 231,
+            "sampleDurationMs": 33,
+            "deltaX": -66,
+            "deltaY": 0,
+            "deltaZ": 327,
+            "positionX": -1158,
+            "positionY": 0,
+            "positionZ": 31812
+        },
+        {
+            "logicFrame": 7,
+            "sampleEndTimeMs": 264,
+            "sampleDurationMs": 33,
+            "deltaX": -13,
+            "deltaY": 0,
+            "deltaZ": 261,
+            "positionX": -1171,
+            "positionY": 0,
+            "positionZ": 32073
+        },
+        {
+            "logicFrame": 8,
+            "sampleEndTimeMs": 297,
+            "sampleDurationMs": 33,
+            "deltaX": 3,
+            "deltaY": 0,
+            "deltaZ": 249,
+            "positionX": -1168,
+            "positionY": 0,
+            "positionZ": 32322
+        },
+        {
+            "logicFrame": 9,
+            "sampleEndTimeMs": 330,
+            "sampleDurationMs": 33,
+            "deltaX": 15,
+            "deltaY": 0,
+            "deltaZ": 192,
+            "positionX": -1153,
+            "positionY": 0,
+            "positionZ": 32514
+        },
+        {
+            "logicFrame": 10,
+            "sampleEndTimeMs": 363,
+            "sampleDurationMs": 33,
+            "deltaX": 23,
+            "deltaY": 0,
+            "deltaZ": 140,
+            "positionX": -1130,
+            "positionY": 0,
+            "positionZ": 32654
+        },
+        {
+            "logicFrame": 11,
+            "sampleEndTimeMs": 396,
+            "sampleDurationMs": 33,
+            "deltaX": 28,
+            "deltaY": 0,
+            "deltaZ": 91,
+            "positionX": -1102,
+            "positionY": 0,
+            "positionZ": 32745
+        },
+        {
+            "logicFrame": 12,
+            "sampleEndTimeMs": 429,
+            "sampleDurationMs": 33,
+            "deltaX": 31,
+            "deltaY": 0,
+            "deltaZ": 47,
+            "positionX": -1071,
+            "positionY": 0,
+            "positionZ": 32792
+        },
+        {
+            "logicFrame": 13,
+            "sampleEndTimeMs": 450,
+            "sampleDurationMs": 21,
+            "deltaX": 3,
+            "deltaY": 0,
+            "deltaZ": 8,
+            "positionX": -1068,
+            "positionY": 0,
+            "positionZ": 32800
+        }
+    ]
+}

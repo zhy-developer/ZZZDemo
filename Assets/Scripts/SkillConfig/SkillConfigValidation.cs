@@ -52,7 +52,8 @@ namespace SkillConfig
                 if (s == null) { error("SKILL_NULL", "skills", "Null skill."); continue; }
                 string loc = s.skillId ?? "skill";
                 if (!SafeId(s.skillId) || !skillIds.Add(s.skillId)) error("SKILL_ID", loc, "Missing or duplicate stable SkillID.");
-                if (s.skillType != SkillType.Normal && s.skillType != SkillType.Ultimate) error("SKILL_TYPE", loc, "Explicit Normal or Ultimate required; legacy AttackStyle is not inferred.");
+                if (s.skillType != SkillType.Normal && s.skillType != SkillType.Ultimate && s.skillType != SkillType.Skill && s.skillType != SkillType.Dodge)
+                    error("SKILL_TYPE", loc, "Explicit Normal, Skill, Ultimate or Dodge required; legacy AttackStyle is not inferred.");
                 if (s.baseDamage < 0 || s.durationFrames <= 0 || s.durationFrames > 1000000) error("SKILL_RANGE", loc, "Invalid base damage or duration.");
                 if (s.animations == null || s.tracks == null || s.hitGroups == null || s.hitBoxes == null || s.invincibility == null || s.interrupts == null || s.events == null || s.vfx == null || s.sfx == null)
                 { error("COLLECTION", loc, "Required skill collections cannot be null."); continue; }

@@ -86,3 +86,8 @@ Thumbs.db
 !Tests/**/*.csproj
 Tests/**/bin/
 Tests/**/obj/
+
+# Headless battle regression runner
+!Tools/BattleChecks/*.csproj
+Tools/BattleChecks/bin/
+Tools/BattleChecks/obj/

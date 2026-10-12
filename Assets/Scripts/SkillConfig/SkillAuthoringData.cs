@@ -4,11 +4,6 @@ using UnityEngine;
 
 namespace SkillConfig
 {
-    public enum SkillType { Unspecified, Normal, Ultimate }
-    public enum CatalogCompleteness { PartialPilot, Complete }
-    public enum RootBindingSource { None, LegacyCombo, Explicit }
-    public enum MotionTailPolicy { Unverified, HoldAtCoverageEnd }
-    public enum ResourceKind { VfxPrefab, AudioClip }
 
     [Serializable]
     public sealed class AnimationSegment

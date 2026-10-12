@@ -21,9 +21,14 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 8579d1164b67cd7439dd77f4146fcd5c, type: 2}
   - {fileID: 11400000, guid: 327735ee4e0e41042833fb639b2b68f9, type: 2}
   - {fileID: 11400000, guid: 085b138412fcbab4cbc766472f398fb3, type: 2}
+  skillCombo: {fileID: 11400000, guid: f9a8cee6c95a4ea488c42972151b2903, type: 2}
+  ultimateCombo: {fileID: 11400000, guid: 4a54dc7b2da4b1845b8530b8ce5ad285, type: 2}
+  dodgeForward: {fileID: 11400000, guid: 6f13194a337a71e45906a32981be81fd, type: 2}
+  dodgeBack: {fileID: 11400000, guid: 1db92609ccbd6044b85c4576e420f84c, type: 2}
+  dodgeCooldownFrames: 16
   exportedJson: {fileID: 4900000, guid: 93561b110967280488f28ec259a6bd31, type: 3}
-  sealedJsonHash: 79f6b5b9960f27a6056ca256937d3099988fa061485de9de388bb84a6cbcf8b1
-  sealedSourceHash: 4b9c8aa88c007ccb3ed5030997db226c248a0c1e7c59f6798afa7e4d9bb00a89
+  sealedJsonHash: 69132fbd22a3935ffeba37e1302449394c36c38ee56aa46eede65b1231c407ad
+  sealedSourceHash: 5c4d718e4bff5877ecaf6f2811025747a2e9ace2a43d64dca8c268e0026e9a72
   testHP: 100
   testHurtRadius: 5000
   testHurtOffset:

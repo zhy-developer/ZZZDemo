@@ -14,9 +14,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   characterId: miyabi
   completeness: 0
-  migrationNotes: 'Normal gameplay scope: Miyabi movement and Normal1-5. Initial
-    tunable HP100 and Hurt radius5000/offset0 authorized at delivery. Normal6/Rush_ATK/Skill/FinishSkill
-    remain unmigrated. Partial catalog also retains authoring-only test skills.'
+  migrationNotes: 'Movement + Normal1-5 + E Skill + Q Ultimate + forward/back dodge
+    + shared dodge attack. Normal6/QTE remain outside the scope. Legacy Rush clip
+    has no ATK/gate events: initial authored hit frames 6/12 (20 damage each), preinput15/ready18/move18;
+    tune in Skill Editor. No legacy dodge invincibility window exists; none added.
+    Ultimate follows runtime Ultimate defense policy. Front dodge keeps original
+    750ms bake; back dodge baked to original Animator exit time. Skill/ultimate recovery
+    can be cancelled from the final segment.'
   animatorController: {fileID: 9100000, guid: c36c63ee783b10942a52a9b3fb87c705, type: 2}
   hurtBoxConfigured: 1
   hurtBox:
@@ -33,6 +37,11 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 8579d1164b67cd7439dd77f4146fcd5c, type: 2}
   - {fileID: 11400000, guid: 327735ee4e0e41042833fb639b2b68f9, type: 2}
   - {fileID: 11400000, guid: 085b138412fcbab4cbc766472f398fb3, type: 2}
+  - {fileID: 11400000, guid: f9a8cee6c95a4ea488c42972151b2903, type: 2}
+  - {fileID: 11400000, guid: 4a54dc7b2da4b1845b8530b8ce5ad285, type: 2}
+  - {fileID: 11400000, guid: 6f13194a337a71e45906a32981be81fd, type: 2}
+  - {fileID: 11400000, guid: 1db92609ccbd6044b85c4576e420f84c, type: 2}
+  - {fileID: 11400000, guid: d10d21c0b763de54ca81d0141fe331f2, type: 2}
   resources:
   - id: slash_1
     kind: 0
@@ -43,3 +52,6 @@ MonoBehaviour:
   - id: miyabi-legacy-slash06
     kind: 0
     asset: {fileID: 2157654376139965993, guid: 582593d77dac7d4479c0a8d13797b44e, type: 3}
+  - id: miyabi-ultimate-ex
+    kind: 0
+    asset: {fileID: 1281562640948268549, guid: d5bdaf76c23a633409055ecf15077a9e, type: 3}

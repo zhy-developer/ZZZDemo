@@ -60,9 +60,10 @@ public class UdpMessageDispatcher : Singleton<UdpMessageDispatcher>
         var data = BattleData.Instance;
         _ready.matchId = data.MatchId; _ready.roundId = data.RoundId; _ready.protocolVersion = 1; _ready.joinTicket = data.JoinTicket;
         var pilot = BattleManager.roleManage?.Pilot;
-        _ready.authorityMode = pilot == null ? 0 : 1;
-        _ready.rules = pilot == null ? "legacy" : SkillRuntime.Integration.PilotBattleProfile.Rules;
-        _ready.configHash = pilot?.Digest ?? "legacy";
+        if (pilot == null) return;
+        _ready.authorityMode = 1;
+        _ready.rules = SkillRuntime.Integration.PilotBattleProfile.Rules;
+        _ready.configHash = pilot.Digest;
         Debug.Log("SendBattleReady   _upd== " + _upd);
         _upd.SendMessage(PackageHandler.PackSendMessage<UdpBattleReady>(_ready, CSID.UDP_BATTLE_READY));
     }
@@ -108,12 +109,6 @@ public class UdpMessageDispatcher : Singleton<UdpMessageDispatcher>
     }
 
 
-    public void SendGameOver(int _battleID)
-    {
-        UdpUpGameOver _gameOver = new UdpUpGameOver();
-        _gameOver.battleID = _battleID;
-        _upd.SendMessage(PackageHandler.PackSendMessage<UdpUpGameOver>(_gameOver, CSID.UDP_UP_GAME_OVER));
-    }
     public void SendFinal(UdpUpGameOver result) => _upd?.SendMessage(PackageHandler.PackSendMessage(result, CSID.UDP_UP_GAME_OVER));
 
 

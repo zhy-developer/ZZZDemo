@@ -14,12 +14,18 @@ namespace SkillRuntime.Integration
     // Match setup/allowlist only. Skills remain in the original ComboData.skill and exported JSON.
     public sealed class PilotBattleProfile : ScriptableObject
     {
-        public const string Rules = "phase3c-v1/pilot4b-v1";
+        public const string Rules = "battle-world-v3/expanded-actions-v1";
         [Tooltip("Normal entry for the explicitly listed skill scope. Uses the catalog HurtBox; does not promote the entire partial catalog to BattleReady.")]
         public bool normalGameplay;
         public CharacterSkillCatalog catalog;
         public ComboContainerData comboContainer;
         public ComboData[] allowedCombos;
+        public ComboData skillCombo, ultimateCombo, dodgeForward, dodgeBack;
+        public int dodgeCooldownFrames = 16;
+        public bool HasExpandedActions => skillCombo || ultimateCombo || dodgeForward || dodgeBack;
+        public ComboData[] ReachableCombos() => allowedCombos.Concat(HasExpandedActions
+            ? new[] { skillCombo, ultimateCombo, dodgeForward, dodgeBack, comboContainer.DodgeATKData, comboContainer.BackDodgeATKData ?? comboContainer.DodgeATKData }
+            : new ComboData[0]).Where(c => c).Distinct().ToArray();
         public TextAsset exportedJson;
         public string sealedJsonHash, sealedSourceHash;
         public int testHP = 100;
@@ -32,7 +38,8 @@ namespace SkillRuntime.Integration
         {
             var b = new StringBuilder();
             if (normalGameplay) b.Append("normal-gameplay-scope-v1|");
-            b.Append(Rules).Append('|').Append(testHP).Append('|').Append(testHurtRadius).Append('|').Append(JsonUtility.ToJson(testHurtOffset));
+            // Keep the authoring seal stable; Rules separately versions the simulation protocol.
+            b.Append("phase3c-v1/pilot4b-v1").Append('|').Append(testHP).Append('|').Append(testHurtRadius).Append('|').Append(JsonUtility.ToJson(testHurtOffset));
             b.Append('|').Append(idleState).Append('|').Append(hitState).Append('|').Append(deathState);
             b.Append('|').Append(catalog.characterId).Append('|').Append((int)catalog.completeness).Append('|').Append(catalog.hurtBoxConfigured).Append('|').Append(JsonUtility.ToJson(catalog.hurtBox));
             foreach (var combo in catalog.skills)
@@ -66,6 +73,11 @@ namespace SkillRuntime.Integration
             foreach (var resource in catalog.resources.OrderBy(r => r.id, StringComparer.Ordinal))
                 b.Append("|resource:").Append(resource.id).Append(':').Append((int)resource.kind).Append(':').Append(resource.asset ? resource.asset.name : "missing");
             foreach (var c in allowedCombos) b.Append('|').Append(c ? c.skill?.skillId : "missing");
+            if (HasExpandedActions)
+            {
+                b.Append("|expanded-v1:").Append(dodgeCooldownFrames);
+                foreach (var c in new[] { skillCombo, ultimateCombo, dodgeForward, dodgeBack }) b.Append('|').Append(c ? c.skill?.skillId : "missing");
+            }
             return SkillConfigHash.Sha256(b.ToString());
         }
         internal static long TimeUs(float seconds) => (long)Math.Round(seconds * 1000000.0, MidpointRounding.AwayFromZero);
@@ -80,6 +92,8 @@ namespace SkillRuntime.Integration
                 || allowedCombos.Distinct().Count() != allowedCombos.Length || !comboContainer.comboDatas.Take(allowedCombos.Length).SequenceEqual(allowedCombos))
                 throw new InvalidOperationException("Pilot requires a mapped consecutive prefix of the real combo container; missing successors remain rejected.");
             if (testHP <= 0 || testHP > 16777216 || testHurtRadius <= 0 || string.IsNullOrEmpty(testParameterNotice)) throw new InvalidOperationException("Explicit bounded test HP/HurtBox required.");
+            if (HasExpandedActions && (!skillCombo || !ultimateCombo || !dodgeForward || !dodgeBack || !comboContainer.DodgeATKData || dodgeCooldownFrames <= 0))
+                throw new InvalidOperationException("Expanded actions require skill, ultimate, front/back dodge, dodge attack and cooldown bindings.");
             if (sealedJsonHash != SkillConfigHash.Sha256(exportedJson.text) || sealedSourceHash != SourceHash())
                 throw new InvalidOperationException("Pilot source/export seal changed. Validate/export and explicitly reseal the current development profile.");
             if (!SkillConfigLoader.TryLoad(catalog.characterId, out var snapshot, out var issues)) throw new InvalidOperationException(string.Join("\n", issues));
@@ -94,13 +108,15 @@ namespace SkillRuntime.Integration
                     throw new InvalidOperationException("Resource catalog/export asset mismatch: " + resource.id);
             }
             if (JsonUtility.ToJson(dto) != JsonUtility.ToJson(JsonUtility.FromJson<SkillConfigDto>(exportedJson.text))) throw new InvalidOperationException("Loaded JSON differs from sealed export.");
-            if (!RuntimeSkillCatalog.TryCreateIsolated(snapshot, NetConfig.frameTime, ToolMethod.Render2LogicScale, out var index, out var error)) throw new InvalidOperationException(error);
+            if (!RuntimeSkillCatalog.TryCreateIsolated(dto, NetConfig.frameTime, ToolMethod.Render2LogicScale, out var index, out var error)) throw new InvalidOperationException(error);
             var moves = new List<PilotSkill>();
-            foreach (var combo in allowedCombos)
+            foreach (var combo in ReachableCombos())
             {
                 if (!catalog.skills.Contains(combo) || !combo.skill.registered) throw new InvalidOperationException("Allowlist skill absent from catalog.");
                 var s = dto.skills.Single(v => v.skillId == combo.skill.skillId);
-                if (s.animations.Count != combo.skill.animations.Count || s.skillType != SkillType.Normal
+                var expectedType = combo == skillCombo ? SkillType.Skill : combo == ultimateCombo ? SkillType.Ultimate
+                    : combo == dodgeForward || combo == dodgeBack ? SkillType.Dodge : SkillType.Normal;
+                if (s.animations.Count != combo.skill.animations.Count || s.skillType != expectedType
                     || s.events.Any(e => !SkillEventRegistry.IsValid(e)))
                     throw new InvalidOperationException(s.skillId + ": unsupported event/presentation capability; never fall back to legacy combat.");
                 if (s.hitGroups.Any(g => !string.IsNullOrEmpty(g.hitVfxResourceId) || !string.IsNullOrEmpty(g.hitSfxResourceId)))
@@ -137,8 +153,11 @@ namespace SkillRuntime.Integration
             foreach (var issue in index.ReadinessIssues) Debug.Log("[PilotReadiness] " + issue.Code + " " + issue.Location + ": " + issue.Message);
             var hurt = normalGameplay ? new HurtCircle(dto.hurtBox.radius, dto.hurtBox.offset.x, dto.hurtBox.offset.y, dto.hurtBox.offset.z)
                 : new HurtCircle(testHurtRadius, testHurtOffset.x, testHurtOffset.y, testHurtOffset.z);
+            int At(ComboData source) => moves.FindIndex(m => m.Source == source);
+            var actions = HasExpandedActions ? new BattleActionBindings(At(skillCombo), At(ultimateCombo), At(dodgeForward), At(dodgeBack),
+                At(comboContainer.DodgeATKData), At(comboContainer.BackDodgeATKData ?? comboContainer.DodgeATKData), dodgeCooldownFrames) : null;
             return new PilotConfiguration(moves.ToArray(), hurt, testHP,
-                SkillConfigHash.Sha256(Rules + "|" + sealedSourceHash + "|" + sealedJsonHash), idleState, hitState, deathState, comboContainer, dto.resources);
+                SkillConfigHash.Sha256(Rules + "|" + sealedSourceHash + "|" + sealedJsonHash), idleState, hitState, deathState, comboContainer, dto.resources, allowedCombos.Length, actions);
         }
         // Capability validation is local to this binding, not a relaxation of the general loader's
         // incomplete-catalog guard. Unsupported feedback/resources fail before the Ready handshake.
@@ -181,9 +200,11 @@ namespace SkillRuntime.Integration
             Source = source; Skill = skill; Clip = clip; State = state; Motion = motion; MotionEnd = end; DistancePermille = scale;
             TimelineMotion = timeline; Animations = Array.AsReadOnly(animations ?? new PilotAnimation[0]);
             presentationJson = presentation == null ? null : JsonUtility.ToJson(presentation);
-            PreInput = Gate(events, "combo.preinput", true); Ready = Gate(events, "combo.attack-ready", true);
+            bool comboGates = presentation == null || presentation.skillType == SkillType.Normal;
+            PreInput = comboGates ? Gate(events, "combo.preinput", true) : skill.Duration - 1;
+            Ready = comboGates ? Gate(events, "combo.attack-ready", true) : skill.Duration - 1;
             LinkEnd = events.Any(e => e.eventId == "combo.link") ? Gate(events, "combo.link", false) : skill.Duration;
-            MoveCancel = Gate(events, "combo.move-interrupt", true);
+            MoveCancel = comboGates || events.Any(e => e.eventId == "combo.move-interrupt") ? Gate(events, "combo.move-interrupt", true) : skill.Duration;
             if (PreInput > Ready || Ready >= LinkEnd || LinkEnd > skill.Duration || MoveCancel > skill.Duration) throw new InvalidOperationException("Invalid logical gate order: " + skill.SkillId);
             Debug.Log("[PilotGates] " + skill.SkillId + " pre=" + PreInput + " ready=" + Ready + " linkEnd=" + LinkEnd + " move=" + MoveCancel + " D=" + skill.Duration);
         }
@@ -196,18 +217,25 @@ namespace SkillRuntime.Integration
     }
     public sealed class PilotConfiguration
     {
+        public BattleConfiguration CreateLogicConfiguration() => new BattleConfiguration(Skills.Select(s =>
+            new BattleSkill(s.Skill, s.PreInput, s.Ready, s.LinkEnd, s.MoveCancel, s.TimelineMotion, s.Motion, s.MotionEnd, s.DistancePermille)),
+            Hurt, HP, ContainerCount, Digest, NormalCount, Actions);
         public readonly System.Collections.ObjectModel.ReadOnlyCollection<PilotSkill> Skills;
         public readonly HurtCircle Hurt;
         public readonly int HP;
         public readonly string Digest, Idle, Hit, Death;
         public readonly ComboContainerData Container;
         public readonly int ContainerCount;
+        public readonly int NormalCount;
+        public readonly BattleActionBindings Actions;
         readonly Dictionary<string, ResourceDto> resources;
         internal ResourceDto Resource(string id) => id != null && resources.TryGetValue(id, out var value) ? new ResourceDto { id = value.id, kind = value.kind, path = value.path } : null;
-        internal PilotConfiguration(PilotSkill[] skills, HurtCircle hurt, int hp, string digest, string idle, string hit, string death, ComboContainerData container, IEnumerable<ResourceDto> resourceRefs = null)
+        internal PilotConfiguration(PilotSkill[] skills, HurtCircle hurt, int hp, string digest, string idle, string hit, string death, ComboContainerData container,
+            IEnumerable<ResourceDto> resourceRefs = null, int normalCount = -1, BattleActionBindings actions = null)
         {
             Skills = Array.AsReadOnly(skills); Hurt = hurt; HP = hp; Digest = digest; Idle = idle; Hit = hit; Death = death; Container = container;
             ContainerCount = container.comboDatas.Count;
+            NormalCount = normalCount < 0 ? skills.Length : normalCount; Actions = actions;
             resources = (resourceRefs ?? new ResourceDto[0]).ToDictionary(r => r.id, r => new ResourceDto { id = r.id, kind = r.kind, path = r.path }, StringComparer.Ordinal);
         }
     }

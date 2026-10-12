@@ -4,6 +4,10 @@ using System.Collections.Generic;
 using UnityEngine;
 using Cinemachine;
 using ZZZ;
+using System;
+using System.Linq;
+using SkillRuntime;
+using SkillRuntime.Integration;
 
 public class RoleManager : MonoBehaviour
 {
@@ -18,6 +22,7 @@ public class RoleManager : MonoBehaviour
     public SkillRuntime.Integration.PilotBattleSession Pilot { get; private set; }
     public SkillRuntime.Integration.BattleAuthorityMode AuthorityMode { get; private set; }
     private SkillRuntime.Integration.PilotConfiguration pilotConfig;
+    private PilotBattleView battleView;
 
     public void InitData(Transform _roleParent)
     {
@@ -26,8 +31,9 @@ public class RoleManager : MonoBehaviour
 
         dic_role = new Dictionary<int, RoleBase>();
         var settings = GetComponent<SkillRuntime.Integration.PilotMatchSettings>();
-        pilotConfig = settings != null ? settings.Freeze() : null;
-        AuthorityMode = pilotConfig == null ? SkillRuntime.Integration.BattleAuthorityMode.Legacy : SkillRuntime.Integration.BattleAuthorityMode.DeterministicPilot;
+        if (settings == null) throw new InvalidOperationException("Battle scene requires a battle profile.");
+        pilotConfig = settings.Freeze();
+        AuthorityMode = BattleAuthorityMode.DeterministicPilot;
 
         pre_roleBase = Resources.Load<GameObject>("BattleScene/Role/RoleBase");
         pre_roleUI = Resources.Load<GameObject>("BattleScene/Role/RoleUI");
@@ -79,26 +85,28 @@ public class RoleManager : MonoBehaviour
             }
         }
 
-        if (pilotConfig != null) Pilot = new SkillRuntime.Integration.PilotBattleSession(pilotConfig, dic_role.Values, BattleData.Instance.SessionKey, BattleData.Instance.MatchId);
+        var data = BattleData.Instance;
+        var spawns = dic_role.Values.Select(r => new BattleSpawn(r.Player.BattleID, r.LogicalPosition.x, r.LogicalPosition.y, r.moveSpeed)).ToArray();
+        var directions = Enumerable.Range(0, 120).Select(i => { var d = data.GetSpeed(i * 3); return new XzDelta(d.x, d.y); }).ToArray();
+        Pilot = new PilotBattleSession(pilotConfig.CreateLogicConfiguration(), spawns,
+            new BattleBounds(data.mapMinX, data.mapMaxX, data.mapMinY, data.mapMaxY), directions,
+            data.SessionKey, data.MatchId, PilotBattleProfile.Rules);
+        foreach (var role in dic_role.Values) role.Player.BindBattleInput(() => Pilot.Latest);
+        try { battleView = new PilotBattleView(pilotConfig, dic_role.Values); battleView.Enqueue(Pilot.Latest); }
+        catch (Exception e) { Debug.LogException(e); }
         initFinish = true;
     }
 
-    public void InitializeDevelopmentRoles(RoleBase[] roles, SkillRuntime.Integration.PilotConfiguration config)
-    {
-        if (dic_role != null) throw new System.InvalidOperationException("Reinitialize with fresh roles/match, never hot switch.");
-        dic_role = new Dictionary<int, RoleBase>();
-        foreach (var role in roles) dic_role.Add(role.Player.BattleID, role);
-        AuthorityMode = config == null ? SkillRuntime.Integration.BattleAuthorityMode.Legacy : SkillRuntime.Integration.BattleAuthorityMode.DeterministicPilot;
-        if (config != null) Pilot = new SkillRuntime.Integration.PilotBattleSession(config, roles, 1L + (uint)BattleData.Instance.randSeed);
-        initFinish = true;
-    }
     public bool ConsumeFrame(long frame, AllPlayerOperation operations)
     {
-        if (!initFinish) return false;
-        if (AuthorityMode == SkillRuntime.Integration.BattleAuthorityMode.DeterministicPilot) return Pilot != null && Pilot.Advance(frame, operations);
-        Logic_Operation(operations); Logic_Move(); return true;
+        if (!initFinish || Pilot == null || !Pilot.Advance(frame, operations)) return false;
+        foreach (var op in operations.operations)
+            if (op.rightOperation != RightOpType.noop && op.operationID > 0)
+                BattleData.Instance.UpdateRightOperationID(op.battleID, op.operationID, op.rightOperation);
+        battleView?.Enqueue(Pilot.Latest);
+        return true;
     }
-
+    void LateUpdate() { battleView?.Render(Time.unscaledDeltaTime); }
     public RoleBase GetRoleFromBattleID(int _id)
     {
         return dic_role[_id];
@@ -118,44 +126,10 @@ public class RoleManager : MonoBehaviour
         }
     }
 
-    public void Logic_Operation(AllPlayerOperation _allOp)
-    {
-        if (AuthorityMode != SkillRuntime.Integration.BattleAuthorityMode.Legacy) throw new System.InvalidOperationException("Pilot must consume the whole frame.");
-        // Advance cooldowns before applying this frame's new actions.
-        foreach (var role in dic_role.Values) role.Logic_Tick();
-        //	Debug.Log("操作数" + _allOp.operations.Count);
-        foreach (var item in _allOp.operations)
-        {
-            ///玩家执行移动
-            dic_role[item.battleID].Logic_UpdateMoveDir(item.move);
-
-            if (item.rightOperation == RightOpType.noop || item.operationID == 0)
-            {
-                //无操作
-            }
-            else
-            {
-                if (BattleData.Instance.IsValidRightOp(item.battleID, item.operationID))
-                {
-                    dic_role[item.battleID].Logic_ApplyAction(item);
-
-                    BattleData.Instance.UpdateRightOperationID(item.battleID, item.operationID, item.rightOperation);
-                }
-            }
-        }
-    }
-
-    public void Logic_Move()
-    { // 逻辑移动。遍历每一个角色完成移动
-        foreach (var item in dic_role)
-        {
-            item.Value.Logic_Move();
-        }
-    }
-
     void OnDestroy()
     {
-        Pilot?.Dispose();
+        battleView?.Dispose();
+        if (PilotResultFlow.Active == null) Pilot?.Dispose();
         LocalPlayer = null;
         if (BattleManager.roleManage == this) BattleManager.roleManage = null;
     }

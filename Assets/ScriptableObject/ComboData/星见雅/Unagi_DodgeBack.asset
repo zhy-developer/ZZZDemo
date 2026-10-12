@@ -1,0 +1,79 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f13413444ffc8b243bed7dc2a8fc7155, type: 3}
+  m_Name: Unagi_DodgeBack
+  m_EditorClassIdentifier: 
+  skill:
+    registered: 1
+    skillId: miyabi-dodge-back
+    displayName: Unagi_DodgeBack
+    category: Dodge
+    skillType: 4
+    animations:
+    - id: animation-1
+      startFrame: 0
+      endFrame: 28
+      clip: {fileID: -4756552657945709222, guid: 2e97bb40dd1ff8c4295dfc3b074e0ece, type: 3}
+      statePaths:
+      - "Base Layer.Movement.Dodge\uFF08\u95EA\u907F\uFF09.\u4E0D\u9501\u654C.Dodge_Back"
+      trimStartUs: 0
+      trimEndUs: 924000
+      speedPermille: 1000
+      rootSource: 2
+      additionalRootMotion: {fileID: 4900000, guid: 8283316040020a847a2352081ba3293e, type: 3}
+      additionalEndFrameExclusive: 0
+      additionalDistancePermille: 1000
+      tailPolicy: 1
+    tracks:
+    - id: hits
+      name: Logical hit points
+      group: 
+      kind: 0
+      displayOrder: 0
+    - id: gates
+      name: Logical cancellation
+      group: 
+      kind: 3
+      displayOrder: 0
+    - id: vfx
+      name: Legacy presentation
+      group: 
+      kind: 4
+      displayOrder: 0
+    hitGroups: []
+    hitBoxes: []
+    invincibility: []
+    interrupts: []
+    events: []
+    vfx: []
+    sfx: []
+  characterName: 0
+  _attackStyle: 0
+  _comboName: Dodge_Back
+  _comboColdTime: 0
+  _comboDamage: 0
+  _attackDistance: 0
+  _comboOffset: 0
+  _hitName: []
+  _parryName: []
+  rootMotion:
+    json: {fileID: 0}
+    endFrameExclusive: 0
+    distancePermille: 1000
+  appAudioPrefab: 0
+  _weaponSound: []
+  _characterVoice: []
+  _universalSound: 0
+  _ATKCount: 0
+  _pauseFrameTime: 0
+  _shakeForceList: []
+  _pauseFrameTimeList: []

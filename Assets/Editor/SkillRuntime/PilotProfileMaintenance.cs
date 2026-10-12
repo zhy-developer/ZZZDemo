@@ -10,11 +10,27 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-// Seals an already exported source. Never migrates skills, generates gates or exports implicitly.
+// Exporting and sealing are explicit authoring actions; build validation remains read-only.
 public static class PilotProfileMaintenance
 {
     [MenuItem("Tools/Skill Runtime/Validate and Seal Selected Profile")]
     public static void SealSelected() => Seal(Selection.activeObject as PilotBattleProfile);
+
+    [MenuItem("Tools/Skill Runtime/Export and Seal Selected Profile")]
+    public static void ExportAndSealSelected() => ExportAndSeal(Selection.activeObject as PilotBattleProfile);
+
+    public static void ExportAndSeal(PilotBattleProfile profile)
+    {
+        if (EditorApplication.isPlayingOrWillChangePlaymode) throw new InvalidOperationException("Leave Play Mode before exporting configuration.");
+        if (!profile || !profile.catalog) throw new InvalidOperationException("Select a battle profile with a catalog.");
+        // Require the correct binding before writing; never silently replace a profile's JSON asset.
+        if (!profile.exportedJson || AssetDatabase.GetAssetPath(profile.exportedJson) != SkillConfigExporter.PathFor(profile.catalog))
+            throw new InvalidOperationException("Profile must reference its catalog's actual exported JSON.");
+        var issues = SkillConfigExporter.Export(profile.catalog);
+        if (issues.Any(d => d.severity == DiagnosticSeverity.Error))
+            throw new InvalidOperationException(string.Join("\n", issues));
+        Seal(profile);
+    }
 
     [MenuItem("Tools/Skill Runtime/Build Windows Player (Clean Cache)")]
     public static void BuildCleanPlayer()
@@ -37,7 +53,7 @@ public static class PilotProfileMaintenance
     {
         if (!profile || !profile.catalog) throw new InvalidOperationException("Select a battle profile with a catalog.");
         if (SkillConfigExporter.IsStale(profile.catalog))
-            throw new InvalidOperationException("Skill JSON is stale or invalid. Save, Validate and explicitly Export JSON in Skill Editor first.");
+            throw new InvalidOperationException("Skill JSON is stale or invalid (including moved Resources assets). Select the battle profile and use Tools/Skill Runtime/Export and Seal Selected Profile. Resolve any validation errors before building.");
         if (AssetDatabase.GetAssetPath(profile.exportedJson) != SkillConfigExporter.PathFor(profile.catalog))
             throw new InvalidOperationException("Profile must reference its catalog's actual exported JSON.");
     }
@@ -88,9 +104,14 @@ public sealed class PilotBattleProfileInspector : Editor
             EditorGUILayout.TextField("Sealed JSON", profile.sealedJsonHash ?? "");
         }
         using (new EditorGUI.DisabledScope(EditorApplication.isPlayingOrWillChangePlaymode))
+        {
+            if (GUILayout.Button("重新导出并校验配置、更新摘要（资源移动后使用）"))
+                try { PilotProfileMaintenance.ExportAndSeal(profile); }
+                catch (Exception e) { Debug.LogError("[ProfileRejected] " + e.Message); }
             if (GUILayout.Button("校验已导出的配置并更新摘要"))
                 try { PilotProfileMaintenance.Seal(profile); }
                 catch (Exception e) { Debug.LogError("[ProfileRejected] " + e.Message); }
+        }
     }
 }
 
@@ -127,7 +148,7 @@ public sealed class GameplayBuildValidation : IProcessSceneWithReport, IPreproce
         var manager = scene.GetRootGameObjects().SelectMany(g => g.GetComponentsInChildren<GameManager>(true)).Single();
         var settings = manager.GetComponent<PilotMatchSettings>();
         if (!settings) throw new BuildFailedException("BattleScene must declare its battle mode explicitly.");
-        if (settings.mode == BattleAuthorityMode.Legacy) { Debug.LogWarning("[GameplayBuild] Explicit Legacy rollback; not the new-system delivery."); return; }
+        if (settings.mode != BattleAuthorityMode.DeterministicPilot) throw new BuildFailedException("Legacy combat has been removed. Select DeterministicPilot.");
         PilotProfileMaintenance.CheckExport(settings.profile);
         if (!settings.profile.normalGameplay && (report.summary.options & BuildOptions.Development) == 0)
             throw new BuildFailedException("A test profile cannot be used in a non-development build.");

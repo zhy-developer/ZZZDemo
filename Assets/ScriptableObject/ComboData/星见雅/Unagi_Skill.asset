@@ -12,6 +12,107 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f13413444ffc8b243bed7dc2a8fc7155, type: 3}
   m_Name: Unagi_Skill
   m_EditorClassIdentifier: 
+  skill:
+    registered: 1
+    skillId: miyabi-skill
+    displayName: Unagi_Skill
+    category: Skill
+    skillType: 3
+    animations:
+    - id: animation-1
+      startFrame: 0
+      endFrame: 14
+      clip: {fileID: -2278640468525542589, guid: 3d9757a43f4c1d14ebf43cbec50dcda5, type: 3}
+      statePaths:
+      - Base Layer.Combo.Special Attack.Unagi_Skill
+      trimStartUs: 0
+      trimEndUs: 450000
+      speedPermille: 1000
+      rootSource: 2
+      additionalRootMotion: {fileID: 4900000, guid: 3cfab85bfb1c58a43955f68a75c994b5, type: 3}
+      additionalEndFrameExclusive: 0
+      additionalDistancePermille: 1000
+      tailPolicy: 1
+    - id: animation-2
+      startFrame: 14
+      endFrame: 120
+      clip: {fileID: -8133270213699686728, guid: 3d9757a43f4c1d14ebf43cbec50dcda5, type: 3}
+      statePaths:
+      - Base Layer.Combo.Special Attack.Unagi_Skill_End
+      trimStartUs: 0
+      trimEndUs: 3483334
+      speedPermille: 1000
+      rootSource: 2
+      additionalRootMotion: {fileID: 4900000, guid: 7409897d8a4ad6d40904543205c44008, type: 3}
+      additionalEndFrameExclusive: 0
+      additionalDistancePermille: 1000
+      tailPolicy: 1
+    tracks:
+    - id: hits
+      name: Logical hit points
+      group: 
+      kind: 0
+      displayOrder: 0
+    - id: gates
+      name: Logical cancellation
+      group: 
+      kind: 3
+      displayOrder: 0
+    - id: vfx
+      name: Legacy presentation
+      group: 
+      kind: 4
+      displayOrder: 0
+    hitGroups:
+    - id: hit-0
+      mode: 0
+      repeatIntervalFrames: 1
+      damageSource: 0
+      explicitDamage: 0
+      hitStunFrames: 0
+      knockback:
+        x: 0
+        y: 0
+        z: 0
+      knockbackFrames: 0
+      hitVfxResourceId: 
+      hitSfxResourceId: 
+    hitBoxes:
+    - id: box-0
+      trackId: hits
+      hitGroupId: hit-0
+      startFrame: 3
+      endFrame: 4
+      shape: 3
+      offset:
+        x: 0
+        y: 0
+        z: 0
+      size:
+        x: 0
+        y: 0
+        z: 0
+      yawMilliDegrees: 0
+      radius: 35000
+      height: 1
+      sectorAngleMilliDegrees: 90000
+    invincibility: []
+    interrupts: []
+    events:
+    - id: combo-move-interrupt
+      trackId: gates
+      eventId: combo.move-interrupt
+      frame: 14
+      order: 0
+      version: 1
+      execution: 1
+      parameterKind: 2
+      marker:
+        text: 
+      comboGate:
+        enabled: 1
+    vfx: []
+    sfx: []
   characterName: 1
   _attackStyle: 1
   _comboName: Unagi_Skill
@@ -24,6 +125,10 @@ MonoBehaviour:
   _parryName:
   - Hit_1
   - Hit_2
+  rootMotion:
+    json: {fileID: 0}
+    endFrameExclusive: 0
+    distancePermille: 1000
   appAudioPrefab: 0
   _weaponSound: []
   _characterVoice: []

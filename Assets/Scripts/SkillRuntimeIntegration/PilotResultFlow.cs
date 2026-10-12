@@ -39,7 +39,6 @@ namespace SkillRuntime.Integration
             if (Retired) return;
             if (session.TerminalSnapshot != null && Agreement.Local == null)
             { Agreement.LockLocal(session.TerminalSnapshot); waitingSince = Time.realtimeSinceStartup; }
-            session.UpdateTerminalPresentation(Time.unscaledDeltaTime);
             if (Agreement.Confirmed != null && !applied)
             {
                 applied = true;
