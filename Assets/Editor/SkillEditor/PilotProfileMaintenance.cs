@@ -13,12 +13,6 @@ using UnityEngine.SceneManagement;
 // Exporting and sealing are explicit authoring actions; build validation remains read-only.
 public static class PilotProfileMaintenance
 {
-    [MenuItem("Tools/Skill Runtime/Validate and Seal Selected Profile")]
-    public static void SealSelected() => Seal(Selection.activeObject as PilotBattleProfile);
-
-    [MenuItem("Tools/Skill Runtime/Export and Seal Selected Profile")]
-    public static void ExportAndSealSelected() => ExportAndSeal(Selection.activeObject as PilotBattleProfile);
-
     public static void ExportAndSeal(PilotBattleProfile profile)
     {
         if (EditorApplication.isPlayingOrWillChangePlaymode) throw new InvalidOperationException("Leave Play Mode before exporting configuration.");
@@ -32,28 +26,11 @@ public static class PilotProfileMaintenance
         Seal(profile);
     }
 
-    [MenuItem("Tools/Skill Runtime/Build Windows Player (Clean Cache)")]
-    public static void BuildCleanPlayer()
-    {
-        if (EditorApplication.isPlayingOrWillChangePlaymode) throw new InvalidOperationException("Leave Play Mode before building.");
-        if (EditorUserBuildSettings.activeBuildTarget != BuildTarget.StandaloneWindows64)
-            throw new InvalidOperationException("Switch Build Settings to Windows x86_64 first.");
-        string path = EditorUtility.SaveFilePanel("Clean Windows build", "Builds", "ARPGDEMO", "exe");
-        if (string.IsNullOrEmpty(path)) return;
-        var options = BuildOptions.CleanBuildCache;
-        if (EditorUserBuildSettings.development) options |= BuildOptions.Development;
-        var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions {
-            scenes = EditorBuildSettings.scenes.Where(s => s.enabled).Select(s => s.path).ToArray(),
-            target = BuildTarget.StandaloneWindows64, locationPathName = path, options = options });
-        if (report.summary.result != BuildResult.Succeeded) throw new BuildFailedException("Clean build failed: " + report.summary.result);
-        Debug.Log("[GameplayBuild] Clean build complete: " + path);
-    }
-
     public static void CheckExport(PilotBattleProfile profile)
     {
         if (!profile || !profile.catalog) throw new InvalidOperationException("Select a battle profile with a catalog.");
         if (SkillConfigExporter.IsStale(profile.catalog))
-            throw new InvalidOperationException("Skill JSON is stale or invalid (including moved Resources assets). Select the battle profile and use Tools/Skill Runtime/Export and Seal Selected Profile. Resolve any validation errors before building.");
+            throw new InvalidOperationException("技能 JSON 已过期或存在错误。请打开 Tools/Skill Editor/Skill Editor，选择对应战斗配置并点击“保存并导出”，修复校验错误后再打包。");
         if (AssetDatabase.GetAssetPath(profile.exportedJson) != SkillConfigExporter.PathFor(profile.catalog))
             throw new InvalidOperationException("Profile must reference its catalog's actual exported JSON.");
     }
@@ -88,7 +65,7 @@ public sealed class PilotBattleProfileInspector : Editor
     public override void OnInspectorGUI()
     {
         serializedObject.Update();
-        EditorGUILayout.HelpBox("Normal Gameplay：HP 使用下面的 Initial HP（旧序列化名 testHP）；HurtBox 只读取角色目录。技能仍在 ComboData.skill 中编辑。先保存并导出 JSON，再明确更新摘要；不会自动导出或迁移技能。", MessageType.Info);
+        EditorGUILayout.HelpBox("在技能编辑器中编辑技能并点击“保存并导出”，同时更新战斗配置摘要。正式战斗的 HurtBox 读取角色目录。", MessageType.Info);
         DrawPropertiesExcluding(serializedObject, "m_Script", "testHP", "testHurtRadius", "testHurtOffset", "sealedSourceHash", "sealedJsonHash");
         EditorGUILayout.PropertyField(serializedObject.FindProperty("testHP"), new GUIContent("Initial HP"));
         if (!serializedObject.FindProperty("normalGameplay").boolValue)
@@ -105,12 +82,7 @@ public sealed class PilotBattleProfileInspector : Editor
         }
         using (new EditorGUI.DisabledScope(EditorApplication.isPlayingOrWillChangePlaymode))
         {
-            if (GUILayout.Button("重新导出并校验配置、更新摘要（资源移动后使用）"))
-                try { PilotProfileMaintenance.ExportAndSeal(profile); }
-                catch (Exception e) { Debug.LogError("[ProfileRejected] " + e.Message); }
-            if (GUILayout.Button("校验已导出的配置并更新摘要"))
-                try { PilotProfileMaintenance.Seal(profile); }
-                catch (Exception e) { Debug.LogError("[ProfileRejected] " + e.Message); }
+            if (GUILayout.Button("打开技能编辑器")) SkillEditorWindow.OpenProfile(profile);
         }
     }
 }

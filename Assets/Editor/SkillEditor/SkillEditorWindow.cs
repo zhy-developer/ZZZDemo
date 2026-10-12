@@ -1,6 +1,7 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using SkillRuntime.Integration;
 using UnityEditor;
 using UnityEngine;
 
@@ -10,6 +11,10 @@ namespace SkillConfig.Editor
     {
         [SerializeField] CharacterSkillCatalog catalog;
         [SerializeField] ComboData owner;
+        [SerializeField] PilotBattleProfile battleProfile;
+        string exportMessage = "";
+        bool exportFailed;
+        bool sealCurrent;
         [SerializeField] string selected = "";
         readonly SkillTimelineView timeline = new SkillTimelineView();
         readonly SkillInspectorPanel inspector = new SkillInspectorPanel();
@@ -21,14 +26,21 @@ namespace SkillConfig.Editor
         string search = "";
         bool stale = true, diagnosticsDirty = true;
         double nextValidation;
-        [MenuItem("Tools/Skill Editor/Skill Editor (Phase 2B)")]
+        [MenuItem("工具箱/Skill Editor/Skill Editor")]
         public static void Open() => GetWindow<SkillEditorWindow>("Skill Editor");
-        [MenuItem("Tools/Skill Editor/Skill Editor")]
-        public static void OpenCurrent() => Open();
+        public static void OpenProfile(PilotBattleProfile profile)
+        {
+            var w = GetWindow<SkillEditorWindow>("Skill Editor");
+            w.catalog = profile.catalog;
+            w.battleProfile = profile;
+            w.Choose(w.catalog ? w.catalog.skills.FirstOrDefault(s => s) : null);
+        }
         public static void OpenSkill(ComboData skill)
         {
             var w = GetWindow<SkillEditorWindow>("Skill Editor");
             w.catalog = AssetDatabase.FindAssets("t:CharacterSkillCatalog").Select(g => AssetDatabase.LoadAssetAtPath<CharacterSkillCatalog>(AssetDatabase.GUIDToAssetPath(g))).FirstOrDefault(c => c.skills.Contains(skill));
+            w.battleProfile = null;
+            w.ResolveProfile();
             w.Choose(skill);
         }
         void OnEnable()
@@ -43,6 +55,7 @@ namespace SkillConfig.Editor
             EditorApplication.projectChanged += Changed;
             EditorApplication.playModeStateChanged += PlayModeChanged;
             diagnosticsDirty = true;
+            ResolveProfile();
             preview = new SkillPreviewPanel(f => timeline.SetCursor(f), Repaint, SelectItem);
             timeline.CursorChanged += PreviewSeek;
         }
@@ -57,6 +70,7 @@ namespace SkillConfig.Editor
         void PlayModeChanged(PlayModeStateChange state) { graph.ResetDraft(); preview?.CloseSession(); timeline.Cancel(); SkillEditCommands.Flush(); Repaint(); }
         void Changed()
         {
+            exportMessage = "";
             timeline.Cancel();
             if (catalog && owner && !catalog.skills.Contains(owner) && !graph.Contains(owner)) { owner = catalog.skills.FirstOrDefault(s => s); selected = ""; }
             // A container/layout change must not masquerade as a skill JSON modification.
@@ -69,6 +83,16 @@ namespace SkillConfig.Editor
             state.skillGuid = owner ? AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(owner)) : ""; state.Persist();
         }
         void Choose(ComboData value) { preview?.CloseSession(); timeline.Cancel(); SkillEditCommands.Flush(); owner = value; selected = ""; diagnosticsDirty = true; Persist(); Repaint(); }
+        void ResolveProfile()
+        {
+            if (battleProfile) return;
+            if (!catalog) return;
+            var matches = AssetDatabase.FindAssets("t:PilotBattleProfile")
+                .Select(g => AssetDatabase.LoadAssetAtPath<PilotBattleProfile>(AssetDatabase.GUIDToAssetPath(g)))
+                .Where(p => p && p.catalog == catalog).ToArray();
+            // Multiple matches require an explicit choice; never reseal an arbitrary profile.
+            if (matches.Length == 1) battleProfile = matches[0];
+        }
         void SelectItem(string id) { selected = id; Repaint(); }
         void OnInspectorUpdate()
         {
@@ -77,8 +101,17 @@ namespace SkillConfig.Editor
         void Validate()
         {
             diagnosticsDirty = false; nextValidation = EditorApplication.timeSinceStartup + 2;
+            sealCurrent = false;
             if (!catalog) { issues.Clear(); stale = true; return; }
-            SkillAssetValidator.Build(catalog, out issues); stale = SkillConfigExporter.IsStale(catalog); Repaint();
+            ResolveProfile();
+            SkillAssetValidator.Build(catalog, out issues); stale = SkillConfigExporter.IsStale(catalog);
+            if (!stale && battleProfile && battleProfile.catalog == catalog && battleProfile.exportedJson)
+            {
+                try { sealCurrent = battleProfile.sealedJsonHash == SkillConfigHash.Sha256(battleProfile.exportedJson.text)
+                    && battleProfile.sealedSourceHash == battleProfile.SourceHash(); }
+                catch { sealCurrent = false; } // An incomplete profile remains editable.
+            }
+            Repaint();
         }
         void OnGUI()
         {
@@ -87,15 +120,28 @@ namespace SkillConfig.Editor
                 using (new EditorGUILayout.HorizontalScope(EditorStyles.toolbar))
                 {
                     var next = (CharacterSkillCatalog)EditorGUILayout.ObjectField(catalog, typeof(CharacterSkillCatalog), false, GUILayout.Width(245));
-                    if (next != catalog) { SkillEditCommands.Flush(); catalog = next; Choose(catalog ? catalog.skills.FirstOrDefault(s => s) : null); }
+                    if (next != catalog) { SkillEditCommands.Flush(); catalog = next; battleProfile = null; exportMessage = ""; ResolveProfile(); Choose(catalog ? catalog.skills.FirstOrDefault(s => s) : null); }
                     if (GUILayout.Button("角色配置", EditorStyles.toolbarButton)) selected = "@catalog";
                     GUILayout.Label(stale ? "JSON 待导出" : "JSON 已导出", GUILayout.Width(95));
                     GUILayout.Label((owner && EditorUtility.IsDirty(owner)) || (catalog && EditorUtility.IsDirty(catalog)) ? "SO 未保存" : "SO 已保存", GUILayout.Width(80));
                     if (GUILayout.Button("保存 SO", EditorStyles.toolbarButton)) Save();
                     if (GUILayout.Button("校验", EditorStyles.toolbarButton)) Validate();
                     using (new EditorGUI.DisabledScope(!catalog))
-                        if (GUILayout.Button("Export JSON", EditorStyles.toolbarButton)) { SkillEditCommands.Flush(); issues = SkillConfigExporter.Export(catalog); stale = SkillConfigExporter.IsStale(catalog); diagnosticsDirty = false; nextValidation = EditorApplication.timeSinceStartup + 2; }
+                        if (GUILayout.Button(new GUIContent("保存并导出", "保存技能、导出 JSON，并校验和更新所选战斗配置的摘要。"), EditorStyles.toolbarButton)) Export();
                 }
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    var nextProfile = (PilotBattleProfile)EditorGUILayout.ObjectField("战斗配置", battleProfile, typeof(PilotBattleProfile), false);
+                    if (nextProfile != battleProfile) { battleProfile = nextProfile; exportMessage = ""; diagnosticsDirty = true; sealCurrent = false; }
+                    if (battleProfile) GUILayout.Label(sealCurrent ? "摘要已更新" : "摘要待更新", GUILayout.Width(85));
+                    using (new EditorGUI.DisabledScope(!battleProfile))
+                        if (GUILayout.Button("查看配置", GUILayout.Width(80))) Selection.activeObject = battleProfile;
+                }
+                if (battleProfile && battleProfile.catalog != catalog)
+                    EditorGUILayout.HelpBox("所选战斗配置不属于当前角色目录，请重新选择。", MessageType.Error);
+                else if (!battleProfile)
+                    EditorGUILayout.HelpBox("请选择此角色的战斗配置；未绑定战斗配置的目录仅导出 JSON。", MessageType.Info);
+                if (!string.IsNullOrEmpty(exportMessage)) EditorGUILayout.HelpBox(exportMessage, exportFailed ? MessageType.Error : MessageType.Info);
                 int page = GUILayout.Toolbar(graphPage ? 1 : 0, new[] { "Timeline", "连招 Graph" });
                 if ((page == 1) != graphPage) { graphPage = page == 1; timeline.Cancel(); preview?.CloseSession(); }
                 if (!graphPage) preview?.Draw(owner, catalog, selected, timeline.Cursor);
@@ -121,7 +167,37 @@ namespace SkillConfig.Editor
                 if (!graphPage && Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Delete && !EditorGUIUtility.editingTextField && owner && SkillTimelineAdapters.Find(owner, selected) != null)
                 { SkillEditCommands.DeleteItem(owner, selected); selected = ""; Event.current.Use(); }
             }
-            if (EditorApplication.isPlayingOrWillChangePlaymode) EditorGUILayout.HelpBox("Play Mode 中只读；Phase 2B 不修改运行中的战斗配置。", MessageType.Info);
+            if (EditorApplication.isPlayingOrWillChangePlaymode) EditorGUILayout.HelpBox("Play Mode 中只读；退出运行后可编辑和导出配置。", MessageType.Info);
+        }
+        void Export()
+        {
+            exportMessage = ""; exportFailed = false;
+            try
+            {
+                if (battleProfile && battleProfile.catalog != catalog)
+                    throw new InvalidOperationException("所选战斗配置不属于当前角色目录。");
+                ResolveProfile();
+                if (!battleProfile && AssetDatabase.FindAssets("t:PilotBattleProfile")
+                    .Select(g => AssetDatabase.LoadAssetAtPath<PilotBattleProfile>(AssetDatabase.GUIDToAssetPath(g)))
+                    .Any(p => p && p.catalog == catalog))
+                    throw new InvalidOperationException("此目录对应多个战斗配置，请先选择需要更新的战斗配置。");
+                preview?.CloseSession();
+                Save();
+                if (battleProfile)
+                {
+                    PilotProfileMaintenance.ExportAndSeal(battleProfile);
+                    exportMessage = "已保存并导出，战斗配置摘要已更新：" + battleProfile.name;
+                }
+                else
+                {
+                    issues = SkillConfigExporter.Export(catalog);
+                    if (issues.Any(d => d.severity == DiagnosticSeverity.Error))
+                        throw new InvalidOperationException("导出失败，请修复下方校验错误。");
+                    exportMessage = "已保存并导出 JSON（此目录尚未绑定战斗配置）。";
+                }
+            }
+            catch (Exception e) { exportFailed = true; exportMessage = "导出未完成：" + e.Message; Debug.LogError(exportMessage); }
+            Validate();
         }
         void Save()
         {

@@ -88,7 +88,7 @@ public class RootMotionBakerWindow : EditorWindow
     // Window
     // ============================================================
 
-    [MenuItem("Tools/FrameSync/Root Motion JSON Baker")]
+    [MenuItem("工具箱/Skill Editor/Root Motion JSON Baker")]
     public static void OpenWindow()
     {
         GetWindow<RootMotionBakerWindow>(
