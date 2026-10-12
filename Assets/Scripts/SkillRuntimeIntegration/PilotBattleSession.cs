@@ -48,14 +48,7 @@ namespace SkillRuntime.Integration
         public int FeedbackCount { get; private set; }
         public int ActiveVfx => presentation?.ActiveVfx ?? 0;
         public int ActiveSfx => presentation?.ActiveSfx ?? 0;
-        public IPilotFrameDiagnostics Diagnostics { get; set; }
         public bool VerboseFrameLogging { get; set; } = true;
-        void Observe(Action<IPilotFrameDiagnostics> action)
-        {
-            if (Diagnostics == null) return;
-            try { action(Diagnostics); }
-            catch (Exception e) { Diagnostics = null; Debug.LogError("[PilotDiagnostics] observer detached: " + e); }
-        }
         public PilotBattleSession(PilotConfiguration configuration, IEnumerable<RoleBase> roles, long sessionKey, string networkMatchId = null)
         {
             networkMatch = networkMatchId;
@@ -129,7 +122,6 @@ namespace SkillRuntime.Integration
                 if (operations == null || operations.operations.Any(o => o == null || o.battleID < 1 || o.battleID > 2)
                     || operations.operations.GroupBy(o => o.battleID).Any(g => g.Count() != 1)) throw new InvalidOperationException("Malformed whole-match operation set.");
                 if (Runtime.TryBeginFrame(frame) != FrameBeginResult.Started) return false;
-                if (Diagnostics != null) Observe(d => d.Begin(frame));
                 foreach (var op in operations.operations.OrderBy(o => o.battleID))
                 {
                     var a = actors[op.battleID - 1]; a.Move = op.move >= 0 && op.move <= 120 ? op.move % 120 : 121; a.Role.PilotInput(a.Move);
@@ -190,7 +182,6 @@ namespace SkillRuntime.Integration
                 })) + " events=" + string.Join(";", Runtime.Events.Select(e => e.ToString()))
                     + " feedback=" + string.Join(";", receipt.Feedback.Select(h => h.Source.ToString())));
                 }
-                if (Diagnostics != null) Observe(d => d.Committed(frame, operations, this));
                 // All authority writes, ledger and exit cleanup are complete before any external presentation callback.
                 foreach (var a in actors)
                 {
@@ -207,7 +198,6 @@ namespace SkillRuntime.Integration
                     Debug.Log("[RoundLocal] match=" + networkMatch + " round=1 F=" + frame + " result=" + TerminalSnapshot.Result +
                         " winner=" + TerminalSnapshot.Winner + " hash=" + TerminalSnapshot.Hash);
                 }
-                if (Diagnostics != null) Observe(d => d.End(frame));
                 return true;
             }
             catch (Exception ex) { Faulted = true; Fault = ex.ToString(); Debug.LogError("[PilotHalt] No legacy fallback; reinitialize match. " + Fault); return false; }
@@ -270,7 +260,8 @@ namespace SkillRuntime.Integration
                 double elapsed = (receipt.Frame - a.VisualHitStart) * NetConfig.frameTime / 1000.0;
                 if (a.VisualHitStart >= 0 && a.VisualHitSeconds > 0 && (elapsed < a.VisualHitSeconds || a.Stun.Contains(receipt.Frame)))
                     a.Role.Player.PilotVisual(config.Hit, Mathf.Min(.99f, (float)(elapsed / a.VisualHitSeconds)));
-                else a.Role.Player.PilotVisual(config.Idle, 0);
+                else a.Role.Player.PilotLocomotion(config.Idle,
+                    a.Move < 120 && !Restricted(a, receipt.Frame) && receipt.Round == RoundResult.None);
             }
         }
         string DescribePlayers() => string.Join(";", actors.Select(a => FormattableString.Invariant($"{a.Key}:pos={a.Role.LogicalPosition.x},{a.Role.LogicalPosition.y};facing={a.Role.LogicalFacing};hp={a.Health.ReadPilotHealth()};cast={Runtime.Current(a.Key)?.Key};k={Runtime.Current(a.Key)?.SkillFrame};stun={a.Stun.Start},{a.Stun.End}")));
@@ -318,7 +309,7 @@ namespace SkillRuntime.Integration
             foreach (var a in actors)
             {
                 if (!a.Role) continue;
-                a.Role.CancelRootMotion(); if (a.Role.Player) { a.Role.Player.PilotDestroyed -= Dispose; a.Role.Player.BindPilotOpponent(null); }
+                a.Role.CancelRootMotion(); if (a.Role.Player) { a.Role.Player.PilotDestroyed -= Dispose; a.Role.Player.BindPilotOpponent(null); a.Role.Player.StopPilotPresentation(); }
             }
         }
     }

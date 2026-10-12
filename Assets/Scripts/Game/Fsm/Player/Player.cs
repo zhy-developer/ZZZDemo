@@ -88,6 +88,10 @@ namespace ZZZ
             return new Vector3(Mathf.Cos(angle), 0, Mathf.Sin(angle));
         }
         public bool IsDeterministicPilot { get; private set; }
+        // Render-only ownership. Never read by movement, action eligibility or state hashes.
+        private bool pilotLocomotion;
+        private bool pilotLocomotionMoving;
+        private bool pilotHasLocomotion;
         public bool PilotRoundClosed { get; internal set; }
         public event System.Action PilotDestroyed;
         public void BindDeterministicPilot()
@@ -102,15 +106,66 @@ namespace ZZZ
             characterAnimator.applyRootMotion = false;
             characterAnimator.fireEvents = false;
             characterAnimator.speed = 0;
+            pilotHasLocomotion = characterAnimator.HasState(0, Animator.StringToHash("WalkStart"))
+                && characterAnimator.HasState(0, Animator.StringToHash("Locomotion"))
+                && characterAnimator.HasState(0, Animator.StringToHash("Idle"));
+            if (!pilotHasLocomotion) Debug.LogWarning("[PilotPresentation] Controller lacks WalkStart/Locomotion/Idle; using configured idle visual.", this);
             currentComboState = "DeterministicPilot";
         }
 
         public void PilotVisual(string state, float normalizedTime)
         {
             if (!IsDeterministicPilot || !characterAnimator.HasState(0, Animator.StringToHash(state))) return;
+            StopPilotPresentation();
             characterAnimator.Play(state, 0, normalizedTime);
             characterAnimator.Update(0);
             transform.localPosition = Vector3.zero;
+        }
+
+        // Only committed ordinary movement selects locomotion. Animator may interpolate its
+        // original start/loop/stop transitions, but cannot move the role or emit gameplay events.
+        public void PilotLocomotion(string idleState, bool moving)
+        {
+            if (!IsDeterministicPilot) return;
+            moving &= pilotHasLocomotion && !PilotRoundClosed;
+            bool entering = !pilotLocomotion;
+            if (!entering && pilotLocomotionMoving == moving) return;
+            pilotLocomotion = true;
+            pilotLocomotionMoving = moving;
+            characterAnimator.applyRootMotion = false;
+            characterAnimator.fireEvents = false;
+            characterAnimator.speed = 1;
+            characterAnimator.SetBool(AnimatorID.HasInputID, moving);
+            characterAnimator.SetBool(AnimatorID.TurnBackID, false);
+            characterAnimator.SetBool(AnimatorID.RunID, false);
+            characterAnimator.SetFloat(AnimatorID.LockID, 0);
+            characterAnimator.SetFloat(AnimatorID.MovementID, moving ? playerSO.movementData.runData.inputMult : 0);
+            if (moving) characterAnimator.CrossFadeInFixedTime("WalkStart", .14f, 0, 0);
+            // The pilot profile's historical idle pose is Locomotion at t=0. Automatic idle
+            // uses the Controller's real Idle state, avoiding a spurious walk-stop at spawn.
+            else if (entering) characterAnimator.CrossFadeInFixedTime(pilotHasLocomotion ? "Idle" : idleState, .14f, 0, 0);
+            // On release, HasInput=false lets the original Controller play Walk_End -> Idle.
+            // Repeated logic frames must not restart either the loop or the stop animation.
+        }
+
+        public void StopPilotPresentation()
+        {
+            if (!IsDeterministicPilot || !characterAnimator) return;
+            if (pilotLocomotion)
+            {
+                characterAnimator.SetBool(AnimatorID.HasInputID, false);
+                characterAnimator.SetFloat(AnimatorID.MovementID, 0);
+            }
+            pilotLocomotion = false;
+            pilotLocomotionMoving = false;
+            characterAnimator.speed = 0;
+        }
+
+        private void LateUpdate()
+        {
+            // The model is a child of the logically positioned RoleBase. Animation curves must
+            // not introduce a second positional owner while automatic locomotion is playing.
+            if (IsDeterministicPilot) transform.localPosition = Vector3.zero;
         }
 
         public void BindMotionRole(RoleBase role) { motionRole = role; }
@@ -268,6 +323,7 @@ namespace ZZZ
 
         public void OnDisable()
         {
+            StopPilotPresentation();
             motionRole?.CancelRootMotion();
             networkInput?.Clear();
             if (IsLocalPlayer && networkRoleInitialized) BattleData.Instance.StopMove();

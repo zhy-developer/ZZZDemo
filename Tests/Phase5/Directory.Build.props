@@ -1,7 +1,0 @@
-<Project>
-  <PropertyGroup>
-    <!-- Multiple console tools share this folder; apphost and NuGet intermediates must not. -->
-    <BaseIntermediateOutputPath>obj/$(MSBuildProjectName)/</BaseIntermediateOutputPath>
-    <BaseOutputPath>bin/$(MSBuildProjectName)/</BaseOutputPath>
-  </PropertyGroup>
-</Project>

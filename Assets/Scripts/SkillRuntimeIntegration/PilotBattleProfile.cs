@@ -73,7 +73,10 @@ namespace SkillRuntime.Integration
         public PilotConfiguration ValidateAndFreeze()
         {
             if (!normalGameplay && !Debug.isDebugBuild) throw new InvalidOperationException("Development profiles require a development build.");
-            if (!catalog || !comboContainer || !exportedJson || allowedCombos == null || allowedCombos.Length == 0 || allowedCombos.Any(c => !c)
+            if (!catalog) throw new InvalidOperationException(name + ": Catalog is missing. Restore the referenced CharacterSkillCatalog asset and its original .meta GUID, or explicitly assign a replacement catalog.");
+            if (!comboContainer) throw new InvalidOperationException(name + ": Combo Container is missing. Assign the real character's ComboContainerData.");
+            if (!exportedJson) throw new InvalidOperationException(name + ": Exported Json is missing. Assign this catalog's exported skill JSON.");
+            if (allowedCombos == null || allowedCombos.Length == 0 || allowedCombos.Any(c => !c)
                 || allowedCombos.Distinct().Count() != allowedCombos.Length || !comboContainer.comboDatas.Take(allowedCombos.Length).SequenceEqual(allowedCombos))
                 throw new InvalidOperationException("Pilot requires a mapped consecutive prefix of the real combo container; missing successors remain rejected.");
             if (testHP <= 0 || testHP > 16777216 || testHurtRadius <= 0 || string.IsNullOrEmpty(testParameterNotice)) throw new InvalidOperationException("Explicit bounded test HP/HurtBox required.");

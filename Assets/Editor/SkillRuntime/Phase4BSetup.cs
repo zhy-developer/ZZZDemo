@@ -109,16 +109,4 @@ public static class Phase4BSetup
             EditorUtility.SetDirty(combo);
         }
     }
-    public static void RunSceneBatch()
-    {
-        try
-        {
-            Prepare();
-            UnityEditor.SceneManagement.EditorSceneManager.OpenScene(PilotArenaSetup.ScenePath);
-            var arena = UnityEngine.Object.FindObjectOfType<PilotDevelopmentArena>();
-            arena.produceLoopbackFrames = false; arena.automatedChecks = true; arena.phase4BChecks = true;
-            EditorApplication.isPlaying = true;
-        }
-        catch (Exception ex) { Debug.LogException(ex); EditorApplication.Exit(1); }
-    }
 }

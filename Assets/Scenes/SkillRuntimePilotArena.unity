@@ -225,7 +225,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1364412965}
-  - component: {fileID: 1364412964}
   m_Layer: 0
   m_Name: Phase 4A Development Arena
   m_TagString: Untagged
@@ -233,22 +232,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1364412964
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1364412963}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6badc33dac18b9a4ba363ee570877eb4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  profile: {fileID: 11400000, guid: 71e77768517ae9a46a53dcfef0cdff3c, type: 2}
-  mode: 1
-  produceLoopbackFrames: 1
-  automatedChecks: 0
 --- !u!4 &1364412965
 Transform:
   m_ObjectHideFlags: 0

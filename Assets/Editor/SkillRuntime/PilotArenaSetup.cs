@@ -1,18 +1,15 @@
 using System;
-using System.IO;
 using System.Linq;
 using SkillConfig;
 using SkillConfig.Editor;
 using SkillRuntime.Integration;
 using UnityEditor;
-using UnityEditor.SceneManagement;
 using UnityEngine;
 
 public static class PilotArenaSetup
 {
     public const string ProfilePath = "Assets/ScriptableObject/SkillConfigs/MiyabiPhase4A_Development.asset";
-    public const string ScenePath = "Assets/Scenes/SkillRuntimePilotArena.unity";
-    [MenuItem("Tools/Skill Runtime/Prepare Phase 4A Arena")]
+    [MenuItem("Tools/Skill Runtime/Prepare Phase 4A Profile")]
     public static void Prepare()
     {
         if (EditorApplication.isPlayingOrWillChangePlaymode) throw new InvalidOperationException("Exit Play Mode first.");
@@ -35,13 +32,7 @@ public static class PilotArenaSetup
         profile.sealedJsonHash = SkillConfigHash.Sha256(profile.exportedJson.text); profile.sealedSourceHash = profile.SourceHash();
         EditorUtility.SetDirty(profile); AssetDatabase.SaveAssetIfDirty(profile);
         profile.ValidateAndFreeze();
-        if (!Application.isBatchMode && !EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
-        var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
-        var arena = new GameObject("Phase 4A Development Arena").AddComponent<PilotDevelopmentArena>(); arena.profile = profile;
-        var floor = GameObject.CreatePrimitive(PrimitiveType.Plane); floor.name = "Development arena floor"; floor.transform.localScale = new Vector3(4, 1, 4);
-        var light = new GameObject("Arena light").AddComponent<Light>(); light.type = LightType.Directional; light.transform.rotation = Quaternion.Euler(45, 20, 0);
-        EditorSceneManager.SaveScene(scene, ScenePath);
-        Debug.Log("[PilotSetup] Ready scene=" + ScenePath + " profile=" + ProfilePath + " gates are saved in the ORIGINAL ComboData.skill; no parallel definitions.");
+        Debug.Log("[PilotSetup] Ready profile=" + ProfilePath + " gates are saved in the ORIGINAL ComboData.skill; no parallel definitions.");
     }
     internal static void SeedVerifiedGates(ComboData combo)
     {
@@ -76,14 +67,5 @@ public static class PilotArenaSetup
         if (!combo.skill.tracks.Any(t => t.id == "pilot-gates")) combo.skill.tracks.Add(new SkillTrack { id = "pilot-gates", name = "Imported logic gates (33ms)", kind = TrackKind.Event });
         foreach (var p in proposals.Where(p => p.frame < duration)) if (!combo.skill.events.Any(e => e.eventId == p.eventId)) combo.skill.events.Add(p);
         EditorUtility.SetDirty(combo); AssetDatabase.SaveAssetIfDirty(combo);
-    }
-    public static void RunBatch()
-    {
-        try
-        {
-            Prepare(); var arena = UnityEngine.Object.FindObjectOfType<PilotDevelopmentArena>(); arena.produceLoopbackFrames = false; arena.automatedChecks = true;
-            EditorApplication.isPlaying = true;
-        }
-        catch (Exception ex) { Debug.LogException(ex); EditorApplication.Exit(1); }
     }
 }

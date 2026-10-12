@@ -6,6 +6,7 @@ using SkillRuntime.Integration;
 using UnityEditor;
 using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -14,6 +15,23 @@ public static class PilotProfileMaintenance
 {
     [MenuItem("Tools/Skill Runtime/Validate and Seal Selected Profile")]
     public static void SealSelected() => Seal(Selection.activeObject as PilotBattleProfile);
+
+    [MenuItem("Tools/Skill Runtime/Build Windows Player (Clean Cache)")]
+    public static void BuildCleanPlayer()
+    {
+        if (EditorApplication.isPlayingOrWillChangePlaymode) throw new InvalidOperationException("Leave Play Mode before building.");
+        if (EditorUserBuildSettings.activeBuildTarget != BuildTarget.StandaloneWindows64)
+            throw new InvalidOperationException("Switch Build Settings to Windows x86_64 first.");
+        string path = EditorUtility.SaveFilePanel("Clean Windows build", "Builds", "ARPGDEMO", "exe");
+        if (string.IsNullOrEmpty(path)) return;
+        var options = BuildOptions.CleanBuildCache;
+        if (EditorUserBuildSettings.development) options |= BuildOptions.Development;
+        var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions {
+            scenes = EditorBuildSettings.scenes.Where(s => s.enabled).Select(s => s.path).ToArray(),
+            target = BuildTarget.StandaloneWindows64, locationPathName = path, options = options });
+        if (report.summary.result != BuildResult.Succeeded) throw new BuildFailedException("Clean build failed: " + report.summary.result);
+        Debug.Log("[GameplayBuild] Clean build complete: " + path);
+    }
 
     public static void CheckExport(PilotBattleProfile profile)
     {
@@ -77,12 +95,35 @@ public sealed class PilotBattleProfileInspector : Editor
 }
 
 // Read-only build gate. Does not inject settings or mutate the BattleScene build copy.
-public sealed class GameplayBuildValidation : IProcessSceneWithReport
+public sealed class GameplayBuildValidation : IProcessSceneWithReport, IPreprocessBuildWithReport
 {
     public int callbackOrder => 20000;
+    public void OnPreprocessBuild(BuildReport report)
+    {
+        // IProcessScene alone is insufficient: incremental builds can reuse serialized scenes
+        // without invoking it. Validate the saved entry on EVERY build, without saving a scene.
+        if (!EditorBuildSettings.scenes.Any(s => s.enabled && s.path == "Assets/Scenes/BattleScene.unity")) return;
+        const string path = "Assets/Scenes/BattleScene.unity";
+        var active = SceneManager.GetActiveScene();
+        var scene = SceneManager.GetSceneByPath(path);
+        bool alreadyOpen = scene.IsValid() && scene.isLoaded;
+        if (alreadyOpen && scene.isDirty) throw new BuildFailedException("Save BattleScene before validating its build configuration.");
+        if (!alreadyOpen) scene = EditorSceneManager.OpenScene(path, OpenSceneMode.Additive);
+        try { ValidateScene(scene, report); }
+        finally
+        {
+            if (!alreadyOpen) EditorSceneManager.CloseScene(scene, true);
+            if (active.IsValid() && active.isLoaded) SceneManager.SetActiveScene(active);
+        }
+        Debug.Log("[GameplayBuildPreflight] Saved BattleScene validated (also on incremental builds).");
+    }
     public void OnProcessScene(Scene scene, BuildReport report)
     {
         if (report == null || scene.path != "Assets/Scenes/BattleScene.unity") return;
+        ValidateScene(scene, report);
+    }
+    internal static void ValidateScene(Scene scene, BuildReport report)
+    {
         var manager = scene.GetRootGameObjects().SelectMany(g => g.GetComponentsInChildren<GameManager>(true)).Single();
         var settings = manager.GetComponent<PilotMatchSettings>();
         if (!settings) throw new BuildFailedException("BattleScene must declare its battle mode explicitly.");

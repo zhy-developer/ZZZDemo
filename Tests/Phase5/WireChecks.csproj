@@ -1,4 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net8.0</TargetFramework><EnableDefaultCompileItems>false</EnableDefaultCompileItems><ImplicitUsings>enable</ImplicitUsings></PropertyGroup>
-  <ItemGroup><Compile Include="WireChecks.cs"/><Compile Include="../../Assets/Scripts/MatchLifecycle/*.cs"/><Compile Include="../../Assets/Scripts/Net/Message/GameProtocol.cs"/><Reference Include="protobuf-net"><HintPath>../../Tools/protobuf-net.dll</HintPath></Reference></ItemGroup>
-</Project>
