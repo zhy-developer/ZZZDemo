@@ -1,0 +1,28 @@
+using System;
+using System.Collections;
+using UnityEngine;
+public sealed class Phase5ServerDriver : MonoBehaviour
+{
+    float nextSample;
+    void Update() {
+        if(Time.realtimeSinceStartup<nextSample)return;nextSample=Time.realtimeSinceStartup+15;
+        var flags=System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic;
+        var battles=(IDictionary)typeof(BattleManage).GetField("dic_battles",flags).GetValue(BattleManage.Instance);
+        var udp=UdpManager.Instance;var gate=typeof(UdpManager).GetField("socketLock",flags).GetValue(udp);int routes;
+        lock(gate)routes=((IDictionary)typeof(UdpManager).GetField("clients",flags).GetValue(udp)).Count;
+        Debug.Log("[Phase5ServerResource] seconds="+Time.realtimeSinceStartup+" retainedBattles="+battles.Count+" routes="+routes+" managed="+GC.GetTotalMemory(false));
+    }
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+    static void Boot() {
+        if (Array.IndexOf(Environment.GetCommandLineArgs(), "-phase5TestServer") < 0) return;
+        var go = new GameObject("Phase5 owned test server"); DontDestroyOnLoad(go); go.AddComponent<Phase5ServerDriver>();
+    }
+    IEnumerator Start() {
+        Application.runInBackground = true; Application.SetStackTraceLogType(LogType.Log, StackTraceLogType.None);
+        yield return null; // after UICon.Start; no PlayerPrefs changes
+        ServerConfig.battleUserNum = 2; ServerTcp.Instance.StartServer();
+        Debug.Log("PHASE5_SERVER_READY players=2");
+        yield return new WaitForSecondsRealtime(2400); Application.Quit();
+    }
+}
+

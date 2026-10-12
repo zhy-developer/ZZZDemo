@@ -1,0 +1,29 @@
+using System;
+using System.Linq;
+using UnityEditor;
+using UnityEditor.Build.Reporting;
+using UnityEngine;
+
+public static class DeliveryBuild
+{
+    public static void Run()
+    {
+        try
+        {
+            var args = Environment.GetCommandLineArgs();
+            bool server = Array.IndexOf(args, "-deliveryServer") >= 0;
+            bool release = Array.IndexOf(args, "-deliveryRelease") >= 0;
+            string path = "Builds/FinalDelivery" + (release ? "-Release/" : "/") + (server ? "ZZZServer.exe" : "ARPGDEMO.exe");
+            System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(path));
+            // Exactly the saved build scenes. No IProcessScene injection, profile clone or test HP.
+            var result = BuildPipeline.BuildPlayer(new BuildPlayerOptions {
+                scenes = EditorBuildSettings.scenes.Where(s => s.enabled).Select(s => s.path).ToArray(),
+                locationPathName = path, target = BuildTarget.StandaloneWindows64,
+                options = release ? BuildOptions.None : BuildOptions.Development });
+            if (result.summary.result != BuildResult.Succeeded) throw new Exception(result.summary.result.ToString());
+            Debug.Log("DELIVERY_BUILD_COMPLETE server="+server+" release="+release+" path="+path);
+            EditorApplication.Exit(0);
+        }
+        catch (Exception e) { Debug.LogException(e); EditorApplication.Exit(1); }
+    }
+}

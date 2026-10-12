@@ -19,7 +19,9 @@ namespace SkillConfig.Editor.Tests
             Check(source && source.comboDatas.Count==6,"real Miyabi six-step container");
             Check(source.comboDatas.Select(x=>x.name).SequenceEqual(Enumerable.Range(1,6).Select(i=>"Unagi_Normal_"+i)),"real reference order Normal1 through Normal6");
             Check(source.DodgeATKData && source.DodgeATKData.name=="Unagi_Rush_ATK" && !source.BackDodgeATKData,"real dodge entry and absent back entry");
-            Check(SkillComboGraphDraft.Label(source.comboDatas[0]).Contains("miyabi-normal-1") && SkillComboGraphDraft.Label(source.comboDatas[2]).Contains("Legacy"),"registered ID and Legacy labels");
+            Check(SkillComboGraphDraft.Label(source.comboDatas[0]).Contains("miyabi-normal-1") &&
+                SkillComboGraphDraft.Label(source.comboDatas[2]).Contains("miyabi-normal-3") &&
+                SkillComboGraphDraft.Label(source.comboDatas[5]).Contains("Legacy"),"Phase4B registered Normal1/3 IDs and unregistered Normal6 Legacy label");
             if(!AssetDatabase.IsValidFolder(Root)) AssetDatabase.CreateFolder("Assets","GraphChecks");
             if(AssetDatabase.LoadAssetAtPath<ComboContainerData>(Path)) AssetDatabase.DeleteAsset(Path);
             var copy=Object.Instantiate(source); AssetDatabase.CreateAsset(copy,Path); AssetDatabase.SaveAssetIfDirty(copy);

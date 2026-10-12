@@ -1,0 +1,66 @@
+Phase 5 实际文件清单（客户端根 D:/GitHub/ARPGDEMO）
+
+已修改：
+M D:/GitHub/ARPGDEMO/Assets/Editor/SkillEditor/SceneHitBox/SkillShapeHandles.cs
+M D:/GitHub/ARPGDEMO/Assets/Editor/SkillEditor/Tests/SkillComboGraphChecks.cs
+M D:/GitHub/ARPGDEMO/Assets/Editor/SkillEditor/Tests/SkillEditorPhase2CChecks.cs
+M D:/GitHub/ARPGDEMO/Assets/Editor/SkillEditor/Tests/SkillGraphInteractionChecks.cs
+M D:/GitHub/ARPGDEMO/Assets/Editor/SkillEditor/Tests/SkillPresentationResourceChecks.cs
+M D:/GitHub/ARPGDEMO/Assets/Editor/SkillEditor/Tests/SkillSlashTimelineChecks.cs
+M D:/GitHub/ARPGDEMO/Assets/Scripts/FrameSync/Battle/BattleData.cs
+M D:/GitHub/ARPGDEMO/Assets/Scripts/FrameSync/Managers/BattleManager.cs
+M D:/GitHub/ARPGDEMO/Assets/Scripts/FrameSync/Managers/RoleBase.cs
+M D:/GitHub/ARPGDEMO/Assets/Scripts/FrameSync/RootMotionBake/RootMotionPlayback.cs
+M D:/GitHub/ARPGDEMO/Assets/Scripts/SkillRuntimeIntegration/PilotBattleSession.cs
+M D:/GitHub/ARPGDEMO/Tests/SkillEditor/RunPhase2CChecks.ps1
+
+新增：
+A D:/GitHub/ARPGDEMO/Assets/Scripts/SkillRuntimeIntegration/PilotFrameDiagnostics.cs
+A D:/GitHub/ARPGDEMO/Assets/Scripts/SkillRuntimeIntegration/PilotFrameDiagnostics.cs.meta
+A D:/GitHub/ARPGDEMO/Tests/Phase5/AllocationProbe.cs.txt
+A D:/GitHub/ARPGDEMO/Tests/Phase5/AssertProjectAvailable.ps1
+A D:/GitHub/ARPGDEMO/Tests/Phase5/Build.ps1
+A D:/GitHub/ARPGDEMO/Tests/Phase5/ClientBuild.cs.txt
+A D:/GitHub/ARPGDEMO/Tests/Phase5/ClientDriver.cs.txt
+A D:/GitHub/ARPGDEMO/Tests/Phase5/Directory.Build.props
+A D:/GitHub/ARPGDEMO/Tests/Phase5/EditorSetup.cs.txt
+A D:/GitHub/ARPGDEMO/Tests/Phase5/FaultProxy.cs.txt
+A D:/GitHub/ARPGDEMO/Tests/Phase5/FrameRecorder.cs.txt
+A D:/GitHub/ARPGDEMO/Tests/Phase5/LifecycleChecks.cs.txt
+A D:/GitHub/ARPGDEMO/Tests/Phase5/LifecycleEntry.cs.txt
+A D:/GitHub/ARPGDEMO/Tests/Phase5/PrepareEditor.ps1
+A D:/GitHub/ARPGDEMO/Tests/Phase5/RunEditor.ps1
+A D:/GitHub/ARPGDEMO/Tests/Phase5/RunLifecycle.ps1
+A D:/GitHub/ARPGDEMO/Tests/Phase5/RunNetwork.ps1
+A D:/GitHub/ARPGDEMO/Tests/Phase5/RunSceneRegression.ps1
+A D:/GitHub/ARPGDEMO/Tests/Phase5/SceneRegression.cs.txt
+A D:/GitHub/ARPGDEMO/Tests/Phase5/ServerBuild.cs.txt
+A D:/GitHub/ARPGDEMO/Tests/Phase5/ServerDriver.cs.txt
+A D:/GitHub/ARPGDEMO/Tests/Phase5/SummarizeRun.ps1
+A D:/GitHub/ARPGDEMO/Tests/Phase5/TraceChecks.cs
+A D:/GitHub/ARPGDEMO/Tests/Phase5/TraceChecks.csproj
+A D:/GitHub/ARPGDEMO/Tests/Phase5/VerifyNetwork.ps1
+A D:/GitHub/ARPGDEMO/Tests/Phase5/WireChecks.cs
+A D:/GitHub/ARPGDEMO/Tests/Phase5/WireChecks.csproj
+A D:/GitHub/ARPGDEMO/docs/SkillRuntime_Phase5_ManualAcceptance.txt
+A D:/GitHub/ARPGDEMO/docs/SkillRuntime_Phase5_Plan.txt
+A D:/GitHub/ARPGDEMO/docs/SkillRuntime_Phase5_Report.txt
+A D:/GitHub/ARPGDEMO/docs/SkillRuntime_Phase5_Files.txt
+
+服务端本批修改（不是整个服务端未提交diff）：
+M D:/GitHub/ZZZServer/Assets/Scripts/MarsNet/MarsUDP/UdpManager.cs
+M D:/GitHub/ZZZServer/Assets/Scripts/BattleService.cs
+
+主要职责：
+BattleData/BattleManager：缺帧恢复、输入不可覆盖、有界连续补帧。
+PilotFrameDiagnostics/PilotBattleSession/RoleBase/RootMotionPlayback：可选诊断观察与具名权威状态，旧运行规则不变。
+SkillShapeHandles：缺角色目录或HurtBox时跳过Hurt轮廓，避免中断攻击盒编辑。
+五个Editor测试文件：修复当前已迁移技能/已移动资源与旧夹具假设不一致，不改正式资产。
+Tests/Phase5：阶段内有界构建、双端故障代理、输入/状态比较、协议与Unity测试入口、证据验证/性能汇总。
+Tests/SkillEditor/RunPhase2CChecks.ps1：增加PrepareOnly开关供本批隔离测试复用。
+docs：计划、报告、人工验收清单及本清单。
+
+Git差异：客户端原跟踪12文件 +93/-16（详见Logs/Phase5/ClientDiff-Tracked.txt），新增文件单列；未提交。
+服务端Phase4C既有修改保留，仅对照Logs/Phase5/UdpManager-BeforeFix.cs.txt与BattleService-BeforeFix.cs.txt审查本批。
+Logs、Builds、Temp及.NET bin/obj为忽略的本地证据/产物；不会自动随Git传递，需单独保存本轮证据。
+测试没有修改正式SO、JSON、Prefab、场景、Animator或网络生成协议。

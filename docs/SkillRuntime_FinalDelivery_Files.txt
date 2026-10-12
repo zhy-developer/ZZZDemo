@@ -1,0 +1,79 @@
+最终集成收口：本轮文件清单与回退
+根目录D:/GitHub/ARPGDEMO；服务端D:/GitHub/ZZZServer。
+此前Phase5文件清单独立保留于SkillRuntime_Phase5_Files.txt；两批均尚未提交，不把整份git diff算成本轮。
+
+客户端修改（9个已跟踪文件）
+Assets/Scenes/BattleScene.unity
+  保存正常模式组件与Miyabi_NormalGameplay引用。GameManager实际位于Main Camera对象。
+  场景保存的diff还包含雾材质序列化与UI布局记录更新；不整体还原可能含用户保存内容的场景。
+  真实双端回归使用该最终保存场景；本轮没有手工调整地图边界/出生点/Animator。
+Assets/ScriptableObject/SkillConfigs/MiyabiPhase1.asset
+  显式HurtBox5000/height10000/offset0；迁移备注说明当前范围，仍PartialPilot。
+Assets/Resources/SkillConfigs/Character_miyabi_Skills.json
+  通过原Exporter重新生成HurtBox、备注、摘要与诊断，Schema1不变。
+Assets/ScriptableObject/SkillConfigs/MiyabiPhase4A_Development.asset
+  保留开发Profile；normalGameplay=false，新目录/JSON对应的源封印更新。
+Assets/Scripts/SkillRuntimeIntegration/PilotBattleProfile.cs
+  正常范围标识、Release能力、导出HurtBox、表现能力检查与范围内就绪日志。
+Assets/Scripts/SkillRuntimeIntegration/PilotMatchSettings.cs
+  正常玩法范围HUD，与开发参数HUD明确区分。
+Assets/Scripts/SkillRuntimeIntegration/PilotBattleSession.cs
+  绑定前检查实际骨骼；绑定/清理本局对手输入引用。文件还含此前Phase5诊断改动，回退不能整文件覆盖。
+Assets/Scripts/Game/Fsm/Player/Player.cs
+  本地输入使用本局逻辑目标/逻辑朝向，不依赖已停止更新的旧黑板或动画模型Transform.forward。
+Assets/Scripts/Game/Input/PlayerNetworkInput.cs
+  新模式静止普攻走新的输入瞄准；未开放动作不进入本地队列，不清理正常攻击缓存；Legacy保持原捕获顺序。
+
+客户端新增
+Assets/ScriptableObject/SkillConfigs/Miyabi_NormalGameplay.asset及.meta
+  正常对局配置引用，不复制技能定义/连招定义。用户允许的初始HP100与范围Normal1～5。
+Assets/Editor/SkillRuntime/PilotProfileMaintenance.cs及.meta
+  明确校验/更新摘要命令、Profile Inspector、只读构建前配置检查；无自动迁移/自动导出。
+
+服务端仅本轮新增修改
+Assets/Scripts/LogScene/UICon.cs
+Assets/Scripts/MarsNet/ServerConfig.cs
+  默认2人并拒绝非2人。相对原基线统计2文件+9/-5，部分为文本换行差异。
+  修改前快照：Logs/FinalDelivery/ServerUI-Before.cs.txt、ServerConfig-Before.cs.txt。
+  其余服务端dirty文件均属于既有Phase4C/5，不是本轮新改。自动生成的UnityConnectSettings已备份并回到已核对干净基线。
+
+复现与证据工具（Tests/FinalDelivery，不随游戏作为正式脚本导入）
+SetupAndChecks.cs.txt：一次性初始授权参数/场景配置，以及隔离Profile校验、Undo/Redo、保存重开断言。
+  Setup仅供本轮交付建立初值，后续用户改参数后不可把它当日常更新命令重复执行。
+Build.cs.txt：按保存的EditorBuildSettings普通构建，无场景配置注入器。
+ClientDriver.cs.txt：Development测试中调用真实登录/匹配按钮和原键鼠Action；不注入操作/入站帧/HP/配置。
+ServerDriver.cs.txt：Development测试中验证正常2人并调用原UICon.StartServer，不覆盖人数。
+RunUnity.ps1：有界Unity executeMethod/构建，保存进程所有权、日志与退出结果。
+RunNetwork.ps1：启动本次拥有的两客户端/独立服务器，结束后只清理这些进程，调用既有TraceChecks。
+VerifyNetwork.ps1：正常入口、范围、输入、终局、确认、退役、重新匹配、逐帧记录断言。
+复用Tests/Phase5/FrameRecorder.cs.txt和TraceChecks.csproj，不创建第二种状态摘要协议。
+临时暂存到Assets的测试/构建脚本、meta和__DeliveryCheck测试资产交付前均移除。
+
+复现检查（PowerShell，客户端根目录；先保存并关闭对应Unity编辑器）：
+  将SetupAndChecks.cs.txt临时复制为Assets/Editor/SkillRuntime/DeliveryChecks.cs。
+  ./Tests/FinalDelivery/RunUnity.ps1 -Method FinalDeliveryChecks.Run -Name Checks-Recheck
+  ./Tests/FinalDelivery/RunUnity.ps1 -Method FinalDeliveryChecks.Reopen -Name Reopen-Recheck
+  成功后移除自己暂存的DeliveryChecks.cs/.meta；名称必须使用尚未存在的新日志名。
+  不执行Setup，以免重置用户随后调整的初值；Run和Reopen成对运行，后者验证并删除专用Scratch资产。
+复现自动双端时，客户端临时导入ClientDriver.cs.txt和Tests/Phase5/FrameRecorder.cs.txt为同名类.cs，
+  服务端临时导入ServerDriver.cs.txt；两端Editor目录导入Build.cs.txt为DeliveryBuild.cs。
+  使用RunUnity.ps1 -Method DeliveryBuild.Run分别构建客户端及带-Server的服务端，均不带-Release。
+  运行./Tests/FinalDelivery/RunNetwork.ps1 -RunName NormalEntry-Recheck（必须新名称且13001无旧服务器）。
+  完成后仅删除自己暂存的文件及.meta。发布构建先移除所有驱动，再以-Release分别重建两端。
+  Build模板是临时Editor工具；这些步骤需要服务端工程访问权限，不能当日常正常玩法启动步骤。
+
+文档
+docs/SkillRuntime_FinalDelivery.txt：验收状态、范围、版本、真实缺陷、调用链、证据及限制。
+docs/SkillRuntime_Operations.txt：正常启动/打包、编辑导出/摘要、诊断、退出/重新进入、回退。
+docs/SkillRuntime_FinalDelivery_Files.txt：本文件。
+日志/构建为本地证据产物，分别在Logs/FinalDelivery、Builds/FinalDelivery和Builds/FinalDelivery-Release。
+
+针对性回退
+1. 不在已运行对局中热切换。等待双方退役，备份当前SO/JSON/Profile与同版本构建。
+2. 若只需回退默认入口，在BattleScene同一组件把mode改为Legacy，保存并重建双方；保留当前协议服务端。
+   构建会给显式Legacy警告，不能将此构建当本次正常新系统交付。Legacy完整回归本轮未执行。
+3. 若回退本轮源码，按上述文件/具体hunk操作，保留PilotBattleSession已有Phase5诊断改动。
+   Server UI/Config有本轮修改前快照；其他服务端Phase4C/5改动不得被一并撤销。
+4. 新目录HurtBox与JSON封印是一组变更，不能只换JSON或Profile；不匹配会被启动/构建检查拒绝。
+5. 新旧二进制、规则与配置必须双方一致；不允许一端Legacy另一端新模式，不能清理正在等待确认的match来伪造新局。
+6. 本轮未建立Git提交，git reset --hard会丢掉此前已验收和用户修改，不能作为推荐回退命令。

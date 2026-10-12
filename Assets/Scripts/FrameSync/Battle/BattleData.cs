@@ -41,6 +41,8 @@ public class BattleData{
 
 	private int curFramID;
     public int NextFrameID => curFramID + 1;
+	public int HighestReceivedFrame => maxFrameID;
+	public int PendingFrameSpan => System.Math.Max(0, maxFrameID - curFramID);
 	private int maxFrameID;
 	private int maxSendNum;
 
@@ -308,12 +310,13 @@ public class BattleData{
 	}
 
 	public void AddNewFrameData(int _frameID,AllPlayerOperation _op){
+		if (_frameID <= 0 || _op == null || dic_frameDate.ContainsKey(_frameID)) return;
 		dic_frameDate [_frameID] = _op;
 		//for (int i = maxFrameID + 1; i < _frameID; i++) { // 
 		//	lackFrame.Add (i);
 		//	Debug.LogError ("缺失 :" + i);
 		//}
-		maxFrameID = _frameID;
+		maxFrameID = System.Math.Max(maxFrameID, _frameID);
 
 		//发送缺失帧数据
 		//if (lackFrame.Count > 0) {
@@ -328,8 +331,9 @@ public class BattleData{
 
 	public void AddLackFrameData (int _frameID, AllPlayerOperation _newOp)
 	{
-		//删除缺失的帧记录
-		if (lackFrame.Contains(_frameID)) {
+		// Scope was checked by BattleManager. A requested replay is also valid when the
+		// historical lackFrame list was never populated. Never replace accepted input.
+		if (_frameID > curFramID && _frameID <= maxFrameID && _newOp != null && !dic_frameDate.ContainsKey(_frameID)) {
 			dic_frameDate [_frameID] = _newOp;
 			lackFrame.Remove (_frameID);
 			Debug.Log ("补上 :" + _frameID);

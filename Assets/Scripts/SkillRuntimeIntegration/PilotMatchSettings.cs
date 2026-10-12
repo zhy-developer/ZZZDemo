@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace SkillRuntime.Integration
 {
-    // Add to the GameManager object in a DEVELOPMENT battle scene. Absent/default means Legacy.
+    // Saved on BattleScene's GameManager. Legacy is an explicit per-match rollback option.
     public sealed class PilotMatchSettings : MonoBehaviour
     {
         public BattleAuthorityMode mode = BattleAuthorityMode.Legacy;
@@ -18,7 +18,8 @@ namespace SkillRuntime.Integration
             var session = GetComponent<RoleManager>()?.Pilot;
             if (session == null) return;
             GUILayout.BeginArea(new Rect(10, 10, 720, 115), GUI.skin.box);
-            GUILayout.Label("DEVELOPMENT DeterministicPilot / test HP and HurtBox / " + session.TerminalResult);
+            GUILayout.Label((profile && profile.normalGameplay ? "新战斗系统 · 星见雅移动 / Normal1–5" : "DEVELOPMENT DeterministicPilot / test HP and HurtBox") + " / " + session.TerminalResult);
+            if (profile && profile.normalGameplay) GUILayout.Label("Normal6、闪避攻击、Skill、FinishSkill 尚未开放；第五段结束后可重新普攻。");
             for (int id = 1; id <= 2; id++)
             {
                 var health = session.Health(id);

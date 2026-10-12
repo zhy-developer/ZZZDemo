@@ -1,4 +1,4 @@
-param([string]$Method = 'SkillConfig.Editor.Tests.SkillEditorPhase2CChecks.Safety', [string]$LogName = 'Safety', [switch]$NoQuit)
+param([string]$Method = 'SkillConfig.Editor.Tests.SkillEditorPhase2CChecks.Safety', [string]$LogName = 'Safety', [switch]$NoQuit, [switch]$PrepareOnly)
 $ErrorActionPreference = 'Stop'
 $repo = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
 $harness = Join-Path $repo 'Temp/SkillEditorPhase2C'
@@ -35,6 +35,7 @@ $manifest = '{"dependencies":{"com.unity.modules.animation":"1.0.0","com.unity.m
 [IO.File]::WriteAllText((Join-Path $harness 'Packages/manifest.json'), $manifest)
 & (Join-Path $PSScriptRoot 'PrepareGraphHarness.ps1') -Repo $repo -Harness $harness
 & (Join-Path $PSScriptRoot 'PreparePresentationHarness.ps1') -Repo $repo -Harness $harness
+if ($PrepareOnly) { Write-Output $harness; exit 0 }
 $unity = 'C:/Program Files/Unity/Hub/Editor/2022.3.62f2c1/Editor/Unity.exe'
 $log = Join-Path $repo ('Logs/SkillEditor-Phase2C-' + $LogName + '.log')
 $quit = if ($NoQuit) { '' } else { '-quit ' }

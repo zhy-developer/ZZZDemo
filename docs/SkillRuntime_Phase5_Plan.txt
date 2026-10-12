@@ -1,0 +1,38 @@
+Phase 5 bounded execution matrix (2026-10-12)
+
+Baseline: client 0a9a27f, initially clean. Server e42284f plus existing Phase 4C changes;
+Logs/Phase5/ServerBaseline.patch and ServerBaseline.txt preserve that starting point.
+Windows x64, Unity 2022.3.62f2c1, 33ms, real LoginScene -> MainScene -> BattleScene.
+Approved pilot: Miyabi Normal1..5. PartialPilot/BattleReady=false stays protected.
+Normal6/Rush/Skill/Finish and missing authored SFX remain deferred; no invented gameplay.
+
+M1: .NET config, 3B geometry/identity, 3C batch rules, 4B mapping, 4C agreement.
+    One fresh full run; repeat only affected checks after changes. Logs/Phase5/*Baseline.txt.
+M2: Unity existing real Player 4B and 4C lifecycle suites, one run on final sources.
+M3: isolated Unity editor 2B/2C/2D timeline, Graph, presentation and reopen suites.
+    No changes to production SO/Prefab/Scene for test fixtures.
+M4: actual server + two Windows64 Development clients, terminal Winner1/2/Draw,
+    alternate render pacing; bounded input/state traces at post-commit pre-presentation.
+M5: real UDP proxy (separate client endpoint), deterministic finite packet schedule:
+    20ms base delay + 0..60ms jitter, one 600ms receive blackout, occasional drop,
+    duplicate and reorder; drop first result report/confirmation. TCP remains ordered.
+    Separately run synthetic protocol clients against real server for conflicts,
+    one reporter, incompatible ready configuration/rules and application duplicates.
+M6: continuous 20 complete matches across >=1800 seconds; no more than 2400 seconds
+    client budget. Explicit test-only HP/hurt fixtures retained in build copies.
+    Match completion and duration both required; server retention cleanup sampled.
+M7: built-client authority frame timings, render-batch timings, backlog, work counts,
+    allocations/GC, process memory, owned presentation counts; trace-on/off separated.
+    No project performance budget exists: baseline only, performance acceptance pending.
+
+Trace: normalized consumed inputs first, then stable named authority fields; Match/Round/
+frame/stage key. Old terminal hash remains unchanged (protocol compatibility). New diagnostic
+snapshot includes motion cursors and residuals. Records bounded, never silently truncate a pass.
+Failures and first field-level differences kept with previous context and exact input records.
+
+4C evidence remains historical, not a fresh Phase 5 pass. Manual feedback is basic acceptance,
+not confirmation of every historical pending test. Pending product decisions: disconnect/timeout
+adjudication, Draw scoring, reconnect recovery, multi-round series. Cosmetic stepped animation /
+missing locomotion remain Phase 4B issues. Critical correctness/cleanup failures block acceptance.
+
+All statuses begin NOT RUN; final report replaces plans with actual evidence and limitations.

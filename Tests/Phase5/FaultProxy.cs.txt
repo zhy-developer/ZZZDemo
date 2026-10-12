@@ -1,0 +1,62 @@
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Net;
+using System.Net.Sockets;
+using System.Threading;
+using GameProtocol;
+using UnityEngine;
+
+// Real loopback UDP hop: bytes travel through both sockets, never injected into frame consumers.
+public sealed class Phase5FaultProxy : IDisposable
+{
+    sealed class Packet { public byte[] Data; public long Due; public bool Up; public IPEndPoint Target; }
+    readonly UdpClient local=new UdpClient(0), upstream=new UdpClient(0);
+    readonly List<Packet> queue=new List<Packet>(); readonly Thread thread; readonly bool faults;
+    volatile bool running=true; uint rng=0x51f15e; int serial; string match; byte[] stale;
+    IPEndPoint client; bool reportDropped, confirmDropped; readonly Stopwatch clock=Stopwatch.StartNew(); long matchStart;
+    public int Port => ((IPEndPoint)local.Client.LocalEndPoint).Port;
+    public long Received, Sent, Dropped, Duplicated, Blackout, StaleInjected; public string Error;
+    public Phase5FaultProxy(string ip,int port,bool enabled) {
+        // Retiring a match closes the real client's UDP endpoint. Delayed datagrams
+        // to that endpoint may return ICMP; this is packet loss, not proxy failure.
+        if(Environment.OSVersion.Platform==PlatformID.Win32NT) {
+            var suppress=(IOControlCode)unchecked((int)0x9800000C);
+            local.Client.IOControl(suppress,new byte[4],null);
+            upstream.Client.IOControl(suppress,new byte[4],null);
+        }
+        faults=enabled;upstream.Connect(ip,port);
+        thread=new Thread(Run){IsBackground=true,Name="Phase5 owned UDP fault proxy"};thread.Start();
+    }
+    void Run() { try { while(running) {
+        if(local.Available>0) { IPEndPoint source=null;var b=local.Receive(ref source);client=source;Schedule(b,true); }
+        if(upstream.Available>0) { IPEndPoint source=null;Schedule(upstream.Receive(ref source),false); }
+        long now=clock.ElapsedMilliseconds;
+        for(int i=0;i<queue.Count;) { var p=queue[i];if(p.Due>now){i++;continue;}queue.RemoveAt(i);
+            if(p.Up)upstream.Send(p.Data,p.Data.Length);else if(p.Target!=null)local.Send(p.Data,p.Data.Length,p.Target);Sent++; }
+        Thread.Sleep(1);
+    }} catch(Exception e) {if(running)Error=e.ToString();} }
+    T Read<T>(byte[] b) {using(var s=new System.IO.MemoryStream(b,3,b.Length-3))return ProtoBuf.Serializer.Deserialize<T>(s);}
+    void Schedule(byte[] data,bool up) {
+        Received++;serial++; if(data.Length<3)return;
+        if(up && data[0]==(byte)CSID.UDP_BATTLE_READY) {
+            var r=Read<UdpBattleReady>(data);
+            if(r.matchId!=match) { match=r.matchId;matchStart=clock.ElapsedMilliseconds;reportDropped=confirmDropped=false;
+                if(faults&&stale!=null) {queue.Add(new Packet{Data=stale,Up=false,Due=clock.ElapsedMilliseconds+1000,Target=client});StaleInjected++;} }
+        }
+        if(!up && data[0]==(byte)SCID.UDP_DOWN_FRAME_OPERATIONS) {
+            stale=data;
+            long elapsed=clock.ElapsedMilliseconds-matchStart;
+            if(faults&&elapsed>=4000&&elapsed<4600){Dropped++;Blackout++;return;}
+        }
+        if(faults && up && data[0]==(byte)CSID.UDP_UP_GAME_OVER && !reportDropped){reportDropped=true;Dropped++;return;}
+        if(faults && !up && data[0]==(byte)SCID.UDP_DOWN_GAME_OVER && !confirmDropped && Read<UdpDownGameOver>(data).status==1){confirmDropped=true;Dropped++;return;}
+        if(faults && serial%37==0){Dropped++;return;}
+        if(queue.Count>=4096)throw new InvalidOperationException("Bounded UDP proxy capacity exceeded");
+        rng=unchecked(rng*1664525+1013904223);
+        long due=clock.ElapsedMilliseconds+(faults?20+(rng%61):0);
+        queue.Add(new Packet{Data=data,Up=up,Due=due,Target=client});
+        if(faults&&serial%29==0){Duplicated++;queue.Add(new Packet{Data=data,Up=up,Due=due+90,Target=client});}
+    }
+    public void Dispose(){running=false;if(!thread.Join(2000))throw new Exception("Proxy thread did not stop");local.Dispose();upstream.Dispose();}
+}

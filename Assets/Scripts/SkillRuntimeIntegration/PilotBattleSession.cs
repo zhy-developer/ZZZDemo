@@ -48,6 +48,14 @@ namespace SkillRuntime.Integration
         public int FeedbackCount { get; private set; }
         public int ActiveVfx => presentation?.ActiveVfx ?? 0;
         public int ActiveSfx => presentation?.ActiveSfx ?? 0;
+        public IPilotFrameDiagnostics Diagnostics { get; set; }
+        public bool VerboseFrameLogging { get; set; } = true;
+        void Observe(Action<IPilotFrameDiagnostics> action)
+        {
+            if (Diagnostics == null) return;
+            try { action(Diagnostics); }
+            catch (Exception e) { Diagnostics = null; Debug.LogError("[PilotDiagnostics] observer detached: " + e); }
+        }
         public PilotBattleSession(PilotConfiguration configuration, IEnumerable<RoleBase> roles, long sessionKey, string networkMatchId = null)
         {
             networkMatch = networkMatchId;
@@ -60,12 +68,20 @@ namespace SkillRuntime.Integration
                 if (r.Player.playerSO.ComboData.comboData.lightCombo != config.Container) throw new InvalidOperationException("Real Player combo container differs from validated pilot.");
                 foreach (string state in config.Skills.SelectMany(s => s.Animations.Count == 0 ? new[] { s.State } : s.Animations.Select(a => a.State)).Concat(new[] { config.Idle, config.Hit, config.Death }))
                     if (string.IsNullOrEmpty(state) || !r.Player.characterAnimator.HasState(0, Animator.StringToHash(state))) throw new InvalidOperationException("Required Animator state missing: " + state);
+                foreach (var skill in config.Skills)
+                    foreach (var cue in skill.CopyPresentation().vfx.Where(c => c.attachment == AttachmentMode.Bone))
+                    {
+                        var root = r.Player.characterAnimator.transform;
+                        if (!root.Find(cue.bone) && (string.IsNullOrEmpty(cue.bone) || cue.bone.Contains("/") || root.GetComponentsInChildren<Transform>(true).Count(t => t.name == cue.bone) != 1))
+                            throw new InvalidOperationException(skill.Skill.SkillId + "/" + cue.id + ": missing/ambiguous VFX bone " + cue.bone);
+                    }
             }
             actors = ordered.Select(r => new Actor { Key = new EntityKey(sessionKey, 1, r.Player.BattleID, 1), Role = r }).ToArray();
             Runtime = new SkillFrameRuntime(actors[0].Key, actors[1].Key);
             foreach (var a in actors)
             {
                 a.Role.CancelRootMotion(); a.Role.Player.BindDeterministicPilot();
+                a.Role.Player.BindPilotOpponent(actors.Single(other => !other.Key.Equals(a.Key)).Role);
                 a.Health = a.Role.Player.GetComponent<CharacterHealthBase>() ?? a.Role.Player.gameObject.AddComponent<CharacterHealthBase>();
                 a.Health.InitializePilotHealth(config.HP);
                 a.Role.PilotFace(a.Key.BattleId == 1 ? 0 : 60);
@@ -113,6 +129,7 @@ namespace SkillRuntime.Integration
                 if (operations == null || operations.operations.Any(o => o == null || o.battleID < 1 || o.battleID > 2)
                     || operations.operations.GroupBy(o => o.battleID).Any(g => g.Count() != 1)) throw new InvalidOperationException("Malformed whole-match operation set.");
                 if (Runtime.TryBeginFrame(frame) != FrameBeginResult.Started) return false;
+                if (Diagnostics != null) Observe(d => d.Begin(frame));
                 foreach (var op in operations.operations.OrderBy(o => o.battleID))
                 {
                     var a = actors[op.battleID - 1]; a.Move = op.move >= 0 && op.move <= 120 ? op.move % 120 : 121; a.Role.PilotInput(a.Move);
@@ -163,6 +180,8 @@ namespace SkillRuntime.Integration
                     if (Nullable.Equals(a.PendingOwner, exit.Cast)) { a.PendingIndex = -1; a.PendingOwner = null; }
                 }
                 LastStateHash = SkillConfigHash.Sha256(DescribeState());
+                if (VerboseFrameLogging)
+                {
                 Debug.Log("[PilotFrame] F=" + frame + " hash=" + LastStateHash + " " + DescribePlayers());
                 Debug.Log("[PilotSettlement] F=" + frame + " records=" + Runtime.RecordCount + " accepted=" + string.Join(";", Runtime.Committed.Select(c => c.ToString()))
                     + " exits=" + string.Join(";", Runtime.Exits.Select(e => e.Cast + ":" + e.Reason)) + " result=" + TerminalResult + " winner=" + TerminalWinner);
@@ -170,12 +189,14 @@ namespace SkillRuntime.Integration
                     var c = Runtime.Current(a.Key); return a.Key + ":" + (c == null ? "none" : c.Key + "/" + c.Skill.SegmentAt(c.SkillFrame).Id + "/" + c.SkillFrame);
                 })) + " events=" + string.Join(";", Runtime.Events.Select(e => e.ToString()))
                     + " feedback=" + string.Join(";", receipt.Feedback.Select(h => h.Source.ToString())));
+                }
+                if (Diagnostics != null) Observe(d => d.Committed(frame, operations, this));
                 // All authority writes, ledger and exit cleanup are complete before any external presentation callback.
                 foreach (var a in actors)
                 {
                     try { Present(a, receipt); } catch (Exception ex) { Debug.LogException(ex); }
                 }
-                try { presentation.Tick(frame, capturedCasts, Runtime.Exits, receipt.Feedback); Debug.Log("[PilotEffects] F=" + frame + " requests=" + presentation.LastRequests); }
+                try { presentation.Tick(frame, capturedCasts, Runtime.Exits, receipt.Feedback); if (VerboseFrameLogging) Debug.Log("[PilotEffects] F=" + frame + " requests=" + presentation.LastRequests); }
                 catch (Exception ex) { Debug.LogWarning("[PilotPresentation] Frame=" + frame + " " + ex.Message + "; authority already committed."); }
                 if (TerminalSnapshot != null)
                 {
@@ -186,6 +207,7 @@ namespace SkillRuntime.Integration
                     Debug.Log("[RoundLocal] match=" + networkMatch + " round=1 F=" + frame + " result=" + TerminalSnapshot.Result +
                         " winner=" + TerminalSnapshot.Winner + " hash=" + TerminalSnapshot.Hash);
                 }
+                if (Diagnostics != null) Observe(d => d.End(frame));
                 return true;
             }
             catch (Exception ex) { Faulted = true; Fault = ex.ToString(); Debug.LogError("[PilotHalt] No legacy fallback; reinitialize match. " + Fault); return false; }
@@ -262,6 +284,32 @@ namespace SkillRuntime.Integration
             }
             return b.ToString();
         }
+        public SortedDictionary<string, string> DescribeDiagnosticFields()
+        {
+            var fields = new SortedDictionary<string, string>(StringComparer.Ordinal) {
+                ["config"] = Digest, ["rules"] = PilotBattleProfile.Rules,
+                ["revision"] = revision.ToString(CultureInfo.InvariantCulture),
+                ["result"] = TerminalResult + "/" + TerminalWinner };
+            string[] names = { "clock", "sequences", "casts", "ledger", "handles", "deferredExits", "candidates", "committed", "events", "exits" };
+            var lines = Runtime.DescribeState().Split('\n');
+            for (int i = 0; i < lines.Length; i++) fields["runtime." + names[i]] = lines[i];
+            foreach (var a in actors)
+            {
+                string key = "entity." + a.Key.BattleId.ToString(CultureInfo.InvariantCulture) + ".";
+                var cast = Runtime.Current(a.Key);
+                fields[key + "identity"] = a.Key.ToString();
+                fields[key + "position"] = FormattableString.Invariant($"{a.Role.LogicalPosition.x},{a.Role.LogicalPosition.y}");
+                fields[key + "facing"] = a.Role.LogicalFacing.ToString(CultureInfo.InvariantCulture);
+                fields[key + "hp"] = a.Health.ReadPilotHealth().ToString(CultureInfo.InvariantCulture);
+                fields[key + "cast"] = cast == null ? "none" : FormattableString.Invariant($"{cast.Key}/{cast.Skill.SkillId}/{cast.SkillFrame}");
+                fields[key + "stun"] = FormattableString.Invariant($"{a.Stun.Start},{a.Stun.End}");
+                fields[key + "input"] = FormattableString.Invariant($"{a.LastOp}/{a.Move}/{a.PendingIndex}/{a.PendingFacing}/{a.PendingOwner}");
+                fields[key + "motion"] = a.Role.DescribePilotMotion();
+                fields[key + "knockback"] = a.Knockback == null ? "none" : FormattableString.Invariant($"{a.Knockback.Source}/{a.Knockback.StartFrame}/{a.Knockback.Duration}/{a.Knockback.WorldTotal.X}/{a.Knockback.WorldTotal.Z}");
+            }
+            fields["map"] = FormattableString.Invariant($"{BattleData.Instance.mapMinX},{BattleData.Instance.mapMaxX},{BattleData.Instance.mapMinY},{BattleData.Instance.mapMaxY}");
+            return fields;
+        }
         public void Dispose()
         {
             if (disposed) return; disposed = true;
@@ -270,7 +318,7 @@ namespace SkillRuntime.Integration
             foreach (var a in actors)
             {
                 if (!a.Role) continue;
-                a.Role.CancelRootMotion(); if (a.Role.Player) a.Role.Player.PilotDestroyed -= Dispose;
+                a.Role.CancelRootMotion(); if (a.Role.Player) { a.Role.Player.PilotDestroyed -= Dispose; a.Role.Player.BindPilotOpponent(null); }
             }
         }
     }

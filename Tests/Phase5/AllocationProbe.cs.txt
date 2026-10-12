@@ -1,0 +1,25 @@
+using System;
+using Unity.Profiling;
+using UnityEngine;
+using UnityEditor;
+public static class Phase5AllocationProbe
+{
+    static object retain;
+    public static void Run() {
+        using(var recorder=ProfilerRecorder.StartNew(ProfilerCategory.Memory,"GC.Alloc",4096,
+            ProfilerRecorderOptions.StartImmediately|ProfilerRecorderOptions.CollectOnlyOnCurrentThread)) {
+            long before=GC.GetAllocatedBytesForCurrentThread();
+            retain=new byte[8192];
+            long managed=GC.GetAllocatedBytesForCurrentThread()-before;
+            recorder.Stop();long bytes=0;for(int i=0;i<recorder.Count;i++)bytes+=recorder.GetSample(i).Value;
+            Debug.Log("PHASE5_ALLOC_PROBE valid="+recorder.Valid+" unit="+recorder.UnitType+" samples="+recorder.Count+" native="+bytes+" managed="+managed);
+            if(!recorder.Valid||recorder.Count<1)throw new Exception("Native allocation EVENT recorder not available");
+            // GC.Alloc is a time marker: Count measures allocation events, NOT bytes.
+            using(var counter=ProfilerRecorder.StartNew(ProfilerCategory.Memory,"GC Allocated In Frame",1)) {
+                Debug.Log("PHASE5_ALLOC_COUNTER valid="+counter.Valid+" unit="+counter.UnitType);
+                if(!counter.Valid||counter.UnitType.ToString()!="Bytes")throw new Exception("Frame allocation byte counter unavailable");
+            }
+        }
+        retain=null;
+    }
+}

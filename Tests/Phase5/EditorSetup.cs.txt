@@ -1,0 +1,26 @@
+using System;
+using System.IO;
+using UnityEngine;
+using UnityEditor;
+using SkillConfig;
+using SkillConfig.Editor;
+
+public static class Phase5EditorSetup
+{
+    public static void Run() {
+        if(!Application.dataPath.Replace('\\','/').Contains("/Temp/SkillEditorPhase2"))throw new Exception("Disposable editor harness only");
+        // The historical Phase1/2B suite deliberately expects a two-skill pilot. Actual current
+        // ComboData copies and their real references are retained, not reauthored or migrated.
+        var c=AssetDatabase.LoadAssetAtPath<CharacterSkillCatalog>(SkillPilotSetup.CatalogPath);
+        if(!c){Directory.CreateDirectory(Path.GetDirectoryName(SkillPilotSetup.CatalogPath));AssetDatabase.Refresh();
+            c=ScriptableObject.CreateInstance<CharacterSkillCatalog>();c.characterId="miyabi";c.completeness=CatalogCompleteness.PartialPilot;
+            c.animatorController=AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>(SkillPilotSetup.ControllerPath);
+            c.skills.Add(AssetDatabase.LoadAssetAtPath<ComboData>(SkillPilotSetup.ComboPath(1)));c.skills.Add(AssetDatabase.LoadAssetAtPath<ComboData>(SkillPilotSetup.ComboPath(2)));
+            c.resources.Add(new SkillResourceBinding{id="slash_1",kind=ResourceKind.VfxPrefab,asset=AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Resources/Prefabs/VFX/FX_slash_01.prefab")});
+            c.resources.Add(new SkillResourceBinding{id="miyabi-legacy-slash06",kind=ResourceKind.VfxPrefab,asset=AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Resources/Prefabs/VFX/Miyabi_LegacySlash06.prefab")});
+            c.resources.Add(new SkillResourceBinding{id="hit_1",kind=ResourceKind.AudioClip,asset=AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Resources/Audio/Combo/Hit/IMPT-punch-1.wav")});
+            AssetDatabase.CreateAsset(c,SkillPilotSetup.CatalogPath);AssetDatabase.SaveAssets();}
+        SkillPilotSetup.Register();
+        Debug.Log("PHASE5_EDITOR_SETUP_COMPLETE isolated two-skill fixture, original source copies preserved");
+    }
+}

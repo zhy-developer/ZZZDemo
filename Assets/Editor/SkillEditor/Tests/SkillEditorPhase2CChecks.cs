@@ -188,6 +188,9 @@ namespace SkillConfig.Editor.Tests
             var first = AssetDatabase.LoadAssetAtPath<ComboData>(SkillPilotSetup.ComboPath(1));
             var owner = UnityEngine.Object.Instantiate(first); owner.skill.skillId = "phase2c-fixture";
             owner.skill.tracks.Clear(); owner.skill.hitBoxes.Clear(); owner.skill.hitGroups.Clear(); owner.skill.events.Clear();
+            // Later phases populated these real pilots. This geometry-only export fixture
+            // has no resource bindings; clear copied data with its tracks, never the source.
+            owner.skill.vfx.Clear(); owner.skill.sfx.Clear(); owner.skill.invincibility.Clear(); owner.skill.interrupts.Clear();
             AssetDatabase.CreateAsset(owner, "Assets/Phase2CChecks/Skill.asset");
             var catalog = ScriptableObject.CreateInstance<CharacterSkillCatalog>(); catalog.characterId = "phase2c-fixture"; catalog.skills.Add(owner);
             catalog.animatorController = AssetDatabase.LoadAssetAtPath<UnityEditor.Animations.AnimatorController>(SkillPilotSetup.ControllerPath);
@@ -201,7 +204,8 @@ namespace SkillConfig.Editor.Tests
                 using (var edit = new SkillShapeEdit()) { edit.BeginBox(owner, id); edit.Box.offset = new Int3 { x = (int)shape * 12000, y = 10000 }; edit.Box.radius = 5500; edit.Box.height = 20000; edit.Commit(); }
             }
             SkillEditCommands.Flush();
-            Check(!SkillConfigExporter.Export(catalog).Any(d => d.severity == DiagnosticSeverity.Error), "geometry edits save/export through unchanged Phase1 pipeline");
+            var exportIssues = SkillConfigExporter.Export(catalog);
+            Check(!exportIssues.Any(d => d.severity == DiagnosticSeverity.Error), "geometry edits save/export through unchanged Phase1 pipeline: " + string.Join(";", exportIssues.Select(d => d.code)));
             Check(SkillConfigLoader.TryLoad(catalog.characterId, out var loaded, out _) && loaded.CopyData().skills[0].hitBoxes.Count == 5, "five shapes survive JSON readback");
             Gui();
         }

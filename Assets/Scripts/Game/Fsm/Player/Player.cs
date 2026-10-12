@@ -72,6 +72,21 @@ namespace ZZZ
         private PlayerNetworkInput networkInput;
         private PlayerActionController actions;
         private RoleBase motionRole;
+        private RoleBase pilotOpponent;
+        // Local input intent only. The resulting direction is frozen into the existing network
+        // operation; neither remote clients nor combat resolution read this presentation target.
+        internal void BindPilotOpponent(RoleBase opponent) { pilotOpponent = opponent; }
+        internal Vector3 PilotInputAim()
+        {
+            if (motionRole && pilotOpponent)
+            {
+                var self = motionRole.LogicalPosition; var target = pilotOpponent.LogicalPosition;
+                long x = (long)target.x - self.x, z = (long)target.y - self.y;
+                if (x != 0 || z != 0) return new Vector3(x, 0, z);
+            }
+            float angle = (motionRole ? motionRole.LogicalFacing : 0) * Mathf.Deg2Rad;
+            return new Vector3(Mathf.Cos(angle), 0, Mathf.Sin(angle));
+        }
         public bool IsDeterministicPilot { get; private set; }
         public bool PilotRoundClosed { get; internal set; }
         public event System.Action PilotDestroyed;

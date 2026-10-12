@@ -8,6 +8,10 @@ namespace FrameSync.RootMotion
         private long localX, localZ, previousWorldX, previousWorldZ;
         public bool IsPlaying => clip != null;
 
+        // Read-only diagnostic; never used to advance motion or choose gameplay outcomes.
+        public string DescribeDiagnosticState() => !IsPlaying ? "stopped" :
+            System.FormattableString.Invariant($"frame={frame};end={endFrame};scale={distancePermille};basis={forwardX},{forwardZ},{directionScale};local={localX},{localZ};world={previousWorldX},{previousWorldZ}");
+
         // Local +Z is forward and +X is right. Basis comes from the shared integer direction table.
         // endFrameExclusive == 0 means the full clip. Invalid requests preserve current playback.
         public bool TryStart(RootMotionClip value, int endFrameExclusive, int scalePermille,

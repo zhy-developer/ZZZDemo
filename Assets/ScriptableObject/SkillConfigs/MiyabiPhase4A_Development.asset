@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7e46dfb0720ef764781fc7a9736a81dd, type: 3}
   m_Name: MiyabiPhase4A_Development
   m_EditorClassIdentifier: 
+  normalGameplay: 0
   catalog: {fileID: 11400000, guid: 9a1ab0c1f22dbde47a72de717aee890d, type: 2}
   comboContainer: {fileID: 11400000, guid: 6c9a63af5c7aae746b82775a2f40a128, type: 2}
   allowedCombos:
@@ -21,8 +22,8 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 327735ee4e0e41042833fb639b2b68f9, type: 2}
   - {fileID: 11400000, guid: 085b138412fcbab4cbc766472f398fb3, type: 2}
   exportedJson: {fileID: 4900000, guid: 93561b110967280488f28ec259a6bd31, type: 3}
-  sealedJsonHash: 1497367377daa4ae9cba77f347b345af22f33903b51a436bbddca8a992a26259
-  sealedSourceHash: c8907f6c4b22669856cfc18153ec4c4e6ec5425bb4ea645031076b2357c97484
+  sealedJsonHash: 79f6b5b9960f27a6056ca256937d3099988fa061485de9de388bb84a6cbcf8b1
+  sealedSourceHash: b38bf25d80980714f1c5a81c62586fe13ed7a9b5f8baeb5447f77545225e49d8
   testHP: 100
   testHurtRadius: 5000
   testHurtOffset:

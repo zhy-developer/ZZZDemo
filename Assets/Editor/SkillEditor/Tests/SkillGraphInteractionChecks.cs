@@ -51,7 +51,7 @@ namespace SkillConfig.Editor.Tests
                 Check(layout.zoom>zoom && JsonUtility.ToJson(target)==before,"zoom never writes runtime relations");
                 var pan=layout.pan; Mouse(w,EventType.MouseDown,centre,2); Mouse(w,EventType.MouseDrag,centre+new Vector2(20,15),2,1,new Vector2(20,15)); Mouse(w,EventType.MouseUp,centre,2); Paint(w);
                 Check(layout.pan!=pan,"middle mouse pans Graph");
-                var legacy=target.comboDatas[2]; w.owner=legacy; w.graph.Focus(legacy); Paint(w);
+                var legacy=target.comboDatas[5]; w.owner=legacy; w.graph.Focus(legacy); Paint(w);
                 Check(Bounds(w.graph).ContainsKey(legacy) && SkillComboGraphDraft.Label(legacy).Contains("Legacy"),"Legacy selectable without migration");
                 w.graph.SaveLayout(); Check(JsonUtility.ToJson(target)==before && !EditorUtility.IsDirty(target),"save layout leaves official container clean");
             }

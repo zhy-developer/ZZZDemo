@@ -21,7 +21,12 @@ namespace SkillConfig.Editor.Tests
             var track=SkillEditCommands.AddTrack(owner,TrackKind.Vfx);
             owner.skill.vfx.Add(new VfxCue{id="slash-event",trackId=track.id,resourceId="slash_1",startFrame=6,endFrame=8,lifetime=VfxLifetime.TimelineControlled});
             catalog=ScriptableObject.CreateInstance<CharacterSkillCatalog>();catalog.characterId="slash-drag-check";catalog.animatorController=AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>(SkillPilotSetup.ControllerPath);catalog.skills.Add(owner);
-            catalog.resources.Add(new SkillResourceBinding{id="slash_1",kind=ResourceKind.VfxPrefab,asset=AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Third Parts/VFX_Klaus/Prefabs/Stylized Hit & Slash/FX_slash_01.prefab")});
+            // The real prefab moved into Resources after the original bug. Keep the
+            // regression's deliberate, resolvable but non-exportable binding explicit.
+            const string source="Assets/Resources/Prefabs/VFX/FX_slash_01.prefab", previewOnly=Folder+"/PreviewOnlySlash.prefab";
+            Check(AssetDatabase.LoadAssetAtPath<GameObject>(source),"current real slash resource exists");
+            if(!AssetDatabase.LoadAssetAtPath<GameObject>(previewOnly)) Check(AssetDatabase.CopyAsset(source,previewOnly),"isolated non-Resources fixture copied");
+            catalog.resources.Add(new SkillResourceBinding{id="slash_1",kind=ResourceKind.VfxPrefab,asset=AssetDatabase.LoadAssetAtPath<GameObject>(previewOnly)});
             AssetDatabase.CreateAsset(owner,Folder+"/Skill.asset");AssetDatabase.CreateAsset(catalog,Folder+"/Catalog.asset");AssetDatabase.SaveAssets();
         }
         public static void Reproduce()

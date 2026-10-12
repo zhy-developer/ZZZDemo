@@ -22,6 +22,9 @@ public class RoleBase : MonoBehaviour {
     public ZZZ.Player Player => player;
     public int LogicalFacing => roleDirection;
     public GameVector2 LogicalPosition => objShape.GetPosition();
+    // The frozen configuration digest identifies the immutable motion plan itself.
+    public string DescribePilotMotion() => System.FormattableString.Invariant(
+        $"owner={pilotMotionOwner};input={inputDirection};speed={logicSpeed.x},{logicSpeed.y};moveSpeed={moveSpeed};timeline={pilotTimeline != null};boundary={(pilotTimeline != null ? pilotBoundary : 0)};basis={(pilotTimeline != null ? pilotForwardX : 0)},{(pilotTimeline != null ? pilotForwardZ : 0)};previous={(pilotTimeline != null ? pilotPrevious.X : 0)},{(pilotTimeline != null ? pilotPrevious.Z : 0)};legacy={rootMotion.DescribeDiagnosticState()}");
     private SkillRuntime.CastKey? pilotMotionOwner;
     private SkillRuntime.SkillMotionTimeline pilotTimeline;
     private int pilotBoundary, pilotForwardX, pilotForwardZ;

@@ -1,0 +1,122 @@
+#if DEVELOPMENT_BUILD || UNITY_EDITOR
+using System;
+using System.Collections;
+using System.IO;
+using System.Linq;
+using GameProtocol;
+using SkillRuntime.Integration;
+using UnityEngine;
+using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
+
+[DefaultExecutionOrder(32000)]
+public sealed class Phase5ClientDriver : MonoBehaviour
+{
+    string label, directory, match, buffered; bool terminal, performanceOnly, requested, confirmed, attacked;
+    int completed, target, castCount; float started, lastResource; long lastAttack=-100; double duration;
+    Phase5FrameRecorder recorder; Phase5FaultProxy proxy; Gamepad pad;
+    InputSettings original, localSettings;
+    Unity.Profiling.ProfilerRecorder frameAllocation;
+    readonly System.Collections.Generic.List<long> frameBytes=new System.Collections.Generic.List<long>(120000);
+    static string Arg(string name,string fallback) {var a=Environment.GetCommandLineArgs();int i=Array.IndexOf(a,name);return i>=0&&i+1<a.Length?a[i+1]:fallback;}
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)] static void Boot() {
+        if(Arg("-phase5Client","")=="")return;
+        var go=new GameObject("Phase5 owned outbound driver");DontDestroyOnLoad(go);go.AddComponent<Phase5ClientDriver>();
+    }
+    IEnumerator Start() {
+        label=Arg("-phase5Client","A");directory=Arg("-phase5Output","Logs/Phase5");terminal=Arg("-phase5Mode","terminal")=="terminal";
+        performanceOnly=Arg("-phase5Mode","")=="performance";
+        target=terminal?3:performanceOnly?1:20;duration=terminal||performanceOnly?0:1800;started=Time.realtimeSinceStartup;
+        Application.runInBackground=true;Application.targetFrameRate=label=="A"?60:30;
+        QualitySettings.SetQualityLevel(0,true);QualitySettings.vSyncCount=0;Application.SetStackTraceLogType(LogType.Log,StackTraceLogType.None);
+        Debug.Log("[Phase5] ENV unity="+Application.unityVersion+" os="+SystemInfo.operatingSystem+" cpu="+SystemInfo.processorType+" gpu="+SystemInfo.graphicsDeviceName+" mode="+(terminal?"terminal":"soak")+" seed=0x51f15e");
+        frameAllocation=Unity.Profiling.ProfilerRecorder.StartNew(Unity.Profiling.ProfilerCategory.Memory,"GC Allocated In Frame",1);
+        yield return new WaitForSecondsRealtime(2);LoginManager.Instance.OnClickLogin();
+    }
+    void LateUpdate() {
+        if(label==null)return;
+        if(frameAllocation.Valid&&frameBytes.Count<200000)frameBytes.Add(frameAllocation.LastValue);
+        if(proxy!=null&&proxy.Error!=null){Fail(proxy.Error);return;}
+        if(Time.realtimeSinceStartup-started>(terminal||performanceOnly?240:2400)){Fail("time budget exceeded");return;}
+        if(SceneManager.GetActiveScene().name=="MainScene") {
+            if(match!=null) {
+                if(!confirmed||PilotResultFlow.Active!=null){Fail("returned before retirement");return;}
+                recorder.Dispose();recorder=null;completed++;ResourceSample("retired");
+                Debug.Log("[Phase5] RETURN client="+label+" match="+match+" completed="+completed);
+                match=null;requested=confirmed=attacked=false;buffered=null;lastAttack=-100;
+            }
+            if(completed>=target) {
+                if(!terminal && Time.realtimeSinceStartup-started<duration)return;
+                Debug.Log("PHASE5_CLIENT_COMPLETE client="+label+" matches="+completed+" seconds="+(Time.realtimeSinceStartup-started)+" castsObserved="+castCount);
+                Finish();return;
+            }
+            if(!requested) {
+                if(proxy==null) {proxy=new Phase5FaultProxy(NetGlobal.Instance.serverIP,NetGlobal.Instance.udpSendPort,Arg("-phase5Faults","0")=="1");NetGlobal.Instance.udpSendPort=proxy.Port;}
+                requested=true;GameBlackboard.Instance.SetGameData<CharacterNameList>(GameConfig.ROLE_CURRENTNAME,CharacterNameList.Xingjianya);MatchManager.Instance.SendRequestMatchRequest();
+            }
+            return;
+        }
+        var roles=BattleManager.roleManage;if(!roles||!roles.initFinish||roles.Pilot==null)return;
+        var p=roles.Pilot;if(p.Faulted){Fail(p.Fault);return;}int slot=BattleData.Instance.battleID;
+        if(match==null) {
+            match=BattleData.Instance.MatchId;
+            if(p.Runtime.LastCompletedFrame!=0||p.Cast(1)!=null||p.Cast(2)!=null||p.Health(1).ReadPilotHealth()!=(terminal?20:100)){Fail("fresh session invalid");return;}
+            recorder=new Phase5FrameRecorder(directory,match,true,Arg("-phase5Trace","on")=="off");p.Diagnostics=recorder;p.VerboseFrameLogging=false;
+            if(!terminal) SetupInput();
+            Debug.Log("[Phase5] JOIN client="+label+" match="+match+" index="+completed+" slot="+slot+" digest="+p.Digest);
+        }
+        long f=p.Runtime.LastCompletedFrame;
+        if(terminal&&!attacked) {attacked=true;if(completed==2||slot==completed+1)Attack(slot==1?0:60,f);}
+        if(!terminal&&p.TerminalSnapshot==null) {
+            var self=roles.GetRoleFromBattleID(slot);var other=roles.GetRoleFromBattleID(3-slot);var cast=p.Cast(slot);int move=121;
+            // Most of each match repeatedly exercises real Normal1..5 facing away, then closes distance.
+            // At k=0 queue several reliable presses: only accepted preinput windows affect the chain.
+            bool exercise=f<(performanceOnly?600:2100); // finite authority exercise, then real combat to terminal.
+            if(!exercise && slot!=completed%2+1) { move=121; } // bounded closing phase; alternate attacker each match
+            else if(cast==null&&BattleData.Instance.PendingActionCount==0&&f-lastAttack>10) {
+                var a=self.LogicalPosition;var b=other.LogicalPosition;
+                if(exercise) Attack(slot==1?60:0,f);
+                else if(Math.Abs((long)b.x-a.x)>18000 || Math.Abs((long)b.y-a.y)>3000) move=Direction(b.x-a.x,b.y-a.y);
+                else Attack(Direction(b.x-a.x,b.y-a.y),f);
+            }
+            else if(cast!=null && cast.Skill.SkillId!="miyabi-normal-5" && buffered!=cast.Key.ToString() && BattleData.Instance.PendingActionCount==0) {
+                var gate=cast.Skill.Events.FirstOrDefault(e=>e.EventId=="combo.preinput");
+                if(gate!=null&&cast.SkillFrame>=Math.Max(0,gate.Frame-2)) {buffered=cast.Key.ToString();Attack(self.LogicalFacing/3,f);}
+            }
+            Vector3 world=move==121?Vector3.zero:new Vector3(Mathf.Cos(move*3*Mathf.Deg2Rad),0,Mathf.Sin(move*3*Mathf.Deg2Rad));
+            Vector3 local=Quaternion.Inverse(Quaternion.Euler(0,self.Player.camera.eulerAngles.y,0))*world;
+            InputSystem.QueueDeltaStateEvent(pad.leftStick,new Vector2(local.x,local.z));
+            // One controlled render stall per match after startup; transport continues receiving.
+            if(f>=50&&!attacked){attacked=true;System.Threading.Thread.Sleep(label=="A"?250:450);}
+        }
+        if(Time.realtimeSinceStartup-lastResource>=15){lastResource=Time.realtimeSinceStartup;ResourceSample("active");}
+        var flow=PilotResultFlow.Active;if(flow==null||flow.Agreement.Confirmed==null||confirmed)return;
+        var r=flow.Agreement.Confirmed;
+        if(flow.Agreement.ApplyCount!=1||terminal&&(r.Winner!=(completed==2?0:completed+1)||r.Result!=(completed==2?MatchLifecycle.Outcome.Draw:MatchLifecycle.Outcome.Winner))){Fail("incorrect terminal");return;}
+        confirmed=true;Debug.Log("[Phase5] PASS client="+label+" match="+match+" F="+r.Frame+" result="+r.Result+" winner="+r.Winner+" hash="+r.Hash);
+        StartCoroutine(Return(flow));
+    }
+    IEnumerator Return(PilotResultFlow flow) {
+        var r=flow.Agreement.Confirmed;
+        // Pace 20 complete lifecycles across 30 minutes; authority already frozen during this tail.
+        float until=terminal||performanceOnly?Time.realtimeSinceStartup+(label=="A"?1.2f:.3f):started+(completed+1)*90f;
+        while(Time.realtimeSinceStartup<until){yield return null;}
+        if(BattleManager.roleManage.Pilot.Runtime.LastCompletedFrame!=r.Frame){Fail("terminal advanced");yield break;}
+        flow.RequestReturn();flow.RequestReturn();
+    }
+    void SetupInput() {
+        if(pad!=null)return;original=InputSystem.settings;localSettings=Instantiate(original);localSettings.backgroundBehavior=InputSettings.BackgroundBehavior.IgnoreFocus;InputSystem.settings=localSettings;
+        pad=InputSystem.AddDevice<Gamepad>("Phase5AcceptanceMovement");var input=CharacterInputSystem.Instance.inputActions;
+        input.Player.Disable();input.Player.Movement.AddBinding("<Gamepad>/leftStick");input.asset.devices=new InputDevice[]{pad};input.Player.Enable();
+    }
+    void Attack(int facing,long f){lastAttack=f;castCount++;BattleData.Instance.UpdateRightOperation(RightOpType.rop1,facing,0);}
+    static int Direction(int x,int z)=>Mathf.Min(119,(int)(Mathf.Repeat(Mathf.Atan2(z,x)*Mathf.Rad2Deg,360)/3));
+    void ResourceSample(string stage){var process=System.Diagnostics.Process.GetCurrentProcess();process.Refresh();Debug.Log("[Phase5Resource] client="+label+" stage="+stage+" completed="+completed+" elapsed="+(Time.realtimeSinceStartup-started)+" F="+(BattleManager.roleManage?BattleManager.roleManage.Pilot?.Runtime.LastCompletedFrame:0)+" backlog="+BattleData.Instance.PendingFrameSpan+" managed="+GC.GetTotalMemory(false)+" private="+process.PrivateMemorySize64+" handles="+process.HandleCount+" objects="+Resources.FindObjectsOfTypeAll<GameObject>().Length+" audio="+Resources.FindObjectsOfTypeAll<AudioSource>().Length+" particles="+Resources.FindObjectsOfTypeAll<ParticleSystem>().Length+" vfx="+(BattleManager.roleManage?BattleManager.roleManage.Pilot?.ActiveVfx:0));}
+    void Finish(){if(proxy!=null){Debug.Log("[Phase5Proxy] received="+proxy.Received+" sent="+proxy.Sent+" dropped="+proxy.Dropped+" duplicates="+proxy.Duplicated+" blackout="+proxy.Blackout+" stale="+proxy.StaleInjected);proxy.Dispose();proxy=null;}
+        frameBytes.Sort();Debug.Log("[Phase5FrameAllocation] valid="+frameAllocation.Valid+" unit="+frameAllocation.UnitType+" samples="+frameBytes.Count+" mean="+(frameBytes.Count==0?-1:frameBytes.Average())+" p95="+(frameBytes.Count==0?-1:frameBytes[(int)(frameBytes.Count*.95)])+" p99="+(frameBytes.Count==0?-1:frameBytes[(int)(frameBytes.Count*.99)])+" max="+(frameBytes.Count==0?-1:frameBytes.Last()));
+        enabled=false;Application.Quit(0);}
+    void Fail(string why){Debug.LogError("PHASE5_CLIENT_FAIL "+label+" "+why);enabled=false;Application.Quit(1);}
+    void OnDestroy(){recorder?.Dispose();proxy?.Dispose();frameAllocation.Dispose();if(pad!=null&&pad.added)InputSystem.RemoveDevice(pad);if(original)InputSystem.settings=original;if(localSettings)Destroy(localSettings);}
+}
+#endif
+

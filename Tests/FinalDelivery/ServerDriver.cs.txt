@@ -1,0 +1,18 @@
+#if DEVELOPMENT_BUILD || UNITY_EDITOR
+using System;
+using System.Collections;
+using UnityEngine;
+public sealed class DeliveryServerDriver : MonoBehaviour
+{
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)] static void Boot() {
+        if(Array.IndexOf(Environment.GetCommandLineArgs(),"-deliveryServerStart")<0)return;
+        new GameObject("Delivery normal server UI acceptance").AddComponent<DeliveryServerDriver>();
+    }
+    IEnumerator Start() {
+        Application.runInBackground=true;yield return null;
+        var ui=FindObjectOfType<UICon>();
+        if(!ui||ui.input.text!="2"||ServerConfig.battleUserNum!=2){Debug.LogError("DELIVERY_SERVER_FAIL normal default not 2");Application.Quit(1);yield break;}
+        ui.StartServer();Debug.Log("DELIVERY_SERVER_READY normalUI=true players="+ServerConfig.battleUserNum);
+    }
+}
+#endif

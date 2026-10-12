@@ -158,7 +158,7 @@ namespace SkillConfig.Editor
                         DrawOutline(SkillRuntime.XzOutline.Attack(box, pose));
                     Handles.Label(after.World, "XZ 判定轮廓：帧后位置；双方 Y / 偏移 Y / 高度均不参与命中");
                 }
-                if (session.Catalog.hurtBoxConfigured)
+                if (session.Catalog && session.Catalog.hurtBoxConfigured && session.Catalog.hurtBox != null)
                 {
                     var h = session.Catalog.hurtBox;
                     using (new Handles.DrawingScope(Color.cyan, Matrix4x4.identity))

@@ -15,6 +15,8 @@ namespace SkillRuntime.Integration
     public sealed class PilotBattleProfile : ScriptableObject
     {
         public const string Rules = "phase3c-v1/pilot4b-v1";
+        [Tooltip("Normal entry for the explicitly listed skill scope. Uses the catalog HurtBox; does not promote the entire partial catalog to BattleReady.")]
+        public bool normalGameplay;
         public CharacterSkillCatalog catalog;
         public ComboContainerData comboContainer;
         public ComboData[] allowedCombos;
@@ -29,6 +31,7 @@ namespace SkillRuntime.Integration
         public string SourceHash()
         {
             var b = new StringBuilder();
+            if (normalGameplay) b.Append("normal-gameplay-scope-v1|");
             b.Append(Rules).Append('|').Append(testHP).Append('|').Append(testHurtRadius).Append('|').Append(JsonUtility.ToJson(testHurtOffset));
             b.Append('|').Append(idleState).Append('|').Append(hitState).Append('|').Append(deathState);
             b.Append('|').Append(catalog.characterId).Append('|').Append((int)catalog.completeness).Append('|').Append(catalog.hurtBoxConfigured).Append('|').Append(JsonUtility.ToJson(catalog.hurtBox));
@@ -69,7 +72,7 @@ namespace SkillRuntime.Integration
 
         public PilotConfiguration ValidateAndFreeze()
         {
-            if (!Debug.isDebugBuild) throw new InvalidOperationException("DeterministicPilot requires a development build.");
+            if (!normalGameplay && !Debug.isDebugBuild) throw new InvalidOperationException("Development profiles require a development build.");
             if (!catalog || !comboContainer || !exportedJson || allowedCombos == null || allowedCombos.Length == 0 || allowedCombos.Any(c => !c)
                 || allowedCombos.Distinct().Count() != allowedCombos.Length || !comboContainer.comboDatas.Take(allowedCombos.Length).SequenceEqual(allowedCombos))
                 throw new InvalidOperationException("Pilot requires a mapped consecutive prefix of the real combo container; missing successors remain rejected.");
@@ -78,6 +81,8 @@ namespace SkillRuntime.Integration
                 throw new InvalidOperationException("Pilot source/export seal changed. Validate/export and explicitly reseal the current development profile.");
             if (!SkillConfigLoader.TryLoad(catalog.characterId, out var snapshot, out var issues)) throw new InvalidOperationException(string.Join("\n", issues));
             var dto = snapshot.CopyData();
+            if (normalGameplay && (!dto.hurtBoxConfigured || dto.hurtBox == null || dto.hurtBox.radius <= 0))
+                throw new InvalidOperationException("Normal gameplay requires an exported catalog HurtBox; test radius is not a fallback.");
             if (catalog.resources.Count != dto.resources.Count) throw new InvalidOperationException("Resource catalog/export count differs.");
             foreach (var resource in catalog.resources)
             {
@@ -97,6 +102,7 @@ namespace SkillRuntime.Integration
                     throw new InvalidOperationException(s.skillId + ": unsupported event/presentation capability; never fall back to legacy combat.");
                 if (s.hitGroups.Any(g => !string.IsNullOrEmpty(g.hitVfxResourceId) || !string.IsNullOrEmpty(g.hitSfxResourceId)))
                     throw new InvalidOperationException(s.skillId + ": configured hit-feedback resources need a binding/lifetime adapter; timeline presentation alone does not satisfy this capability.");
+                if (normalGameplay) ValidatePresentation(s, dto);
                 var animations = new List<PilotAnimation>(); var mapped = new List<SkillMotionSegment>();
                 RootMotionClip firstMotion = null; int firstEnd = 0, firstScale = 1000;
                 for (int i = 0; i < s.animations.Count; i++)
@@ -122,10 +128,29 @@ namespace SkillRuntime.Integration
                 moves.Add(new PilotSkill(combo, index.Skill(s.skillId), animations[0].Clip, animations[0].State, firstMotion, firstEnd, firstScale, s.events,
                     new SkillMotionTimeline(mapped), animations.ToArray(), s));
             }
-            Debug.Log("[PilotReady] restricted development allowlist ONLY; formal BattleReady=" + index.BattleReady + "; missing formal HurtBox remains unresolved. " + testParameterNotice);
+            Debug.Log(normalGameplay
+                ? "[GameplayReady] scopeReady=true wholeCatalogReady=false skills=" + string.Join(",", moves.Select(m => m.Skill.SkillId)) + " HP=" + testHP + " HurtRadius=" + dto.hurtBox.radius + " rules=" + Rules
+                : "[PilotReady] restricted development allowlist ONLY; whole catalog BattleReady=" + index.BattleReady + "; " + testParameterNotice);
             foreach (var issue in index.ReadinessIssues) Debug.Log("[PilotReadiness] " + issue.Code + " " + issue.Location + ": " + issue.Message);
-            return new PilotConfiguration(moves.ToArray(), new HurtCircle(testHurtRadius, testHurtOffset.x, testHurtOffset.y, testHurtOffset.z), testHP,
+            var hurt = normalGameplay ? new HurtCircle(dto.hurtBox.radius, dto.hurtBox.offset.x, dto.hurtBox.offset.y, dto.hurtBox.offset.z)
+                : new HurtCircle(testHurtRadius, testHurtOffset.x, testHurtOffset.y, testHurtOffset.z);
+            return new PilotConfiguration(moves.ToArray(), hurt, testHP,
                 SkillConfigHash.Sha256(Rules + "|" + sealedSourceHash + "|" + sealedJsonHash), idleState, hitState, deathState, comboContainer, dto.resources);
+        }
+        // Capability validation is local to this binding, not a relaxation of the general loader's
+        // incomplete-catalog guard. Unsupported feedback/resources fail before the Ready handshake.
+        void ValidatePresentation(SkillDto skill, SkillConfigDto dto)
+        {
+            foreach (var cue in skill.vfx)
+            {
+                var r = dto.resources.Single(x => x.id == cue.resourceId);
+                var prefab = Resources.Load<GameObject>(r.path);
+                SkillPresentationSlots.ValidateVfx(prefab);
+                PilotPresentation.ParticleTailFrames(prefab);
+                if (cue.lifetime == VfxLifetime.AutoComplete && cue.maxLifetimeFrames <= 0)
+                    throw new InvalidOperationException(skill.skillId + "/" + cue.id + ": finite VFX lifetime required.");
+                // Character-dependent bone existence is checked against each actual Player at bind time.
+            }
         }
     }
     public sealed class PilotAnimation

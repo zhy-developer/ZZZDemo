@@ -1,0 +1,20 @@
+using System;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using SkillRuntime.Integration;
+public static class Phase5SceneRegression
+{
+    public static void Run()
+    {
+        try {
+            // Open existing arena without Prepare(), migration, export, reseal or scene save.
+            EditorSceneManager.OpenScene(PilotArenaSetup.ScenePath);
+            var arena = UnityEngine.Object.FindObjectOfType<PilotDevelopmentArena>();
+            arena.profile.ValidateAndFreeze();
+            arena.produceLoopbackFrames = false; arena.automatedChecks = true; arena.phase4BChecks = true;
+            EditorApplication.isPlaying = true;
+        } catch (Exception e) { Debug.LogException(e); EditorApplication.Exit(1); }
+    }
+}
+

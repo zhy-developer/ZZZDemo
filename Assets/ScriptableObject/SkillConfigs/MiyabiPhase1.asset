@@ -14,18 +14,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   characterId: miyabi
   completeness: 0
-  migrationNotes: 'Phase4B partial migration: Normal1-5; Normal6/Rush_ATK await source
-    events. Skill/FinishSkill and full presentation readiness remain pending. HP/HurtBox
-    remain explicit test values.'
+  migrationNotes: 'Normal gameplay scope: Miyabi movement and Normal1-5. Initial
+    tunable HP100 and Hurt radius5000/offset0 authorized at delivery. Normal6/Rush_ATK/Skill/FinishSkill
+    remain unmigrated. Partial catalog also retains authoring-only test skills.'
   animatorController: {fileID: 9100000, guid: c36c63ee783b10942a52a9b3fb87c705, type: 2}
-  hurtBoxConfigured: 0
+  hurtBoxConfigured: 1
   hurtBox:
     offset:
       x: 0
       y: 0
       z: 0
-    radius: 0
-    height: 0
+    radius: 5000
+    height: 10000
   skills:
   - {fileID: 11400000, guid: 3608c4587e7146d4b8b9f78174009635, type: 2}
   - {fileID: 11400000, guid: e79851970ca93f64f9a3ebb0c13b8c3e, type: 2}

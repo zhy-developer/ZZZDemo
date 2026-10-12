@@ -1,21 +1,21 @@
 {
     "schemaVersion": 1,
     "characterId": "miyabi",
-    "sourceFingerprint": "1800c3ff39f74600765260d26d0bccee2bcd136b642002d9b9b3b95c7b016e82",
+    "sourceFingerprint": "1a7aeaf4efa85affd01166adf8d1db5bb80883b04488eddb6368cf32a9dca5f3",
     "logicFrameIntervalMs": 33,
     "precision": 10000,
     "completeness": 0,
     "battleReady": false,
-    "migrationNotes": "Phase4B partial migration: Normal1-5; Normal6/Rush_ATK await source events. Skill/FinishSkill and full presentation readiness remain pending. HP/HurtBox remain explicit test values.",
-    "hurtBoxConfigured": false,
+    "migrationNotes": "Normal gameplay scope: Miyabi movement and Normal1-5. Initial tunable HP100 and Hurt radius5000/offset0 authorized at delivery. Normal6/Rush_ATK/Skill/FinishSkill remain unmigrated. Partial catalog also retains authoring-only test skills.",
+    "hurtBoxConfigured": true,
     "hurtBox": {
         "offset": {
             "x": 0,
             "y": 0,
             "z": 0
         },
-        "radius": 0,
-        "height": 0
+        "radius": 5000,
+        "height": 10000
     },
     "resources": [
         {
@@ -1376,12 +1376,6 @@
             "code": "COMBO_TIMING_UNVERIFIED",
             "location": "MiyabiPhase1",
             "message": "Early combo cancellation timing must be approved before critical effects are battle-ready."
-        },
-        {
-            "severity": 0,
-            "code": "HURTBOX_UNCONFIGURED",
-            "location": "catalog",
-            "message": "Pilot has no authoritative HurtBox yet."
         },
         {
             "severity": 0,

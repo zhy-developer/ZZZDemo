@@ -14,7 +14,7 @@ namespace SkillConfig.Editor.Tests
         static void Setup()
         {
             Guard();owner=SkillPresentationChecks.Owner();owner.skill.skillId="presentation-resource-probe";
-            var prefab=AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Third Parts/VFX_Klaus/Prefabs/Stylized Hit & Slash/FX_slash_01.prefab");
+            var prefab=AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Resources/Prefabs/VFX/FX_slash_01.prefab");
             Check(prefab,"actual project slash prefab loads");catalog=SkillPresentationChecks.Catalog(owner,prefab);
             Check(AssetDatabase.GetAssetPath(catalog.resources[1].asset).EndsWith("IMPT-punch-1.wav"),"actual project AudioClip loads");
         }

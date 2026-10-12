@@ -1,0 +1,88 @@
+#if UNITY_EDITOR
+using System;
+using System.Collections;
+using System.Reflection;
+using GameProtocol;
+using SkillRuntime;
+using SkillRuntime.Integration;
+using UnityEngine;
+
+// Real Player prefabs with explicit test configuration; incoming frames below are isolated, NOT network traffic.
+public sealed class Phase5LifecycleChecks : MonoBehaviour
+{
+    public PilotDevelopmentArena arena;
+    int checks;
+    void Check(bool value, string name) { if (!value) throw new Exception("PHASE5_LIFECYCLE_FAIL " + name); checks++; Debug.Log("PHASE5_LIFECYCLE_PASS " + name); }
+    static AllPlayerOperation Ops(bool attack = false) {
+        var ops = new AllPlayerOperation();
+        for (int id=1; id<=2; id++) ops.operations.Add(new PlayerOperation { battleID=id, move=121, rightOperation=attack?RightOpType.rop1:RightOpType.noop, operationID=attack?1:0, operationValue1=id==1?0:60 });
+        return ops;
+    }
+    IEnumerator Start()
+    {
+        yield return new WaitUntil(() => arena.Ready || arena.StartupError != null);
+        if (!arena.Ready) { Debug.LogError(arena.StartupError); UnityEditor.EditorApplication.Exit(1); yield break; }
+        arena.Restart(BattleAuthorityMode.Legacy); yield return null; // fresh Players, not a second binding
+        PilotBattleProfile profile = null; PilotBattleSession pilot = null; GameObject receiver = null;
+        try {
+            profile=Instantiate(arena.profile); profile.testHP=20; profile.testHurtRadius=100000; profile.sealedSourceHash=profile.SourceHash();
+            string match=Guid.NewGuid().ToString("N");
+            var data=BattleData.Instance;
+            data.SetScope(new TcpEnterBattle {matchId=match,sessionKey=424242,roundId=1,protocolVersion=1,joinTicket=Guid.NewGuid().ToString("N")});
+            pilot=new PilotBattleSession(profile.ValidateAndFreeze(),arena.Players,424242,match);
+            Check(pilot.Advance(1,Ops(true)),"first accepted whole frame");
+            string initial=pilot.LastStateHash;
+            Check(!pilot.Advance(1,Ops(true)) && pilot.LastStateHash==initial,"duplicate consumed frame cannot repeat attack");
+            Check(!pilot.Advance(3,Ops()) && pilot.Runtime.LastCompletedFrame==1,"missing continuous frame does not advance");
+            data.UpdateRightOperation(RightOpType.rop1,0,0); int queued=data.PendingActionCount;
+            for (int f=2;f<=20 && pilot.TerminalSnapshot==null;f++) Check(pilot.Advance(f,Ops()),"empty operation frame advances "+f);
+            var terminal=pilot.TerminalSnapshot;
+            Check(terminal!=null && terminal.Result==MatchLifecycle.Outcome.Draw && pilot.Health(1).IsDead && pilot.Health(2).IsDead,"whole committed terminal frame contains both deaths and Draw");
+            Check(pilot.LastReceipt.Round==RoundResult.Draw && pilot.TerminalState.Contains("accepted="),"immutable terminal snapshot retains committed output before external cleanup");
+            Check(data.PendingActionCount==queued && queued>0,"terminal freeze does not clear reliable outgoing queue");
+            Check(pilot.Runtime.IsDisposed && pilot.Cast(1)==null && pilot.Cast(2)==null,"terminal stops active casts");
+            Check(!pilot.Advance(terminal.Frame+1,Ops(true)) && pilot.TerminalSnapshot==terminal,"future action cannot reopen terminal match");
+            pilot.UpdateTerminalPresentation(1);
+            Check(pilot.Runtime.LastCompletedFrame==terminal.Frame && pilot.TerminalSnapshot==terminal,"presentation tail time never advances authority");
+            // Exercise real BattleManager scope filters without starting its network coroutine.
+            receiver=new GameObject("isolated scope receiver"); var manager=receiver.AddComponent<BattleManager>();
+            var receive=typeof(BattleManager).GetMethod("Message_Frame_Operation",BindingFlags.Instance|BindingFlags.NonPublic);
+            int before=data.GetFrameDataNum();
+            receive.Invoke(manager,new object[]{new UdpDownFrameOperations {matchId=Guid.NewGuid().ToString("N"),roundId=1,frameID=1000,operations=Ops(true)}});
+            Check(data.GetFrameDataNum()==before,"old match raw frame rejected before storage");
+            receive.Invoke(manager,new object[]{new UdpDownFrameOperations {matchId=match,roundId=2,frameID=1000,operations=Ops(true)}});
+            Check(data.GetFrameDataNum()==before,"wrong round raw frame rejected before storage");
+            receive.Invoke(manager,new object[]{new UdpDownFrameOperations {matchId=match,roundId=1,frameID=1000,operations=Ops()}});
+            Check(data.GetFrameDataNum()==before+1,"current scope raw frame remains retained while terminal waits");
+            // A stale transport action queued before retirement must not enter a newly subscribed session.
+            int calls=0; var dispatcher=UdpMessageDispatcher.Instance;
+            dispatcher.mes_down_game_over=_=>calls++;
+            dispatcher.AnalyzeMessage(SCID.UDP_DOWN_GAME_OVER,PackageHandler.SerializeData(new UdpDownGameOver {matchId=match,roundId=1}));
+            dispatcher.Destory(); dispatcher.mes_down_game_over=_=>calls++;
+            NetGlobal.Instance.DoForAction();
+            Check(calls==0,"queued old transport callback cannot reach new generation subscriber");
+            pilot.Dispose(); pilot.Dispose();
+            Check(pilot.ActiveVfx==0 && pilot.ActiveSfx==0,"duplicate disposal leaves no session effects or sound ownership");
+            data.ClearData();
+            AllPlayerOperation one=Ops(),two=Ops(),three=Ops();
+            data.AddNewFrameData(3,three); data.AddNewFrameData(1,one);
+            Check(data.HighestReceivedFrame==3,"reordered packet cannot lower highest received frame");
+            Check(data.TryGetNextPlayerOp(out var first)&&ReferenceEquals(first,one),"first received frame consumable");
+            data.RunOpSucces(); Check(!data.TryGetNextPlayerOp(out _),"gap waits rather than inventing input");
+            data.AddLackFrameData(2,two);
+            Check(data.TryGetNextPlayerOp(out var recovered)&&ReferenceEquals(recovered,two),"requested replay fills unregistered gap");
+            data.AddNewFrameData(2,Ops(true)); data.AddLackFrameData(2,Ops(true));
+            Check(data.TryGetNextPlayerOp(out recovered)&&ReferenceEquals(recovered,two),"duplicate packets do not overwrite accepted frame");
+            data.RunOpSucces(); Check(data.TryGetNextPlayerOp(out var next)&&ReferenceEquals(next,three),"consecutive catchup after recovery");
+            data.RunOpSucces(); Check(!data.TryGetNextPlayerOp(out _)&&data.NextFrameID==4,"duplicate history cannot advance twice");
+            data.AddLackFrameData(4,Ops()); Check(!data.TryGetNextPlayerOp(out _),"unrequested future replay outside received range ignored");
+            Check(data.PendingFrameSpan==0,"backlog excludes consumed history");
+            Debug.Log("PHASE5_LIFECYCLE_COMPLETE checks="+checks+" realPlayers=true isolatedIncomingFrames=true notNetwork=true");
+            UnityEditor.EditorApplication.Exit(0);
+        } catch(Exception ex) { Debug.LogException(ex); UnityEditor.EditorApplication.Exit(1); }
+        finally { pilot?.Dispose(); if(receiver) DestroyImmediate(receiver); if(profile) DestroyImmediate(profile); }
+    }
+}
+#endif
+
+

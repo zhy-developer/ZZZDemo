@@ -1,0 +1,93 @@
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using GameProtocol;
+using SkillConfig;
+using SkillRuntime.Integration;
+using UnityEngine;
+using Unity.Profiling;
+
+// Staged development-build observer, never a simulation input source.
+public sealed class Phase5FrameRecorder : IPilotFrameDiagnostics, IDisposable
+{
+    [Serializable] public sealed class Field { public string name, value; }
+    [Serializable] public sealed class Row {
+        public string match, stage = "post-commit-exit/pre-presentation", rules, config, input, hash;
+        public int round = 1, seed; public long frame; public Field[] fields;
+    }
+    [Serializable] public sealed class Stats {
+        public string match, mode; public int frames, renderSamples, maxFramesPerRender, maxBacklog, maxCandidates, maxEvents, maxActiveBoxes;
+        public double meanMs, p95Ms, p99Ms, maxMs, renderMeanMs, renderP95Ms, renderP99Ms, renderMaxMs, meanAllocatedBytes, fullMeanMs, meanAllocationEvents;
+        public double fullRenderMeanMs, fullRenderP95Ms, fullRenderP99Ms, fullRenderMaxMs;
+        public bool threadAllocatedBytesAvailable, allocationEventsAvailable;
+        public int maxAllocationEvents;
+        public long maxAllocatedBytes; public int gc0, gc1, gc2;
+    }
+    readonly StreamWriter writer; readonly string match, path; readonly bool detailed;
+    readonly List<double> milliseconds = new List<double>(4096), full = new List<double>(4096), render = new List<double>(4096);
+    readonly List<double> fullRender = new List<double>(4096);
+    readonly List<long> allocations = new List<long>(4096);
+    readonly List<int> allocationEvents = new List<int>(4096);
+    ProfilerRecorder gcEvents;
+    readonly bool bytesAvailable;
+    readonly bool noTrace;
+    readonly int[] gc = { GC.CollectionCount(0), GC.CollectionCount(1), GC.CollectionCount(2) };
+    long tick, allocated, observationCost; int renderFrame = -1, perRender, maxPerRender, backlog, candidates, events;
+    double renderMs, fullRenderMs; int count, activeBoxes;
+    const int MaxFrames = 10000; // Per match; acceptance driver caps matches at 24.
+    public Phase5FrameRecorder(string directory, string id, bool detail, bool disableTrace=false) {
+        match=id; detailed=detail; path=Path.Combine(directory, id); Directory.CreateDirectory(directory);
+        noTrace=disableTrace;
+        long probe=GC.GetAllocatedBytesForCurrentThread();var retained=new byte[8192];bytesAvailable=GC.GetAllocatedBytesForCurrentThread()>probe;GC.KeepAlive(retained);
+        gcEvents=new ProfilerRecorder(ProfilerCategory.Memory,"GC.Alloc",4096,ProfilerRecorderOptions.CollectOnlyOnCurrentThread);
+        if (File.Exists(path+".jsonl")) throw new IOException("Do not overwrite evidence");
+        writer=new StreamWriter(path+".jsonl", false, new System.Text.UTF8Encoding(false));
+    }
+    public void Begin(long frame) { gcEvents.Reset();gcEvents.Start();tick=Stopwatch.GetTimestamp(); allocated=GC.GetAllocatedBytesForCurrentThread(); }
+    public void Committed(long frame, AllPlayerOperation input, PilotBattleSession session) {
+        long end=Stopwatch.GetTimestamp(); long bytes=GC.GetAllocatedBytesForCurrentThread()-allocated;
+        gcEvents.Stop(); if(gcEvents.Count>=4096)throw new InvalidOperationException("GC event recorder capacity exceeded");allocationEvents.Add(gcEvents.Count);
+        if (++count > MaxFrames) throw new InvalidOperationException("Trace capacity reached; run invalid");
+        double ms=(end-tick)*1000.0/Stopwatch.Frequency; milliseconds.Add(ms); allocations.Add(bytes);
+        if (renderFrame != Time.frameCount) { FlushRender(); renderFrame=Time.frameCount; }
+        perRender++; renderMs+=ms;
+        backlog=Math.Max(backlog,BattleData.Instance.PendingFrameSpan);
+        candidates=Math.Max(candidates,session.Runtime.Candidates.Count); events=Math.Max(events,session.Runtime.Events.Count);
+        activeBoxes=Math.Max(activeBoxes,Enumerable.Range(1,2).Select(i=>session.Cast(i)).Where(c=>c!=null).Sum(c=>c.Skill.Shapes.Count(s=>s.StartFrame<=c.SkillFrame&&c.SkillFrame<s.EndFrame)));
+        if(noTrace){observationCost=Stopwatch.GetTimestamp()-end;return;}
+        // Raw action IDs retained even when duplicate/rejected. Missing slots are explicitly absent.
+        string normalized=string.Join(";",input.operations.OrderBy(x=>x.battleID).Select(x=>FormattableString.Invariant(
+            $"{x.battleID},move={(x.move>=0&&x.move<=120?x.move%120:121)},op={(int)x.rightOperation},id={x.operationID},v1={x.operationValue1},v2={x.operationValue2}")));
+        var fields=session.DescribeDiagnosticFields();
+        var row=new Row { match=match, frame=frame, rules=PilotBattleProfile.Rules, config=session.Digest,
+            seed=BattleData.Instance.randSeed, input=normalized,
+            hash=SkillConfigHash.Sha256(string.Join("\n",fields.Select(p=>p.Key.Length+":"+p.Key+"="+p.Value.Length+":"+p.Value))),
+            fields=detailed ? fields.Select(p=>new Field{name=p.Key,value=p.Value}).ToArray() : new Field[0] };
+        writer.WriteLine(JsonUtility.ToJson(row));
+        if (count <= 128 || count % 128 == 0) writer.Flush();
+        observationCost=Stopwatch.GetTimestamp()-end;
+    }
+    public void End(long frame) {
+        double ms=(Stopwatch.GetTimestamp()-tick-observationCost)*1000.0/Stopwatch.Frequency;
+        full.Add(ms); // Whole authority + presentation, excluding diagnostic snapshot serialization.
+        fullRenderMs+=ms;
+    }
+    void FlushRender() { if(perRender==0)return; render.Add(renderMs);fullRender.Add(fullRenderMs); maxPerRender=Math.Max(maxPerRender,perRender); perRender=0;renderMs=0;fullRenderMs=0; }
+    static double P(List<double> values,double p) { if(values.Count==0)return 0;var a=values.OrderBy(v=>v).ToArray();return a[Math.Min(a.Length-1,(int)Math.Ceiling(a.Length*p)-1)]; }
+    public void Dispose() {
+        writer.Dispose(); FlushRender();
+        var stats=new Stats { match=match,mode=noTrace?"diagnostic-off/profiling-only":detailed?"fields-on/verbose-off":"hash-only/verbose-off",frames=count,renderSamples=render.Count,
+            maxFramesPerRender=maxPerRender,maxBacklog=backlog,maxCandidates=candidates,maxEvents=events,maxActiveBoxes=activeBoxes,
+            meanMs=milliseconds.Count==0?0:milliseconds.Average(),p95Ms=P(milliseconds,.95),p99Ms=P(milliseconds,.99),maxMs=P(milliseconds,1),
+            renderMeanMs=render.Count==0?0:render.Average(),renderP95Ms=P(render,.95),renderP99Ms=P(render,.99),renderMaxMs=P(render,1),
+            fullRenderMeanMs=fullRender.Count==0?0:fullRender.Average(),fullRenderP95Ms=P(fullRender,.95),fullRenderP99Ms=P(fullRender,.99),fullRenderMaxMs=P(fullRender,1),
+            threadAllocatedBytesAvailable=bytesAvailable,allocationEventsAvailable=gcEvents.Valid,meanAllocationEvents=allocationEvents.Count==0?0:allocationEvents.Average(),maxAllocationEvents=allocationEvents.Count==0?0:allocationEvents.Max(),
+            meanAllocatedBytes=!bytesAvailable?-1:allocations.Count==0?0:allocations.Average(),maxAllocatedBytes=!bytesAvailable?-1:allocations.Count==0?0:allocations.Max(),
+            fullMeanMs=full.Count==0?0:full.Average(),gc0=GC.CollectionCount(0)-gc[0],gc1=GC.CollectionCount(1)-gc[1],gc2=GC.CollectionCount(2)-gc[2] };
+        File.WriteAllText(path+".stats.json",JsonUtility.ToJson(stats,true));
+        gcEvents.Dispose();
+    }
+}

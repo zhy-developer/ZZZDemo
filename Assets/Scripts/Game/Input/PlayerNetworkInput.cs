@@ -27,14 +27,23 @@ namespace ZZZ
             // Freeze the action's facing at input time; remote players never use our target blackboard.
             Vector3 aim = direction;
             if (input == Vector2.zero)
-                aim = player.enemy != null ? player.enemy.position - player.transform.position : player.transform.forward;
+                aim = player.IsDeterministicPilot ? player.PilotInputAim()
+                    : player.enemy != null ? player.enemy.position - player.transform.position : player.transform.forward;
             int facing = EncodeDirection(aim);
             int moving = input == Vector2.zero ? 0 : 1;
-            if (actions.Walk.WasPressedThisFrame()) Queue(RightOpType.rop5, facing, moving);
-            if (actions.Dash.WasPressedThisFrame()) Queue(RightOpType.rop4, moving != 0 ? facing : EncodeDirection(player.transform.forward), moving);
+            // This match's adapter currently exposes movement + normal attacks. Inactive actions
+            // must not enter the local queue (Dash would otherwise remove an unsent attack).
+            if (!player.IsDeterministicPilot)
+            {
+                if (actions.Walk.WasPressedThisFrame()) Queue(RightOpType.rop5, facing, moving);
+                if (actions.Dash.WasPressedThisFrame()) Queue(RightOpType.rop4, moving != 0 ? facing : EncodeDirection(player.transform.forward), moving);
+            }
             if (actions.L_AtK.WasPressedThisFrame()) Queue(RightOpType.rop1, facing, moving);
-            if (actions.Skill.WasPressedThisFrame()) Queue(RightOpType.rop2, facing, moving);
-            if (actions.FinishSkill.WasPressedThisFrame()) Queue(RightOpType.rop3, facing, moving);
+            if (!player.IsDeterministicPilot)
+            {
+                if (actions.Skill.WasPressedThisFrame()) Queue(RightOpType.rop2, facing, moving);
+                if (actions.FinishSkill.WasPressedThisFrame()) Queue(RightOpType.rop3, facing, moving);
+            }
             FlushCapturedAction();
         }
 

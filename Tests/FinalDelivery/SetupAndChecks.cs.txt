@@ -1,0 +1,101 @@
+using System;
+using System.IO;
+using System.Linq;
+using SkillConfig;
+using SkillConfig.Editor;
+using SkillRuntime.Integration;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+
+public static class FinalDeliveryChecks
+{
+    public const string Profile = "Assets/ScriptableObject/SkillConfigs/Miyabi_NormalGameplay.asset";
+    const string Scratch = "Assets/ScriptableObject/SkillConfigs/__DeliveryCheck.asset";
+    static int checks;
+    static void Check(bool ok, string message) { if (!ok) throw new Exception(message); Debug.Log("DELIVERY_PASS " + (++checks) + " " + message); }
+    static void Reject(Action action, string message) { bool rejected = false; try { action(); } catch { rejected = true; } Check(rejected, message); }
+    public static void Setup()
+    {
+        var catalog = AssetDatabase.LoadAssetAtPath<CharacterSkillCatalog>(SkillPilotSetup.CatalogPath);
+        catalog.hurtBoxConfigured = true;
+        catalog.hurtBox = new HurtBoxData { radius = 5000, height = 10000, offset = new Int3() };
+        catalog.migrationNotes = "Normal gameplay scope: Miyabi movement and Normal1-5. Initial tunable HP100 and Hurt radius5000/offset0 authorized at delivery. Normal6/Rush_ATK/Skill/FinishSkill remain unmigrated. Partial catalog also retains authoring-only test skills.";
+        EditorUtility.SetDirty(catalog); AssetDatabase.SaveAssetIfDirty(catalog);
+        var issues = SkillConfigExporter.Export(catalog);
+        Check(!issues.Any(x => x.severity == DiagnosticSeverity.Error), "catalog export with explicit HurtBox");
+        var development = AssetDatabase.LoadAssetAtPath<PilotBattleProfile>(PilotArenaSetup.ProfilePath);
+        PilotProfileMaintenance.Seal(development);
+        var profile = AssetDatabase.LoadAssetAtPath<PilotBattleProfile>(Profile);
+        if (!profile) { profile = UnityEngine.Object.Instantiate(development); AssetDatabase.CreateAsset(profile, Profile); }
+        profile.normalGameplay = true;
+        profile.testHP = 100;
+        profile.testParameterNotice = "Initial tunable gameplay HP100; HurtBox from catalog. Scope Normal1-5 plus movement. Values authorized at final delivery; not final balance.";
+        PilotProfileMaintenance.Seal(profile);
+        var scene = EditorSceneManager.OpenScene("Assets/Scenes/BattleScene.unity");
+        var manager = scene.GetRootGameObjects().SelectMany(x => x.GetComponentsInChildren<GameManager>(true)).Single();
+        var settings = manager.GetComponent<PilotMatchSettings>() ?? manager.gameObject.AddComponent<PilotMatchSettings>();
+        settings.mode = BattleAuthorityMode.DeterministicPilot; settings.profile = profile;
+        EditorUtility.SetDirty(settings); EditorSceneManager.MarkSceneDirty(scene); EditorSceneManager.SaveScene(scene);
+        Debug.Log("DELIVERY_SETUP_COMPLETE");
+    }
+    public static void Run()
+    {
+        var profile = AssetDatabase.LoadAssetAtPath<PilotBattleProfile>(Profile);
+        var scene = EditorSceneManager.OpenScene("Assets/Scenes/BattleScene.unity");
+        var settings = scene.GetRootGameObjects().SelectMany(x => x.GetComponentsInChildren<PilotMatchSettings>(true)).Single();
+        Check(settings.profile == profile && settings.mode == BattleAuthorityMode.DeterministicPilot, "saved normal BattleScene default");
+        Check(profile.normalGameplay, "normal profile is not development-only");
+        PilotProfileMaintenance.CheckExport(profile);
+        var config = profile.ValidateAndFreeze();
+        Check(config.HP == 100 && config.Skills.Count == 5, "declared HP and five supported skills");
+        Check(config.Skills.Select(s => s.Skill.SkillId).SequenceEqual(Enumerable.Range(1,5).Select(i => "miyabi-normal-"+i)), "real Normal1-5 mapping");
+        Check(profile.catalog.hurtBoxConfigured && profile.catalog.hurtBox.radius == 5000, "catalog HurtBox configured");
+        Check(!SkillConfigExporter.IsStale(profile.catalog), "saved source equals exported JSON");
+        Check(!SkillConfigLoader.TryLoad("miyabi", out _, out _, true), "whole-catalog readiness protection retained");
+        var source = File.ReadAllText(AssetDatabase.GetAssetPath(profile));
+        var json = File.ReadAllText(SkillConfigExporter.PathFor(profile.catalog));
+        var scratch = UnityEngine.Object.Instantiate(profile);
+        AssetDatabase.CreateAsset(scratch, Scratch);
+        try
+        {
+            scratch.testHP = 101;
+            Reject(() => scratch.ValidateAndFreeze(), "changed HP invalidates seal");
+            PilotProfileMaintenance.Seal(scratch);
+            Check(scratch.ValidateAndFreeze().HP == 101, "explicit reseal accepts valid HP without migrating skills");
+            string seal = scratch.sealedSourceHash;
+            Undo.PerformUndo(); Check(scratch.sealedSourceHash != seal, "seal Undo");
+            Undo.PerformRedo(); Check(scratch.sealedSourceHash == seal, "seal Redo");
+            scratch.testHP = 0;
+            Reject(() => PilotProfileMaintenance.Seal(scratch), "invalid HP rejected");
+            Check(scratch.sealedSourceHash == seal, "failed seal preserves old hash");
+            scratch.testHP = 101;
+            scratch.allowedCombos = scratch.allowedCombos.Reverse().ToArray();
+            Reject(() => PilotProfileMaintenance.Seal(scratch), "wrong combo order rejected");
+            Check(scratch.sealedSourceHash == seal, "invalid order cannot change seal");
+            scratch.allowedCombos = profile.allowedCombos;
+            scratch.exportedJson = new TextAsset("{}");
+            Reject(() => PilotProfileMaintenance.Seal(scratch), "wrong JSON asset rejected");
+            UnityEngine.Object.DestroyImmediate(scratch.exportedJson); scratch.exportedJson = profile.exportedJson;
+            var catalog = UnityEngine.Object.Instantiate(profile.catalog);
+            try { catalog.hurtBoxConfigured = false; scratch.catalog = catalog;
+                Reject(() => PilotProfileMaintenance.Seal(scratch), "unexported/missing HurtBox rejected"); }
+            finally { scratch.catalog = profile.catalog; UnityEngine.Object.DestroyImmediate(catalog); }
+            scratch.testHP = 101; PilotProfileMaintenance.Seal(scratch);
+            Check(File.ReadAllText(AssetDatabase.GetAssetPath(profile)) == source && File.ReadAllText(SkillConfigExporter.PathFor(profile.catalog)) == json, "scratch checks leave normal profile and JSON unchanged");
+            Check(AssetDatabase.LoadAssetAtPath<ComboContainerData>(AssetDatabase.GetAssetPath(profile.comboContainer)).comboDatas.Count == 6, "legacy combo container remains six entries");
+            Check(profile.catalog.completeness == CatalogCompleteness.PartialPilot, "unmigrated content remains explicit");
+            Debug.Log("DELIVERY_CHECKS_COMPLETE checks="+checks+" digest="+config.Digest);
+        }
+        finally { AssetDatabase.SaveAssetIfDirty(scratch); }
+    }
+    public static void Reopen()
+    {
+        var scratch = AssetDatabase.LoadAssetAtPath<PilotBattleProfile>(Scratch);
+        Check(scratch && scratch.ValidateAndFreeze().HP == 101, "saved profile reopens with valid seal and HP");
+        AssetDatabase.DeleteAsset(Scratch);
+        var profile = AssetDatabase.LoadAssetAtPath<PilotBattleProfile>(Profile);
+        Check(profile.ValidateAndFreeze().HP == 100, "normal profile still valid after restart");
+        Debug.Log("DELIVERY_REOPEN_COMPLETE");
+    }
+}

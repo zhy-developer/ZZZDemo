@@ -121,15 +121,29 @@ public class BattleManager : MonoSingleton<BattleManager>
     }
 
     //逻辑帧更新
+    float nextMissingFrameRetry;
     void LogicUpdate()
     {
         if (destroyed || roleManage == null || roleManage.Pilot?.TerminalSnapshot != null) return;
-        AllPlayerOperation _op;
-        if (BattleData.Instance.TryGetNextPlayerOp(out _op))
+        var data = BattleData.Instance;
+        // Bounded catch-up drains already received consecutive frames. Every step is still
+        // exactly one server tick; render cadence/wall time never supplies authority inputs.
+        int budget = roleManage.Pilot != null ? 8 : 1;
+        for (int i = 0; i < budget; i++)
         {
-            if (!roleManage.ConsumeFrame(BattleData.Instance.NextFrameID, _op)) return;
-            //roleManage.Logic_Move_Correction();
-            BattleData.Instance.RunOpSucces();
+            if (!data.TryGetNextPlayerOp(out var op))
+            {
+                if (roleManage.Pilot != null && data.HighestReceivedFrame >= data.NextFrameID && Time.realtimeSinceStartup >= nextMissingFrameRetry)
+                {
+                    nextMissingFrameRetry = Time.realtimeSinceStartup + .25f;
+                    int end = (int)Math.Min((long)data.HighestReceivedFrame, (long)data.NextFrameID + 31);
+                    UdpMessageDispatcher.Instance.SendDeltaFrames(data.battleID, new List<int> { data.NextFrameID, end });
+                }
+                return;
+            }
+            if (!roleManage.ConsumeFrame(data.NextFrameID, op)) return;
+            data.RunOpSucces();
+            if (roleManage.Pilot?.TerminalSnapshot != null) return;
         }
     }
 
