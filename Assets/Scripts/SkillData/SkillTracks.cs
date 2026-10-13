@@ -52,13 +52,14 @@ namespace ZZZ.SkillAuthoring
     {
         [Min(1)] public int id = 1;
         [Min(0)] public int damage = 20;
-        [Min(0)] public int hitStopFrames = 3;
+        [Min(0), Tooltip("顿帧暂时全局停用，此值仅保留配置，不产生暂停。")]
+        public int hitStopFrames = 3;
         [Tooltip("-1 = 待人工配置。硬直不包含顿帧，不跟随受击动画长度。")]
         public int hitStunFrames = -1;
         public string[] hitAnimationNames = Array.Empty<string>();
         public string[] parryAnimationNames = Array.Empty<string>();
         [Min(0)] public float cameraShake;
-        // 运行时接入阶段使用：同一释放序号 + 命中组 + 目标，只结算一次。
+        // 帧战斗使用：同一释放序号 + 命中组 + 目标，只结算一次。
     }
 
     public enum SkillWindowKind { PreInput, ComboExecute, MoveCancel }
@@ -69,7 +70,7 @@ namespace ZZZ.SkillAuthoring
         public SkillWindowKind kind;
         public int startFrame;
         public int endFrame = 1;
-        [Tooltip("下一段技能的稳定 ID；第一轮仅制作数据，不执行状态转换。")]
+        [Tooltip("下一段技能的稳定 ID；当前仅保存，连段执行将在后续接入。")]
         public string nextSkillId;
     }
 

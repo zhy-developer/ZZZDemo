@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7f1544957c1b42fc9c03c109ea34d8d1, type: 3}
+  m_Name: Unagi_CombatProfile
+  m_EditorClassIdentifier: 
+  maxHealth: 100
+  hurtRadius: 4000
+  movePerFrame: 3000
+  commands:
+  - command: 1
+    skill: {fileID: 11400000, guid: dd01c8d367538fb4f9666894a287f3ea, type: 2}
+  idleClip: {fileID: -3101187217175272289, guid: 2e97bb40dd1ff8c4295dfc3b074e0ece, type: 3}
+  moveClip: {fileID: -229413099510903425, guid: 2e97bb40dd1ff8c4295dfc3b074e0ece, type: 3}
+  hitClip: {fileID: -3769112847589529204, guid: 80107a816f028fc41bee25cd760bd336, type: 3}

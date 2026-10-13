@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Cinemachine;
 using ZZZ;
+using ZZZ.SkillRuntime;
 
 public class RoleManager : MonoBehaviour
 {
@@ -15,6 +16,10 @@ public class RoleManager : MonoBehaviour
 
     private Transform roleParent;
     private Dictionary<int, RoleBase> dic_role;
+    private FrameCombatSession combat;
+    private CombatStatusView combatStatus;
+    public CombatWorld CombatWorld => combat?.World;
+    public string CombatError { get; private set; }
 
     public void InitData(Transform _roleParent)
     {
@@ -22,6 +27,9 @@ public class RoleManager : MonoBehaviour
         roleParent = _roleParent;
 
         dic_role = new Dictionary<int, RoleBase>();
+        CombatError = null;
+        combatStatus = gameObject.AddComponent<CombatStatusView>();
+        combatStatus.Bind(this);
 
         pre_roleBase = Resources.Load<GameObject>("BattleScene/Role/RoleBase");
         pre_roleUI = Resources.Load<GameObject>("BattleScene/Role/RoleUI");
@@ -73,7 +81,17 @@ public class RoleManager : MonoBehaviour
             }
         }
 
-        initFinish = true;
+        // 两个角色全部创建后再构造同一个战斗世界；配置失败时不发送 ready，也不回退到旧战斗。
+        try
+        {
+            combat = new FrameCombatSession(dic_role.Values);
+            initFinish = true;
+        }
+        catch (System.Exception exception)
+        {
+            CombatError = exception.Message;
+            Debug.LogError("帧战斗初始化失败：" + exception, this);
+        }
     }
 
     public RoleBase GetRoleFromBattleID(int _id)
@@ -95,42 +113,26 @@ public class RoleManager : MonoBehaviour
         }
     }
 
-    public void Logic_Operation(AllPlayerOperation _allOp)
+    public bool Logic_Step(AllPlayerOperation operations)
     {
-        // Advance cooldowns before applying this frame's new actions.
-        foreach (var role in dic_role.Values) role.Logic_Tick();
-        //	Debug.Log("操作数" + _allOp.operations.Count);
-        foreach (var item in _allOp.operations)
+        if (combat == null || !string.IsNullOrEmpty(CombatError)) return false;
+        try
         {
-            ///玩家执行移动
-            dic_role[item.battleID].Logic_UpdateMoveDir(item.move);
-
-            if (item.rightOperation == RightOpType.noop || item.operationID == 0)
-            {
-                //无操作
-            }
-            else
-            {
-                if (BattleData.Instance.IsValidRightOp(item.battleID, item.operationID))
-                {
-                    dic_role[item.battleID].Logic_ApplyAction(item);
-
-                    BattleData.Instance.UpdateRightOperationID(item.battleID, item.operationID, item.rightOperation);
-                }
-            }
+            combat.Step(operations);
+            combatStatus.OnLogicFrame();
+            return true;
         }
-    }
-
-    public void Logic_Move()
-    { // 逻辑移动。遍历每一个角色完成移动
-        foreach (var item in dic_role)
+        catch (System.Exception exception)
         {
-            item.Value.Logic_Move();
+            CombatError = exception.Message;
+            Debug.LogError("帧战斗停止，需检查配置/调用链：" + exception, this);
+            return false;
         }
     }
 
     void OnDestroy()
     {
+        combat?.Dispose(); combat = null;
         LocalPlayer = null;
         if (BattleManager.roleManage == this) BattleManager.roleManage = null;
     }

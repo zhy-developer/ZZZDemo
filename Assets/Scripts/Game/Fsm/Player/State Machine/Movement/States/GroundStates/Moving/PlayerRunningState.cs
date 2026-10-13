@@ -9,7 +9,7 @@ namespace TPF
         public override void Enter()
         {
             base.Enter();
-            animator.CrossFadeInFixedTime("WalkStart", 0.14f);
+            movementStateMachine.CrossFadeAnimation("WalkStart", 0.14f);
             SetMovementParameters(playerMovementData.runData.inputMult, playerMovementData.runData.rotationTime, true);
         }
 

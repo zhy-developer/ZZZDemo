@@ -54,12 +54,16 @@ namespace ZZZ.SkillAuthoring
         }
 
         public static double SampleAnimationSeconds(SkillDefinition skill, int frameBoundary)
+            => SampleAnimationAtTime(skill, SkillFrameUtility.FrameSeconds(frameBoundary));
+
+        /// <summary>连续表现时间到源动画秒数；编辑器整数帧采样和运行时渲染采样共用裁剪规则。</summary>
+        public static double SampleAnimationAtTime(SkillDefinition skill, double timelineSeconds)
         {
             var track = skill?.animation;
             if (track?.clip == null) return 0;
             double end = AnimationEndSeconds(track);
             double start = Math.Max(0, Math.Min(track.sourceStartSeconds, end));
-            double elapsed = SkillFrameUtility.FrameSeconds(Math.Max(0, frameBoundary - track.startFrame));
+            double elapsed = Math.Max(0, timelineSeconds - SkillFrameUtility.FrameSeconds(track.startFrame));
             return Math.Min(end, start + elapsed * Math.Max(0.01f, track.speed));
         }
 

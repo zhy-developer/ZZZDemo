@@ -30,6 +30,8 @@ namespace ZZZ
 
         public void TraceCombo(string stage, string detail = "")
         {
+            // 网络动画控制器托管在 Playable 内；旧连招诊断不应再查询 Animator 自身的状态图。
+            if (UsesFrameCombat) return;
             if (!enableComboDiagnostics || !Debug.isDebugBuild) return;
             var data = comboStateMachine?.ReusableData;
             string animation = "animator=unavailable";
@@ -62,6 +64,7 @@ namespace ZZZ
 
         public int BattleID { get; private set; }
         public bool IsLocalPlayer { get; private set; }
+        public bool UsesFrameCombat { get; private set; }
         [SerializeField] private Transform cameraFollowTarget;
         [SerializeField] private Transform cameraLookAtTarget;
         public Transform CameraFollowTarget => cameraFollowTarget != null ? cameraFollowTarget : transform;
@@ -88,6 +91,10 @@ namespace ZZZ
             BattleID = battleID;
             IsLocalPlayer = isLocalPlayer;
             networkRoleInitialized = true;
+            UsesFrameCombat = true;
+            // 网络对战完全由逻辑帧驱动。原控制器上的事件/状态回调不得再次改变技能或触发伤害。
+            characterAnimator.fireEvents = false;
+            foreach (var legacyHealth in GetComponents<CharacterHealthBase>()) legacyHealth.enabled = false;
         }
 
         protected override void Awake()
@@ -106,11 +113,22 @@ namespace ZZZ
         protected override void Start()
         {
             base.Start();
+            if (UsesFrameCombat)
+            {
+                if (IsLocalPlayer) playerCameraUtility?.Init();
+                return;
+            }
             if (networkRoleInitialized) StartStates();
           
         }
         protected override void Update()
         {
+            if (UsesFrameCombat)
+            {
+                if (IsLocalPlayer && BattleManager.roleManage != null && BattleManager.roleManage.initFinish)
+                    networkInput.Capture();
+                return;
+            }
             if (!statesStarted) return;
             if (IsLocalPlayer)
             {
@@ -125,6 +143,7 @@ namespace ZZZ
 
         public void ApplyNetworkMovement(int direction)
         {
+            if (UsesFrameCombat) return;
             HasNetworkMovement = direction >= 0 && direction <= 120;
             if (!statesStarted && networkRoleInitialized && isActiveAndEnabled) StartStates();
             if (!statesStarted || !isActiveAndEnabled) return;
@@ -133,6 +152,7 @@ namespace ZZZ
 
         public bool ApplyNetworkAction(PlayerOperation operation)
         {
+            if (UsesFrameCombat) return false;
             diagnosticOperationId = operation.operationID;
             TraceCombo("RECEIVE", $"op={operation.operationID} type={operation.rightOperation} payload={operation.operationValue2} index={operation.operationValue2 >> 2}");
             if (!statesStarted || !isActiveAndEnabled)
@@ -152,6 +172,7 @@ namespace ZZZ
 
         public void LogicTick()
         {
+            if (UsesFrameCombat) return;
             if (statesStarted) actions.LogicTick();
         }
 
@@ -171,6 +192,7 @@ namespace ZZZ
         #region 相关动画进入或退出触发的方法
         public void OnAnimationTranslateEvent(OnEnterAnimationPlayerState playerState)
         {
+            if (UsesFrameCombat) return;
             if (!statesStarted) return;
             switch (playerState)
             {
@@ -192,6 +214,7 @@ namespace ZZZ
 
         public void OnAnimationExitEvent()
         {
+            if (UsesFrameCombat) return;
             if (!statesStarted) return;
             movementStateMachine.OnAnimationExitEvent();
 
@@ -214,7 +237,7 @@ namespace ZZZ
             }
 
             // 先恢复监听，再进入状态，否则重新启用后状态名称仍为空。
-            if (networkRoleInitialized && movementStateMachine != null && !statesStarted)
+            if (!UsesFrameCombat && networkRoleInitialized && movementStateMachine != null && !statesStarted)
                 StartStates();
         }
        
@@ -250,6 +273,7 @@ namespace ZZZ
 
         private void StartStates()
         {
+            if (UsesFrameCombat) return;
             if (statesStarted) return;
             statesStarted = true;
             movementStateMachine.ChangeState(movementStateMachine.idlingState);
@@ -356,6 +380,7 @@ namespace ZZZ
         /// </summary>
         public void ATK(AnimationEvent animationEvent = null)
         {
+            if (UsesFrameCombat) return;
             if (!IsLocalPlayer) return;
             comboStateMachine.ATKIngState.ATK(animationEvent);
         }
@@ -366,6 +391,7 @@ namespace ZZZ
 
         public void PlayVFX(string name)
         {
+            if (UsesFrameCombat) return;
             VFX_PoolManager.Instance.TryGetVFX(characterName, name);
         }
 
@@ -404,6 +430,7 @@ namespace ZZZ
         }
 
         public void PlayFinishSkillTimeline() {
+            if (UsesFrameCombat) return;
             if (!IsLocalPlayer || finishSkillTimeline == null) return;
             finishSkillTimeline.time = 0;
             finishSkillTimeline.Play();

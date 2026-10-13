@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ba9a50ad2bfec3c499883961a98560a2, type: 3}
   m_Name: "PlayerInfo\uFF08\u661F\u89C1\u96C5\uFF09"
   m_EditorClassIdentifier: 
+  frameCombat: {fileID: 11400000, guid: 93d21184993648c4a859c93f465a3fd2, type: 2}
   <movementData>k__BackingField:
     <SidewaysCameraRecenteringData>k__BackingField:
     - <minAngleRange>k__BackingField: 0

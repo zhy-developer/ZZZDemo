@@ -25,8 +25,8 @@ namespace ZZZ
         public virtual void Update() { }
         public virtual void UpdateAnimationParameters()
         {
-            animator.SetFloat(AnimatorID.MovementID,
-                movementStateMachine.player.HasNetworkMovement ? reusableData.inputMult : 0f, 0.35f, Time.deltaTime);
+            movementStateMachine.SetAnimationFloat(AnimatorID.MovementID,
+                movementStateMachine.HasMovement ? reusableData.inputMult : 0f, 0.35f);
         }
         public virtual void OnAnimationTranslateEvent(IState state) { movementStateMachine.ChangeState(state); }
         public virtual void OnAnimationExitEvent() { }
@@ -35,7 +35,7 @@ namespace ZZZ
         {
             reusableData.inputMult = inputMultiplier;
             reusableData.rotationTime = rotationTime;
-            animator.SetBool(AnimatorID.HasInputID, hasInput);
+            movementStateMachine.SetAnimationBool(AnimatorID.HasInputID, hasInput);
         }
 
         // During a crossfade the exiting animation can report an exit after the new state entered.

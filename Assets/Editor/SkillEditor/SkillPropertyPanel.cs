@@ -38,11 +38,11 @@ namespace ZZZ.SkillEditor
                     break;
                 case SkillSelectionKind.Window:
                     DrawElement(Element(serialized, "windows", selection.index), "窗口");
-                    EditorGUILayout.HelpBox("首轮只编辑窗口数据，不执行预输入或连段。", MessageType.Info);
+                    EditorGUILayout.HelpBox("帧战斗已使用移动取消窗口；预输入和连段执行留到下一轮接入。", MessageType.Info);
                     break;
                 case SkillSelectionKind.Presentation:
                     DrawElement(Element(serialized, "presentation", selection.index), "表现事件");
-                    EditorGUILayout.HelpBox("首轮只保存资源和时点；Scene 预览不会播放音效或特效。", MessageType.Info);
+                    EditorGUILayout.HelpBox("当前保存资源和时点；Scene 预览和本轮帧战斗尚不播放音效或特效。", MessageType.Info);
                     break;
                 case SkillSelectionKind.HitGroups:
                     if (selection.index >= 0)
@@ -51,7 +51,7 @@ namespace ZZZ.SkillEditor
                         EditorGUILayout.LabelField("点击上方“命中组”可查看全部命中组。", EditorStyles.wordWrappedMiniLabel);
                     }
                     else Field(serialized, "hitGroups", "命中组");
-                    EditorGUILayout.HelpBox("同组区域共享一次命中。硬直 -1 表示待配置；本轮不执行伤害、顿帧或硬直。", MessageType.Info);
+                    EditorGUILayout.HelpBox("同次释放、同组区域对同一目标只命中一次。伤害和受击硬直由逻辑帧结算；顿帧暂时全局停用，配置值仅保留。硬直 -1 会阻止对战初始化。", MessageType.Info);
                     break;
                 case SkillSelectionKind.ImportedEvents:
                     using (new EditorGUI.DisabledScope(true))

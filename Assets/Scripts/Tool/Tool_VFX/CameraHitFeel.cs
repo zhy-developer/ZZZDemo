@@ -26,36 +26,15 @@ public class CameraHitFeel : MonoSingleton<CameraHitFeel>
 
     }
 
-    Coroutine PauseFrameCoroutine;
     Coroutine SlowMotionCoroutine;
 
     /// <summary>
-    /// 顿帧方法
+    /// 旧顿帧入口：暂时停用，保留签名兼容旧连招调用。
     /// </summary>
     /// <param name="time"></param>
     public void PF(float time)
     {
-        if (time == 0) { Debug.Log("顿帧时间为0退出");return; }
-        currentEnemyAnimator= GetEnemyAnimator();
-        currentCharacterAnimator=GetCurrentCharacterAnimator();
-
-        if (currentCharacterAnimator == null )
-        {
-            Debug.Log("currentCharacterAnimator is null!");
-            return;
-        }
-        if (currentEnemyAnimator == null)
-        {
-            Debug.Log("currentEnemyAnimator is null!");
-            return;
-        }
-   
-
-        if (PauseFrameCoroutine != null)
-        { 
-            StopCoroutine(PauseFrameCoroutine);
-        }
-        PauseFrameCoroutine = StartCoroutine(PauseFrameOnAnimation(time));
+        // 用户要求暂时关闭全部顿帧：不暂停双方 Animator，也不暂停 VFX。
     }
     /// <summary>
     /// 动画特效的慢速
@@ -106,16 +85,6 @@ public class CameraHitFeel : MonoSingleton<CameraHitFeel>
         currentEnemyAnimator.speed = currentSpeed;
         VFXManager.Instance.SetVFXSpeed(currentSpeed);
 
-    }
-    IEnumerator PauseFrameOnAnimation(float time)
-    {
-        currentCharacterAnimator.speed = 0f;
-        currentEnemyAnimator.speed = 0f;
-        VFXManager.Instance.PauseVFX();
-        yield return new WaitForSeconds(time);
-        VFXManager.Instance.ResetVFX();
-        currentCharacterAnimator.speed = 1f;
-        currentEnemyAnimator.speed = 1f;
     }
     
 

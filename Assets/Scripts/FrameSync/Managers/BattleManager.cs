@@ -114,10 +114,8 @@ public class BattleManager : MonoSingleton<BattleManager>
         AllPlayerOperation _op;
         if (BattleData.Instance.TryGetNextPlayerOp(out _op))
         {
-            roleManage.Logic_Operation(_op);
-            roleManage.Logic_Move();
-            //roleManage.Logic_Move_Correction();
-            BattleData.Instance.RunOpSucces();
+            // 网络帧是战斗的唯一驱动，世界内部负责全员移动后再统一命中结算。
+            if (roleManage.Logic_Step(_op)) BattleData.Instance.RunOpSucces();
         }
     }
 

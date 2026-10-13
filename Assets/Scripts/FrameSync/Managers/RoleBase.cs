@@ -19,6 +19,83 @@ public class RoleBase : MonoBehaviour {
 
 	private Transform modleParent;
 	private ZZZ.Player player;
+	public ZZZ.Player NetworkPlayer => player;
+	public ZZZ.SkillRuntime.CombatFighter Combat { get; private set; }
+	private ZZZ.SkillRuntime.CombatAnimationView combatView;
+	private StateBarUI[] combatHealthBars;
+	private int combatDisplayedHealth = -1;
+	private bool combatPoseInitialized;
+	private bool combatPresentationFrozen;
+	private bool combatRenderFailed;
+
+	public void BindFrameCombat(ZZZ.SkillRuntime.CombatFighter fighter)
+	{
+		ReleaseFrameCombat(); CancelRootMotion();
+		Combat = fighter;
+		combatPoseInitialized = false;
+		combatDisplayedHealth = -1;
+		combatRenderFailed = false;
+		#if UNITY_EDITOR
+		// 旧 ShapeCircle 只继续保存逻辑位置；受击范围由新配置决定，用战斗 Gizmos 显示。
+		objShape.closeLine = true;
+		#endif
+		combatView = new ZZZ.SkillRuntime.CombatAnimationView(player);
+		SyncFrameCombat();
+	}
+
+	public void SyncFrameCombat(bool matchEnded = false)
+	{
+		if (Combat == null) return;
+		objShape.SetPosition(new GameVector2(Combat.Position.x, Combat.Position.y));
+		renderPosition = objShape.GetPositionVec3();
+		var forward = ZZZ.SkillRuntime.CombatMath.Direction(Combat.Facing);
+		renderDir = Quaternion.LookRotation(new Vector3(forward.x, 0, forward.y));
+		if (!combatPoseInitialized)
+		{
+			// 仅开局直接定位；后续网络帧只更新目标，不重置当前显示位置和追赶速度。
+			transform.position = renderPosition; modleParent.rotation = renderDir;
+			currentMoveVelocity = Vector3.zero; currentRotationVelocity = 0f;
+			combatPoseInitialized = true;
+		}
+		// 顿帧暂时停用，命中不再冻结显示追赶；仅死亡或对局结束保持当前显示位置。
+		combatPresentationFrozen = matchEnded || Combat.State == ZZZ.SkillRuntime.CombatState.Dead;
+		if (combatPresentationFrozen)
+		{
+			currentMoveVelocity = Vector3.zero; currentRotationVelocity = 0f;
+		}
+		// 战斗坐标保存在 Combat/Shape；Transform 是显示结果，不回写逻辑。
+		combatView.SyncState(Combat, matchEnded);
+		// 生命变化是逻辑通知；红条缓动由 StateBarUI.Update 自行按渲染帧推进。
+		if (combatDisplayedHealth != Combat.Health)
+		{
+			combatDisplayedHealth = Combat.Health;
+			if (combatHealthBars != null) foreach (var bar in combatHealthBars)
+				if (bar != null) bar.UpdateBlood((float)Combat.Health / Combat.Library.Profile.maxHealth);
+		}
+		player.currentComboState = Combat.State.ToString();
+		player.currentMovementState = Combat.State == ZZZ.SkillRuntime.CombatState.Free && Combat.Moving ? "Moving" : "Stopped";
+	}
+
+	public void ReleaseFrameCombat()
+	{
+		combatView?.Dispose(); combatView = null; Combat = null;
+		combatPoseInitialized = false;
+		combatPresentationFrozen = false;
+		currentMoveVelocity = Vector3.zero; currentRotationVelocity = 0f;
+	}
+
+	private void LateUpdate()
+	{
+		if (Combat == null || combatView == null || combatRenderFailed) return;
+		// 动画播放、移动参数和混合过渡按渲染帧推进；网络帧仅提供状态通知。
+		try { combatView.Render(Time.deltaTime); }
+		catch (System.Exception exception)
+		{
+			// 表现错误只报告一次，不重试刷屏，也不能反向中断已经确认的战斗逻辑。
+			combatRenderFailed = true;
+			Debug.LogError("角色动画显示失败，请检查动画配置：" + exception, this);
+		}
+	}
 	// Keep input buffered, but do not let it move or turn an active attack/skill.
 	private bool IsInputMovementBlocked => player != null
 		&& (player.comboStateMachine.currentState.Value == player.comboStateMachine.ATKIngState
@@ -37,6 +114,7 @@ public class RoleBase : MonoBehaviour {
 	[HideInInspector]
 	public ShapeBase objShape; // 角色的shapeBase
 	public void InitData(GameObject _ui,GameObject _modle,int _roleID,GameVector2 _logicPos){
+		combatHealthBars = _ui.GetComponentsInChildren<StateBarUI>(true);
 		objShape = GetComponent<ShapeBase> ();
 		logicSpeed = GameVector2.zero;
 		modleParent = transform.Find ("Modle");
@@ -62,6 +140,8 @@ public class RoleBase : MonoBehaviour {
 	}
 
 	void Update () {
+		if (player != null && player.UsesFrameCombat && (Combat == null || combatPresentationFrozen)) return;
+		// 沿用原表现方式：每个渲染帧从当前显示位置追赶最新目标，网络帧不重置进度。
 		transform.position = Vector3.SmoothDamp(
 			transform.position,
 			renderPosition,
@@ -183,7 +263,7 @@ public class RoleBase : MonoBehaviour {
 			SetLogicalFacing((inputDirection % 120) * 3);
 	}
 
-	private void OnDisable() { CancelRootMotion(); }
+	private void OnDisable() { CancelRootMotion(); ReleaseFrameCombat(); }
 
 	private void ApplyLogicDisplacement(GameVector2 delta)
 	{

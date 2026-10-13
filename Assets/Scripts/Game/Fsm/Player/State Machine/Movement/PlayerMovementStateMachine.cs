@@ -5,6 +5,15 @@ using UnityEngine;
 
 namespace ZZZ
 {
+    /// <summary>移动 FSM 的表现出口，不提供位移、输入准入或伤害接口。</summary>
+    public interface IMovementAnimationOutput
+    {
+        void SetBool(int id, bool value);
+        void SetFloat(int id, float value, float dampTime, float deltaTime);
+        void CrossFade(string state, float duration);
+        bool IsPlaying(string tag);
+    }
+
     public class PlayerMovementStateMachine : StateMachine
     {
         //缓存初始状态
@@ -28,6 +37,56 @@ namespace ZZZ
         public PlayerMovementNullState playerMovementNullState { get; }
         private bool sprinting;
         private int lastMoveDirection = 121;
+        private IMovementAnimationOutput presentationOutput;
+        private bool presentationMoving;
+        private float presentationDelta;
+        public bool IsPresentationOnly => presentationOutput != null;
+        public bool HasMovement => IsPresentationOnly ? presentationMoving : player.HasNetworkMovement;
+
+        public void BindPresentation(IMovementAnimationOutput output)
+        {
+            currentState.Value = null;
+            presentationOutput = output;
+        }
+
+        /// <summary>只由表现适配器调用；自由行动时根据已确认移动结果选择旧的基础移动状态。</summary>
+        public void PresentMovement(bool moving, bool reenter, float deltaTime)
+        {
+            if (!IsPresentationOnly) return;
+            presentationMoving = moving;
+            presentationDelta = deltaTime;
+            // 从技能返回时重新进入，移动状态的起步动画不能因状态对象相同而被跳过。
+            if (reenter) { currentState.Value?.Exit(); currentState.Value = null; }
+            IState next = moving ? (reusableData.shouldWalk ? (IState)walkingState : runningState) : idlingState;
+            ChangeState(next);
+            currentState.Value.UpdateAnimationParameters();
+            // 不调用旧 Update / 动画回调：它们可能触发闪避完成、切人或战斗状态变化。
+        }
+
+        public void UnbindPresentation()
+        {
+            if (!IsPresentationOnly) return;
+            currentState.Value?.Exit(); currentState.Value = null;
+            presentationOutput = null;
+        }
+
+        public void SetAnimationBool(int id, bool value)
+        {
+            if (IsPresentationOnly) presentationOutput.SetBool(id, value);
+            else player.characterAnimator.SetBool(id, value);
+        }
+        public void SetAnimationFloat(int id, float value, float damping)
+        {
+            if (IsPresentationOnly) presentationOutput.SetFloat(id, value, damping, presentationDelta);
+            else player.characterAnimator.SetFloat(id, value, damping, Time.deltaTime);
+        }
+        public void CrossFadeAnimation(string state, float duration)
+        {
+            if (IsPresentationOnly) presentationOutput.CrossFade(state, duration);
+            else player.characterAnimator.CrossFadeInFixedTime(state, duration);
+        }
+        public bool IsPlayingAnimation(string tag) => IsPresentationOnly
+            ? presentationOutput.IsPlaying(tag) : player.IsPlayingAnimationTag(tag);
         public bool IsLocomotion => currentState.Value == idlingState || currentState.Value == walkingState
             || currentState.Value == runningState || currentState.Value == sprintingState;
         public bool IsDodgeOrSprint => currentState.Value == dashingState || currentState.Value == dashBackingState
@@ -35,6 +94,7 @@ namespace ZZZ
 
         public void ApplyMovement(int direction)
         {
+            if (IsPresentationOnly) return;
             bool moving = player.HasNetworkMovement;
             if (moving)
             {
@@ -59,6 +119,7 @@ namespace ZZZ
 
         public void ToggleWalk()
         {
+            if (IsPresentationOnly) return;
             reusableData.shouldWalk = !reusableData.shouldWalk;
             sprinting = false;
             player.characterAnimator.SetBool(AnimatorID.TurnBackID, false);
@@ -67,6 +128,7 @@ namespace ZZZ
 
         public void ReturnToLocomotion(bool resumeSprint = false)
         {
+            if (IsPresentationOnly) return;
             if (resumeSprint) sprinting = true;
             if (!player.HasNetworkMovement) sprinting = false;
             IState next = idlingState;
@@ -77,6 +139,7 @@ namespace ZZZ
 
         public void StartDash(bool forward)
         {
+            if (IsPresentationOnly) return;
             sprinting = false;
             player.characterAnimator.SetBool(AnimatorID.TurnBackID, false);
             var data = player.playerSO.movementData.dashData;
@@ -88,6 +151,7 @@ namespace ZZZ
 
         public void EnterDash()
         {
+            if (IsPresentationOnly) return;
             reusableData.rotationTime = player.playerSO.movementData.dashData.rotationTime;
             player.PlayDodgeSound();
         }

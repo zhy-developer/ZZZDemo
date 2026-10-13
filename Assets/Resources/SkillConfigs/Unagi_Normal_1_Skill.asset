@@ -37,7 +37,7 @@ MonoBehaviour:
   - id: 1
     damage: 20
     hitStopFrames: 3
-    hitStunFrames: 3
+    hitStunFrames: 8
     hitAnimationNames:
     - Hit_shake
     parryAnimationNames:
@@ -47,9 +47,9 @@ MonoBehaviour:
   hitRegions:
   - label: "\u4F24\u5BB3\u70B9 1\uFF08\u5F85\u6446\u653E\uFF09"
     enabled: 1
-    needsReview: 1
+    needsReview: 0
     startFrame: 7
-    endFrame: 11
+    endFrame: 18
     hitGroupId: 1
     shape: 0
     center: {x: 95, y: 7230}

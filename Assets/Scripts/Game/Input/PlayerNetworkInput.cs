@@ -30,6 +30,15 @@ namespace ZZZ
                 aim = player.enemy != null ? player.enemy.position - player.transform.position : player.transform.forward;
             int facing = EncodeDirection(aim);
             int moving = input == Vector2.zero ? 0 : 1;
+            if (player.UsesFrameCombat)
+            {
+                // 第二轮仅发送按钮意图和朝向。双方在同一服务器帧重新判断准入，禁止由本地 Animator 选择连招段。
+                if (actions.L_AtK.WasPressedThisFrame()) BattleData.Instance.UpdateRightOperation(RightOpType.rop1, facing, 0);
+                if (actions.Skill.WasPressedThisFrame()) BattleData.Instance.UpdateRightOperation(RightOpType.rop2, facing, 0);
+                if (actions.FinishSkill.WasPressedThisFrame()) BattleData.Instance.UpdateRightOperation(RightOpType.rop3, facing, 0);
+                if (actions.Dash.WasPressedThisFrame()) BattleData.Instance.UpdateRightOperation(RightOpType.rop4, facing, 0);
+                return;
+            }
             if (actions.Walk.WasPressedThisFrame()) Queue(RightOpType.rop5, facing, moving);
             if (actions.Dash.WasPressedThisFrame()) Queue(RightOpType.rop4, moving != 0 ? facing : EncodeDirection(player.transform.forward), moving);
             if (actions.L_AtK.WasPressedThisFrame()) Queue(RightOpType.rop1, facing, moving);

@@ -44,6 +44,7 @@ namespace ZZZ.SkillAuthoring
                 if (animation.clip.legacy) error("预览使用 Animator，不支持 Legacy 动画。");
                 if (animation.startFrame < 0 || animation.startFrame >= skill.totalFrames) error("动画开始帧越界。");
                 if (!Finite(animation.speed) || animation.speed <= 0) error("动画速度必须是有效正数。");
+                if (!Finite(animation.blendInSeconds) || animation.blendInSeconds < 0) error("动画淡入时间必须是有效非负数。");
                 if (!Finite(animation.sourceStartSeconds) || !Finite(animation.sourceEndSeconds)
                     || animation.sourceStartSeconds < 0 || animation.sourceEndSeconds < 0
                     || animation.sourceStartSeconds >= SkillFrameSampler.AnimationEndSeconds(animation)
