@@ -38,7 +38,7 @@ namespace ZZZ.SkillEditor
                     break;
                 case SkillSelectionKind.Window:
                     DrawElement(Element(serialized, "windows", selection.index), "窗口");
-                    EditorGUILayout.HelpBox("帧战斗已使用移动取消窗口；预输入和连段执行留到下一轮接入。", MessageType.Info);
+                    EditorGUILayout.HelpBox("PreInput 缓存一次同一攻击键；ComboExecute 消费缓存或响应当帧按键。在 ComboExecute 的“下一段技能”下拉框选择已注册目标。连段优先于同帧移动取消；受击、取消和技能结束清空缓存。", MessageType.Info);
                     break;
                 case SkillSelectionKind.Presentation:
                     DrawElement(Element(serialized, "presentation", selection.index), "表现事件");

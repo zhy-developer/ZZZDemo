@@ -17,6 +17,9 @@ namespace ZZZ.SkillRuntime
         public CombatSkill Skill { get; internal set; }
         public int SkillFrame { get; internal set; }
         public int CastSerial { get; internal set; }
+        public int SkillCommand { get; internal set; }
+        public bool HasBufferedCombo { get; internal set; }
+        public int BufferedComboFacing { get; internal set; } = 121;
         public int HitStopRemaining { get; internal set; }
         public int HitStunRemaining { get; internal set; }
         public int ReactionSerial { get; internal set; }
@@ -27,6 +30,7 @@ namespace ZZZ.SkillRuntime
         public int MoveDirection { get; internal set; } = 121;
         internal Vector2Int PendingMotion;
         internal bool CompletingSkillThisFrame;
+        internal bool StartedSkillThisFrame;
         // 每次释放重置；同组多个区域对同一目标只产生一次候选命中。
         internal readonly HashSet<long> HitTargets = new HashSet<long>();
 
@@ -38,6 +42,7 @@ namespace ZZZ.SkillRuntime
         internal void StopSkill()
         {
             Skill = null; SkillFrame = 0; HitTargets.Clear();
+            SkillCommand = 0; HasBufferedCombo = false; BufferedComboFacing = 121;
             if (State == CombatState.Skill) { State = CombatState.Free; PoseFrame = 0; }
         }
     }

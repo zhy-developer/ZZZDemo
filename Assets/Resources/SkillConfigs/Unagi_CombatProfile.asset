@@ -18,6 +18,8 @@ MonoBehaviour:
   commands:
   - command: 1
     skill: {fileID: 11400000, guid: dd01c8d367538fb4f9666894a287f3ea, type: 2}
+  additionalSkills:
+  - {fileID: 11400000, guid: fa4ecd0ddb97ea64584833d0c4b485e8, type: 2}
   idleClip: {fileID: -3101187217175272289, guid: 2e97bb40dd1ff8c4295dfc3b074e0ece, type: 3}
   moveClip: {fileID: -229413099510903425, guid: 2e97bb40dd1ff8c4295dfc3b074e0ece, type: 3}
   hitClip: {fileID: -3769112847589529204, guid: 80107a816f028fc41bee25cd760bd336, type: 3}

@@ -15,6 +15,8 @@ namespace ZZZ.SkillAuthoring
         [Min(0), Tooltip("每个 33ms 逻辑帧的普通移动距离；不依赖渲染帧率。")]
         public int movePerFrame = 3000;
         public List<SkillCommandBinding> commands = new List<SkillCommandBinding>();
+        [Tooltip("连段后续技能放在这里；按键入口技能已自动收录，无需重复添加。nextSkillId 在本角色技能库内查找。")]
+        public List<SkillDefinition> additionalSkills = new List<SkillDefinition>();
         // 保留旧资产序列化数据，当前待机/移动由预制体 Animator Controller 提供。
         [HideInInspector] public AnimationClip idleClip;
         [HideInInspector] public AnimationClip moveClip;

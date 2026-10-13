@@ -26,7 +26,7 @@ namespace ZZZ.SkillRuntime
 
         public CombatWorld(List<CombatFighter> actors, int minX, int maxX, int minZ, int maxZ)
         {
-            if (actors.Count != 2 || actors[0].BattleId == actors[1].BattleId) throw new ArgumentException("第二轮只支持两个不同 battleID 的角色。");
+            if (actors.Count != 2 || actors[0].BattleId == actors[1].BattleId) throw new ArgumentException("对战只支持两个不同 battleID 的角色。");
             if (minX >= maxX || minZ >= maxZ || !CombatMath.InRange(minX) || !CombatMath.InRange(maxX)
                 || !CombatMath.InRange(minZ) || !CombatMath.InRange(maxZ)) throw new ArgumentException("地图边界无效或超出整数安全范围。");
             fighters = new List<CombatFighter>(actors);
@@ -44,13 +44,19 @@ namespace ZZZ.SkillRuntime
             foreach (var fighter in fighters)
                 foreach (var command in commands)
                     if (command.BattleId == fighter.BattleId) ApplyCommand(fighter, command);
+            // 所有输入收集后只处理一次切段，连段优先于本帧移动取消。
+            foreach (var fighter in fighters) CombatSkillInput.AdvanceCombo(fighter);
             foreach (var fighter in fighters) Move(fighter);
             foreach (var attacker in fighters) CollectHits(attacker);
             ResolveHits();
             if (fighters.Exists(f => f.Health == 0))
             {
                 Finished = true;
-                foreach (var fighter in fighters) if (fighter.Health > 0) WinnerId = fighter.BattleId;
+                foreach (var fighter in fighters)
+                {
+                    fighter.HasBufferedCombo = false; fighter.BufferedComboFacing = 121;
+                    if (fighter.Health > 0) WinnerId = fighter.BattleId;
+                }
             }
         }
 
@@ -58,6 +64,7 @@ namespace ZZZ.SkillRuntime
         {
             fighter.PendingMotion = Vector2Int.zero;
             fighter.CompletingSkillThisFrame = false;
+            fighter.StartedSkillThisFrame = false;
             // 顿帧暂时全局停用。保留字段供后续恢复，清除历史计数，不能再阻塞技能或位移。
             fighter.HitStopRemaining = 0;
             fighter.FrozenThisFrame = false;
@@ -89,19 +96,15 @@ namespace ZZZ.SkillRuntime
         private static void ApplyCommand(CombatFighter fighter, CombatCommand command)
         {
             fighter.MoveDirection = command.MoveDirection >= 0 && command.MoveDirection < 120 ? command.MoveDirection : 121;
-            if (fighter.BlockedThisFrame || fighter.State != CombatState.Free || command.Action == 0) return;
-            if (!fighter.Library.TryGet(command.Action, out var skill)) return;
-            fighter.Skill = skill; fighter.SkillFrame = 0; fighter.State = CombatState.Skill;
-            fighter.CastSerial = fighter.CastSerial == int.MaxValue ? 1 : fighter.CastSerial + 1;
-            fighter.HitTargets.Clear(); fighter.PoseFrame = 0; fighter.Moving = false;
-            if (command.Facing >= 0 && command.Facing < 120) fighter.Facing = command.Facing * 3;
+            CombatSkillInput.Accept(fighter, command);
         }
 
         private void Move(CombatFighter fighter)
         {
             if (fighter.BlockedThisFrame) return;
             bool inputMoving = fighter.MoveDirection < 120;
-            if (fighter.State == CombatState.Skill && inputMoving && fighter.Skill.CanMoveCancel(fighter.SkillFrame))
+            if (fighter.State == CombatState.Skill && !fighter.StartedSkillThisFrame
+                && inputMoving && fighter.Skill.CanMoveCancel(fighter.SkillFrame))
             { fighter.StopSkill(); fighter.PendingMotion = Vector2Int.zero; }
             Vector2Int delta;
             if (fighter.State == CombatState.Skill || fighter.CompletingSkillThisFrame)
@@ -168,6 +171,7 @@ namespace ZZZ.SkillRuntime
             {
                 Add(fighter.BattleId); Add(fighter.Position.x); Add(fighter.Position.y); Add(fighter.Facing); Add(fighter.Health);
                 Add((int)fighter.State); Add(fighter.SkillFrame); Add(fighter.CastSerial); Add(fighter.HitStopRemaining);
+                Add(fighter.SkillCommand); Add(fighter.HasBufferedCombo ? 1 : 0); Add(fighter.BufferedComboFacing);
                 Add(fighter.HitStunRemaining); Add(fighter.PoseFrame); Add(fighter.ReactionSerial); Add(fighter.MoveDirection);
                 Add(fighter.Moving ? 1 : 0); Add(fighter.FrozenThisFrame ? 1 : 0); Add(fighter.BlockedThisFrame ? 1 : 0);
                 Add(fighter.Skill != null ? fighter.Skill.Data.skillId.Length : 0);

@@ -70,7 +70,7 @@ namespace ZZZ.SkillAuthoring
         public SkillWindowKind kind;
         public int startFrame;
         public int endFrame = 1;
-        [Tooltip("下一段技能的稳定 ID；当前仅保存，连段执行将在后续接入。")]
+        [Tooltip("仅 ComboExecute 使用：下一段技能的稳定 ID，须加入角色对战配置的技能列表。留空表示不接段。")]
         public string nextSkillId;
     }
 

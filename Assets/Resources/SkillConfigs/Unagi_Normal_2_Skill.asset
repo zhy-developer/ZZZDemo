@@ -1,0 +1,164 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a2f7c2060aec413c84a0bb4936636df8, type: 3}
+  m_Name: Unagi_Normal_2_Skill
+  m_EditorClassIdentifier: 
+  schemaVersion: 1
+  skillId: Unagi_Normal_2
+  displayName: Unagi_Normal_2
+  character: 1
+  category: 0
+  totalFrames: 18
+  previewPrefab: {fileID: 2028143046966284670, guid: 6892d51bcc445594c938f7bc93efc744, type: 3}
+  animatorPath: "\u661F\u89C1\u96C5"
+  animation:
+    clip: {fileID: -3972385943832332197, guid: 3d9757a43f4c1d14ebf43cbec50dcda5, type: 3}
+    startFrame: 0
+    sourceStartSeconds: 0
+    sourceEndSeconds: 0
+    speed: 1
+    blendInSeconds: 0.111
+  motion:
+    startFrame: 0
+    settings:
+      json: {fileID: 4900000, guid: 3cd07edeb3b770a459a80511451ed102, type: 3}
+      endFrameExclusive: 0
+      distancePermille: 1000
+  hitGroups:
+  - id: 1
+    damage: 20
+    hitStopFrames: 3
+    hitStunFrames: 8
+    hitAnimationNames:
+    - Hit_shake
+    parryAnimationNames:
+    - Hit_1
+    - Hit_2
+    cameraShake: 0
+  hitRegions:
+  - label: "\u4F24\u5BB3\u70B9 1\uFF08\u5F85\u6446\u653E\uFF09"
+    enabled: 1
+    needsReview: 0
+    startFrame: 6
+    endFrame: 10
+    hitGroupId: 1
+    shape: 0
+    center: {x: 95, y: 7230}
+    size: {x: 10857, y: 25907}
+    radius: 5000
+    yawDegrees: 0
+  windows:
+  - kind: 0
+    startFrame: 7
+    endFrame: 14
+    nextSkillId: 
+  - kind: 1
+    startFrame: 15
+    endFrame: 17
+    nextSkillId: 
+  - kind: 2
+    startFrame: 15
+    endFrame: 18
+    nextSkillId: 
+  presentation:
+  - kind: 0
+    frame: 8
+    legacyKey: Unagi_01
+    effectPrefab: {fileID: 4280303251785601634, guid: 4650564957e69704eaab576b687102e0, type: 3}
+    audioClip: {fileID: 0}
+    bindingPath: 
+    localOffset: {x: 0, y: 0, z: 0}
+    volume: 1
+    stopOnInterrupt: 1
+  - kind: 1
+    frame: 0
+    legacyKey: Unagi_Normal_1
+    effectPrefab: {fileID: 0}
+    audioClip: {fileID: 0}
+    bindingPath: 
+    localOffset: {x: 0, y: 0, z: 0}
+    volume: 1
+    stopOnInterrupt: 1
+  - kind: 2
+    frame: 0
+    legacyKey: Unagi_Normal_1
+    effectPrefab: {fileID: 0}
+    audioClip: {fileID: 0}
+    bindingPath: 
+    localOffset: {x: 0, y: 0, z: 0}
+    volume: 1
+    stopOnInterrupt: 1
+  legacySource: {fileID: 11400000, guid: 3608c4587e7146d4b8b9f78174009635, type: 2}
+  importedEvents:
+  - functionName: ATK
+    sourceTimeSeconds: 0.20440157
+    suggestedFrame: 7
+    stringParameter: 
+    intParameter: 0
+    floatParameter: 0
+    objectParameter: {fileID: 0}
+    outsideClip: 0
+  - functionName: EnablePreInput
+    sourceTimeSeconds: 0.20440157
+    suggestedFrame: 7
+    stringParameter: 
+    intParameter: 0
+    floatParameter: 0
+    objectParameter: {fileID: 0}
+    outsideClip: 0
+  - functionName: PlayVFX
+    sourceTimeSeconds: 0.23725574
+    suggestedFrame: 8
+    stringParameter: Unagi_01
+    intParameter: 0
+    floatParameter: 0
+    objectParameter: {fileID: 0}
+    outsideClip: 0
+  - functionName: CancelAttackColdTime
+    sourceTimeSeconds: 0.5332215
+    suggestedFrame: 17
+    stringParameter: 
+    intParameter: 0
+    floatParameter: 0
+    objectParameter: {fileID: 0}
+    outsideClip: 0
+  - functionName: EnableMoveInterrupt
+    sourceTimeSeconds: 0.5332215
+    suggestedFrame: 17
+    stringParameter: 
+    intParameter: 0
+    floatParameter: 0
+    objectParameter: {fileID: 0}
+    outsideClip: 0
+  - functionName: DisableLinkCombo
+    sourceTimeSeconds: 0.6132047
+    suggestedFrame: 19
+    stringParameter: 
+    intParameter: 0
+    floatParameter: 0
+    objectParameter: {fileID: 0}
+    outsideClip: 0
+  - functionName: EnableMoveInterrupt
+    sourceTimeSeconds: 0.6572531
+    suggestedFrame: 20
+    stringParameter: Unagi_01
+    intParameter: 0
+    floatParameter: 0
+    objectParameter: {fileID: 0}
+    outsideClip: 0
+  importNotes: "Unity \u5B9E\u9645\u52A8\u753B\uFF1AAvatar_Female_Size02_Unagi_Ani_Attack_01\uFF0C657.253ms\uFF0C60.000
+    FPS\u3002\r\n\u4E8B\u4EF6\u7531 AnimationUtility.GetAnimationEvents \u8BFB\u53D6\u79D2\u6570\uFF0C\u5411\u540E\u5438\u9644\u5230
+    33ms \u5E27\uFF1B\u672A\u76F4\u63A5\u89E3\u91CA FBX meta \u7684 time\u3002\r\n\u65E7\u653B\u51FB\u8DDD\u79BB
+    2.5\u3001\u65E7\u504F\u79FB\u5B57\u6BB5 1.7 \u4EC5\u4F9B\u53C2\u8003\u3002\u751F\u6210\u7684
+    1\xD71 \u7C73\u533A\u57DF\u662F\u5F85\u6446\u653E\u8349\u7A3F\u3002\r\n\u6839\u4F4D\u79FB\u8BB0\u5F55\u52A8\u753B\u957F
+    657ms\uFF0C\u5171 20 \u4E2A\u91C7\u6837\uFF1B\u603B\u5E27\u6570\u53D6\u52A8\u753B\u4E0E\u4F4D\u79FB\u8303\u56F4\u7684\u8F83\u5927\u503C\uFF0C\u6536\u5C3E\u4ECD\u9700\u4EBA\u5DE5\u786E\u8BA4\u3002\r\n\u8DF3\u8FC7\u8D8A\u754C\u4E8B\u4EF6
+    EnableMoveInterrupt @ 0.657253s\uFF0C\u4EC5\u4FDD\u7559\u539F\u59CB\u8BB0\u5F55\u3002\r\n\u7279\u6548\u65E7\u540D\u79F0\u53EA\u4F5C\u8FC1\u79FB\u7EBF\u7D22\uFF0C\u4E0D\u641C\u7D22\u6216\u7ED1\u5B9A\u573A\u666F\u4E2D\u7684\u5B9E\u4F8B\u3002\u7B2C\u4E00\u8F6E\u4E0D\u64AD\u653E\u97F3\u6548\u3001\u7279\u6548\u6216\u6267\u884C\u4F24\u5BB3\u3002\r\n"

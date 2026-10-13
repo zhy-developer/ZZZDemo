@@ -110,7 +110,23 @@ namespace ZZZ.SkillAuthoring
             if (skill.windows != null) for (index = 0; index < skill.windows.Count; index++)
             {
                 var window = skill.windows[index];
-                if (window == null || !RangeValid(window.startFrame, window.endFrame, skill.totalFrames)) error("存在无效的输入/动作窗口。");
+                if (window == null || !RangeValid(window.startFrame, window.endFrame, skill.totalFrames))
+                { error("存在无效的输入/动作窗口。"); continue; }
+                if (!Enum.IsDefined(typeof(SkillWindowKind), window.kind)) error("未知的窗口类型。");
+                if (window.kind == SkillWindowKind.ComboExecute)
+                {
+                    if (string.IsNullOrWhiteSpace(window.nextSkillId)) warning("连段执行窗口未指定下一段技能，不会接段。");
+                    // 禁止重叠的执行窗口，避免通过列表顺序隐式决定同一帧接哪一段。
+                    for (int previous = 0; previous < index; previous++)
+                    {
+                        var other = skill.windows[previous];
+                        if (other != null && other.kind == SkillWindowKind.ComboExecute
+                            && window.startFrame < other.endFrame && other.startFrame < window.endFrame)
+                        { error("连段执行窗口不能互相重叠。"); break; }
+                    }
+                }
+                else if (!string.IsNullOrWhiteSpace(window.nextSkillId))
+                    warning("此窗口不使用下一段技能 ID；请将目标填写在连段执行窗口。");
             }
 
 

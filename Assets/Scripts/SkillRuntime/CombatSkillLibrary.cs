@@ -11,6 +11,7 @@ namespace ZZZ.SkillRuntime
         public SkillCombatProfile Profile { get; private set; }
         private readonly Dictionary<int, CombatSkill> commands = new Dictionary<int, CombatSkill>();
         private readonly List<CombatSkill> skills = new List<CombatSkill>();
+        private readonly Dictionary<string, CombatSkill> byId = new Dictionary<string, CombatSkill>(StringComparer.Ordinal);
 
         public CombatSkillLibrary(SkillCombatProfile source)
         {
@@ -24,23 +25,36 @@ namespace ZZZ.SkillRuntime
                     throw new ArgumentException("生命、受击圆或每帧移动距离超出支持范围。");
                 // 待机和移动来自角色原 Animator Controller；只校验仍由时间轴采样的受击片段。
                 ValidateClip(Profile.hitClip, "受击");
-                var byId = new Dictionary<string, CombatSkill>(StringComparer.Ordinal);
                 var byAsset = new Dictionary<SkillDefinition, CombatSkill>();
+                // 显式收录角色可用技能，不扫描 Resources；两端只根据同一配置构建技能库。
+                CombatSkill Register(SkillDefinition asset)
+                {
+                    if (asset == null) throw new ArgumentException("角色技能列表存在空资产。");
+                    if (byAsset.TryGetValue(asset, out var existing)) return existing;
+                    var registered = new CombatSkill(asset);
+                    skills.Add(registered);
+                    if (byId.ContainsKey(registered.Data.skillId))
+                        throw new ArgumentException("不同技能资产不能使用相同 skillId：" + registered.Data.skillId);
+                    byId.Add(registered.Data.skillId, registered);
+                    byAsset.Add(asset, registered);
+                    return registered;
+                }
                 if (Profile.commands == null || Profile.commands.Count == 0) throw new ArgumentException("至少绑定一个技能指令。");
                 foreach (var binding in Profile.commands)
                 {
                     if (binding == null || binding.skill == null) throw new ArgumentException("存在空技能指令绑定。");
                     int command = (int)binding.command;
                     if (command < 1 || command > 6 || commands.ContainsKey(command)) throw new ArgumentException("技能指令必须在 1～6 中且不能重复。");
-                    if (!byAsset.TryGetValue(binding.skill, out var skill))
-                    {
-                        skill = new CombatSkill(binding.skill);
-                        skills.Add(skill);
-                        if (byId.ContainsKey(skill.Data.skillId)) throw new ArgumentException("不同技能资产不能使用相同 skillId：" + skill.Data.skillId);
-                        byId.Add(skill.Data.skillId, skill); byAsset.Add(binding.skill, skill);
-                    }
-                    commands.Add(command, skill);
+                    commands.Add(command, Register(binding.skill));
                 }
+                if (Profile.additionalSkills != null)
+                    foreach (var asset in Profile.additionalSkills) Register(asset);
+                // 收录完成后再解析跨技能引用，支持循环连段，并在开局直接指出拼错/漏配的 ID。
+                foreach (var skill in skills)
+                    if (skill.Data.windows != null) foreach (var window in skill.Data.windows)
+                        if (window.kind == SkillWindowKind.ComboExecute && !string.IsNullOrWhiteSpace(window.nextSkillId)
+                            && !byId.ContainsKey(window.nextSkillId))
+                            throw new ArgumentException(skill.Data.skillId + "：连段目标未加入角色技能列表：" + window.nextSkillId);
             }
             catch { Dispose(); throw; }
         }
@@ -50,10 +64,15 @@ namespace ZZZ.SkillRuntime
             if (clip == null || clip.legacy) throw new ArgumentException(label + "动画必须绑定非 Legacy 片段。");
         }
         public bool TryGet(int command, out CombatSkill skill) => commands.TryGetValue(command, out skill);
+        public bool TryGet(string skillId, out CombatSkill skill)
+        {
+            skill = null;
+            return !string.IsNullOrWhiteSpace(skillId) && byId.TryGetValue(skillId, out skill);
+        }
         public void Dispose()
         {
             foreach (var skill in skills) skill.Dispose();
-            skills.Clear(); commands.Clear();
+            skills.Clear(); commands.Clear(); byId.Clear();
             if (Profile != null) UnityEngine.Object.Destroy(Profile);
             Profile = null;
         }
@@ -105,11 +124,22 @@ namespace ZZZ.SkillRuntime
         public SkillHitGroup Group(int id) => groups[id];
         public Vector2Int MotionDelta(int frame, int facing) => CombatMath.Rotate(motion[frame + 1], facing) - CombatMath.Rotate(motion[frame], facing);
         public bool CanMoveCancel(int frame)
+            => HasWindow(SkillWindowKind.MoveCancel, frame);
+
+        public bool HasWindow(SkillWindowKind kind, int frame)
         {
             if (Data.windows == null) return false;
             foreach (var window in Data.windows)
-                if (window != null && window.kind == SkillWindowKind.MoveCancel && frame >= window.startFrame && frame < window.endFrame) return true;
+                if (window != null && window.kind == kind && frame >= window.startFrame && frame < window.endFrame) return true;
             return false;
+        }
+
+        public string ComboTarget(int frame)
+        {
+            if (Data.windows != null) foreach (var window in Data.windows)
+                if (window.kind == SkillWindowKind.ComboExecute && frame >= window.startFrame && frame < window.endFrame)
+                    return window.nextSkillId;
+            return null;
         }
         public void Dispose() { if (Data != null) UnityEngine.Object.Destroy(Data); Data = null; }
     }

@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace ZZZ.SkillRuntime
 {
-    /// <summary>第二轮人工验收显示：生命、逻辑帧、状态与同帧摘要。显示和日志均不反向修改战斗。</summary>
+    /// <summary>人工验收显示：生命、逻辑帧、状态、连段缓存与同帧摘要。不反向修改战斗。</summary>
     public sealed class CombatStatusView : MonoBehaviour
     {
         public bool showPanel = true;
@@ -20,6 +20,7 @@ namespace ZZZ.SkillRuntime
                 foreach (var fighter in world.Fighters)
                     text.Append($" | P{fighter.BattleId} hp={fighter.Health} state={fighter.State} skill={fighter.Skill?.Data.skillId} F={fighter.SkillFrame}"
                         + $" stop={fighter.HitStopRemaining} frozen={fighter.FrozenThisFrame} stun={fighter.HitStunRemaining}"
+                        + $" cast={fighter.CastSerial} command={fighter.SkillCommand} buffered={fighter.HasBufferedCombo}"
                         + $" pose={fighter.PoseFrame} XZ=({fighter.Position.x},{fighter.Position.y}) facing={fighter.Facing}");
                 Debug.Log(text.ToString());
             }
@@ -27,7 +28,7 @@ namespace ZZZ.SkillRuntime
         private void OnGUI()
         {
             if (!showPanel || manager == null) return;
-            GUILayout.BeginArea(new Rect(12, 12, 540, 220), GUI.skin.box);
+            GUILayout.BeginArea(new Rect(12, 12, 600, 260), GUI.skin.box);
             if (!string.IsNullOrEmpty(manager.CombatError)) GUILayout.Label("帧战斗已停止：" + manager.CombatError);
             var world = manager.CombatWorld;
             if (world != null)
@@ -37,6 +38,7 @@ namespace ZZZ.SkillRuntime
                 {
                     GUILayout.Label($"玩家 {fighter.BattleId}　HP {fighter.Health}/{fighter.Library.Profile.maxHealth}　{fighter.State}");
                     GUILayout.Label($"技能 {fighter.Skill?.Data.skillId ?? "—"} / {fighter.SkillFrame}　顿帧已停用　硬直 {fighter.HitStunRemaining}");
+                    GUILayout.Label($"释放序号 {fighter.CastSerial}　连段缓存：{(fighter.HasBufferedCombo ? "有" : "无")}");
                     GUILayout.Label($"XZ ({fighter.Position.x}, {fighter.Position.y})　朝向 {fighter.Facing}°");
                 }
                 if (world.Finished) GUILayout.Label(world.WinnerId == 0 ? "双方同时倒下：平局" : $"玩家 {world.WinnerId} 获胜");
