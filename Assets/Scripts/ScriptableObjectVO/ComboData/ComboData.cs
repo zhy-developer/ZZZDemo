@@ -13,6 +13,11 @@ public enum AttackStyle
 [CreateAssetMenu(fileName ="ComboData",menuName ="Create/Asset/ComboData")]
 public class ComboData : ScriptableObject
 {
+    [SerializeField, Header("技能制作资产（迁移入口）"),
+        Tooltip("第一轮只用于编辑器制作与预览；现有战斗仍读取下方旧配置。运行时迁移完成后再切换数据源。")]
+    private ZZZ.SkillAuthoring.SkillDefinition _authoredSkill;
+    public ZZZ.SkillAuthoring.SkillDefinition AuthoredSkill => _authoredSkill;
+
     [SerializeField,Header("仅用来创建文件夹使用")] public CharacterNameList characterName;
     [SerializeField,Header("连招数据")] private AttackStyle _attackStyle;
     [SerializeField] private string _comboName;

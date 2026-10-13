@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f13413444ffc8b243bed7dc2a8fc7155, type: 3}
   m_Name: Unagi_Normal_1
   m_EditorClassIdentifier: 
+  _authoredSkill: {fileID: 0}
   characterName: 1
   _attackStyle: 0
   _comboName: Unagi_Normal_1
@@ -24,6 +25,10 @@ MonoBehaviour:
   _parryName:
   - Hit_1
   - Hit_2
+  rootMotion:
+    json: {fileID: 4900000, guid: e01b382748b39154580dfff8466b6701, type: 3}
+    endFrameExclusive: 0
+    distancePermille: 1000
   appAudioPrefab: 0
   _weaponSound: []
   _characterVoice: []
@@ -33,7 +38,3 @@ MonoBehaviour:
   _shakeForceList:
   - 0
   _pauseFrameTimeList: []
-  rootMotion:
-    json: {fileID: 4900000, guid: e01b382748b39154580dfff8466b6701, type: 3}
-    endFrameExclusive: 0
-    distancePermille: 1000
