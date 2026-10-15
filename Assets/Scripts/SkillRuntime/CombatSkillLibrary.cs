@@ -105,7 +105,7 @@ namespace ZZZ.SkillRuntime
                     if (!CombatMath.InRange(region.center.x) || !CombatMath.InRange(region.center.y)
                         || !CombatMath.InRange(region.size.x) || !CombatMath.InRange(region.size.y) || !CombatMath.InRange(region.radius))
                         throw new ArgumentException(source.name + "：攻击区域坐标/尺寸超出整数安全范围。");
-                    if (region.shape != SkillRegionShape.Circle && region.shape != SkillRegionShape.Rectangle)
+                    if (region.shape != SkillRegionShape.Circle && region.shape != SkillRegionShape.Rectangle && region.shape != SkillRegionShape.Sector)
                         throw new ArgumentException(source.name + "：未知攻击区域类型。");
                     if (region.yawDegrees < -180 || region.yawDegrees > 180)
                         throw new ArgumentException(source.name + "：攻击区域角度必须在 -180～180 度之间。");

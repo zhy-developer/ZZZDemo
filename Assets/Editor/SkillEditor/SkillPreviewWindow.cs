@@ -71,6 +71,9 @@ namespace ZZZ.SkillEditor
             }
 
             var handles = owner.SceneHandles;
+            owner.PreviewAudio = EditorGUILayout.Toggle("播放预览音效", owner.PreviewAudio);
+            EditorGUILayout.LabelField("拖动游标可采样粒子；音效仅随播放预览发声，暂停和拖动时停止。", EditorStyles.wordWrappedMiniLabel);
+            DrawEffectTools();
             if (handles != null)
             {
                 EditorGUILayout.Space();
@@ -78,9 +81,12 @@ namespace ZZZ.SkillEditor
                 var region = owner.SelectedRegion;
                 EditorGUILayout.LabelField("操作对象", region == null ? "未选中攻击区域"
                     : string.IsNullOrEmpty(region.label) ? "未命名攻击区域" : region.label);
-                if (region == null)
+                if (region != null)
+                    EditorGUILayout.LabelField("定位方式", region.anchorMode == SkillRegionAnchorMode.CastPosition ? "固定在释放位置"
+                        : region.anchorMode == SkillRegionAnchorMode.ActivationPosition ? "固定在区域生效位置（Start Frame）" : "跟随角色");
+                if (region == null && owner.SelectedEffect == null)
                     EditorGUILayout.HelpBox("请先在技能轨道中选中攻击区域，再使用 Scene 手柄调整。", MessageType.Info);
-                else if (!owner.HasPreview)
+                else if (region != null && !owner.HasPreview)
                     EditorGUILayout.HelpBox("打开 Scene 预览后，可拖动选中攻击区域的手柄。", MessageType.Info);
                 EditorGUI.BeginChangeCheck();
                 using (new EditorGUI.DisabledScope(region == null || !owner.HasPreview))
@@ -89,6 +95,8 @@ namespace ZZZ.SkillEditor
                     EditorGUILayout.LabelField("红色 X 箭头：左右；蓝色 Z 箭头：前后；方块：XZ 平面拖动。", EditorStyles.wordWrappedMiniLabel);
                 if (region != null && region.shape == SkillRegionShape.Circle && handles.Tool == SkillRegionTool.Rotate)
                     EditorGUILayout.LabelField("圆形攻击区域不需要旋转。", EditorStyles.wordWrappedMiniLabel);
+                if (region != null && region.shape == SkillRegionShape.Sector && handles.Tool == SkillRegionTool.Resize)
+                    EditorGUILayout.LabelField("前方方块：调整半径；侧边圆点：调整完整张角。", EditorStyles.wordWrappedMiniLabel);
 
                 EditorGUILayout.Space();
                 EditorGUILayout.LabelField("判定区域显示（仅影响预览）", EditorStyles.boldLabel);
@@ -124,6 +132,43 @@ namespace ZZZ.SkillEditor
             EditorGUILayout.EndScrollView();
             // 完成当前窗口的布局后再切换选中状态，保持 IMGUI 各事件的布局结构一致。
             if (clickedIssue.HasValue) owner.NavigateToIssue(clickedIssue.Value);
+        }
+
+        private void DrawEffectTools()
+        {
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("特效事件编辑（当前选中特效）", EditorStyles.boldLabel);
+            var cue = owner.SelectedEffect;
+            EditorGUILayout.LabelField("操作对象", cue == null ? "未选中特效事件"
+                : (cue.effectPrefab != null ? cue.effectPrefab.name : "未绑定资源") + " / 触发帧 " + cue.frame);
+            using (new EditorGUI.DisabledScope(cue == null || !owner.HasPreview || owner.EffectHandles == null))
+            {
+                EditorGUI.BeginChangeCheck();
+                int tool = GUILayout.Toolbar(owner.EffectHandles != null ? (int)owner.EffectHandles.Tool : 0,
+                    new[] { "特效移动 XYZ", "特效旋转 XYZ", "特效缩放 XYZ" });
+                if (EditorGUI.EndChangeCheck())
+                {
+                    owner.EffectHandles.Tool = (SkillEffectTool)tool;
+                    owner.PausePreviewForEditing();
+                    owner.RefreshPreviewViews();
+                }
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    if (GUILayout.Button("定位特效触发帧")) owner.SeekSelectedEffect();
+                    if (owner.IsPreviewPlaying && GUILayout.Button("暂停并编辑")) owner.PausePreviewForEditing();
+                }
+            }
+            if (cue == null)
+                EditorGUILayout.LabelField("在技能轨道中选中 Vfx 事件后，可用 Scene 手柄摆放。", EditorStyles.wordWrappedMiniLabel);
+            else if (!owner.HasPreview)
+                EditorGUILayout.HelpBox("请先打开 Scene 预览。", MessageType.Info);
+            else if (owner.IsPreviewPlaying)
+                EditorGUILayout.HelpBox("播放时隐藏特效编辑手柄；暂停后可调整。", MessageType.Info);
+            else
+            {
+                EditorGUILayout.LabelField("手柄修改当前事件的偏移、旋转与缩放，支持 Ctrl+Z。缩放可拖动单轴或中心进行调整，各轴最小 0.01。", EditorStyles.wordWrappedMiniLabel);
+                EditorGUILayout.LabelField(cue.followBinding ? "坐标基准：当前绑定节点。" : "坐标基准：触发瞬间的绑定节点。", EditorStyles.wordWrappedMiniLabel);
+            }
         }
     }
 }

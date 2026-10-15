@@ -33,7 +33,8 @@ namespace ZZZ.SkillEditor
             public SkillEditorSelection Selection;
             public int Start, End;
             public bool Resize, Point;
-            public Action<int, int> SetRange;
+            public SkillHitRegion HitRegion;
+            public Action<int, int, bool> SetRange;
         }
 
         public void Draw(SkillDefinition skill, SkillFrameSampler sampler, int frame, float pixelsPerFrame,
@@ -84,6 +85,15 @@ namespace ZZZ.SkillEditor
                 Color color = row.Selection.kind == SkillSelectionKind.Region ? new Color(.86f, .48f, .22f, selected ? 1 : .65f) : new Color(.28f, .55f, .76f, selected ? 1 : .6f);
                 EditorGUI.DrawRect(bar, color);
                 if (bar.width > 38) GUI.Label(bar, row.Point ? row.Start.ToString() : $"[{row.Start},{row.End})", EditorStyles.miniLabel);
+                if (row.HitRegion != null && row.HitRegion.hitMode != SkillHitMode.Once)
+                {
+                    // 下沿短刻度表示真正检测命中的帧，与战斗和 Scene 共用时序查询。
+                    int first = Math.Max(row.Start, firstTick);
+                    int last = Math.Min(Math.Min(row.End, total), lastTick + 1);
+                    for (int hitFrame = first; hitFrame < last; hitFrame++)
+                        if (SkillHitTiming.IsHitFrame(row.HitRegion, hitFrame))
+                            EditorGUI.DrawRect(new Rect(originX + hitFrame * pixelsPerFrame, bar.yMax - 7, 2, 7), Color.yellow);
+                }
                 if (evt.type == EventType.MouseDown && evt.button == 0 && bar.Contains(evt.mousePosition))
                 {
                     select(row.Selection);
@@ -116,7 +126,7 @@ namespace ZZZ.SkillEditor
                         end = start + length;
                     }
                     if (!moved) { Undo.IncrementCurrentGroup(); undoGroup = Undo.GetCurrentGroup(); Undo.RegisterCompleteObjectUndo(skill, "调整技能轨道"); moved = true; }
-                    dragging.SetRange(start, end);
+                    dragging.SetRange(start, end, dragMode == 0);
                     EditorUtility.SetDirty(skill); changed(); evt.Use();
                 }
                 else if (evt.type == EventType.MouseUp || evt.type == EventType.Ignore)
@@ -136,31 +146,42 @@ namespace ZZZ.SkillEditor
                 int end;
                 try { end = SkillFrameSampler.AnimationEndFrame(skill.animation); } catch { end = skill.animation.startFrame + 1; }
                 rows.Add(new Row { Label = "动画", Selection = new SkillEditorSelection(SkillSelectionKind.Animation), Start = skill.animation.startFrame,
-                    End = Math.Max(skill.animation.startFrame + 1, end), SetRange = (s, e) => skill.animation.startFrame = s });
+                    End = Math.Max(skill.animation.startFrame + 1, end), SetRange = (s, e, move) => skill.animation.startFrame = s });
             }
             if (skill.motion?.settings != null)
             {
                 int count = skill.motion.settings.endFrameExclusive == 0 ? sampler.MotionFrameCount : skill.motion.settings.endFrameExclusive;
                 rows.Add(new Row { Label = "根位移", Selection = new SkillEditorSelection(SkillSelectionKind.Motion), Start = skill.motion.startFrame,
-                    End = skill.motion.startFrame + Math.Max(1, count), SetRange = (s, e) => skill.motion.startFrame = s });
+                    End = skill.motion.startFrame + Math.Max(1, count), SetRange = (s, e, move) => skill.motion.startFrame = s });
             }
             if (skill.hitRegions != null) for (int i = 0; i < skill.hitRegions.Count; i++)
             {
                 var region = skill.hitRegions[i]; if (region == null) continue;
                 rows.Add(new Row { Label = region.label, Selection = new SkillEditorSelection(SkillSelectionKind.Region, i), Start = region.startFrame,
-                    End = region.endFrame, Resize = true, SetRange = (s, e) => { region.startFrame = s; region.endFrame = e; } });
+                    End = region.endFrame, Resize = true, HitRegion = region, SetRange = (s, e, move) =>
+                    {
+                        int offset = s - region.startFrame;
+                        // 整体移动保留帧在片段内的相对位置；缩放边界只改范围，越界帧交由配置提示报告。
+                        if (move && offset != 0 && region.hitMode == SkillHitMode.Frames && region.hitFrames != null)
+                            for (int n = 0; n < region.hitFrames.Length; n++)
+                                region.hitFrames[n] = (int)Math.Max(int.MinValue, Math.Min(int.MaxValue, (long)region.hitFrames[n] + offset));
+                        region.startFrame = s; region.endFrame = e;
+                    } });
             }
             if (skill.windows != null) for (int i = 0; i < skill.windows.Count; i++)
             {
                 var window = skill.windows[i]; if (window == null) continue;
                 rows.Add(new Row { Label = window.kind.ToString(), Selection = new SkillEditorSelection(SkillSelectionKind.Window, i), Start = window.startFrame,
-                    End = window.endFrame, Resize = true, SetRange = (s, e) => { window.startFrame = s; window.endFrame = e; } });
+                    End = window.endFrame, Resize = true, SetRange = (s, e, move) => { window.startFrame = s; window.endFrame = e; } });
             }
             if (skill.presentation != null) for (int i = 0; i < skill.presentation.Count; i++)
             {
                 var cue = skill.presentation[i]; if (cue == null) continue;
-                rows.Add(new Row { Label = cue.kind + " · " + cue.legacyKey, Selection = new SkillEditorSelection(SkillSelectionKind.Presentation, i),
-                    Start = cue.frame, End = cue.frame + 1, Point = true, SetRange = (s, e) => cue.frame = s });
+                UnityEngine.Object resource = cue.kind == SkillPresentationKind.Vfx ? (UnityEngine.Object)cue.effectPrefab : cue.audioClip;
+                bool range = SkillEffectTiming.UsesFrameRange(cue);
+                rows.Add(new Row { Label = cue.kind + " · " + (resource != null ? resource.name : "未绑定资源"), Selection = new SkillEditorSelection(SkillSelectionKind.Presentation, i),
+                    Start = cue.frame, End = range ? cue.endFrame : cue.frame + 1, Point = !range, Resize = range,
+                    SetRange = (s, e, move) => { cue.frame = s; if (range) cue.endFrame = e; } });
             }
             return rows;
         }

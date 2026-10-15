@@ -30,6 +30,12 @@ namespace ZZZ.SkillRuntime
         private bool moving, frozen, hasState, hasPose, disposed;
         private bool reactionAtEnd;
         private float clipWeight, blendStart, blendTarget, blendDuration, blendElapsed;
+        private SkillAnimationTrack pendingEnd;
+        private int pendingEndCast, endCast, lastEndCast = -1;
+        private bool playingEnd, cancelEnd;
+        private float endBlendSeconds, endBlendElapsed;
+        private readonly Vector3[] endStartPositions, endStartScales;
+        private readonly Quaternion[] endStartRotations;
 
         public CombatAnimationView(Player player)
         {
@@ -59,6 +65,8 @@ namespace ZZZ.SkillRuntime
                 baseRotations = new Quaternion[bones.Length];
                 posePositions = new Vector3[bones.Length]; poseScales = new Vector3[bones.Length];
                 poseRotations = new Quaternion[bones.Length];
+                endStartPositions = new Vector3[bones.Length]; endStartScales = new Vector3[bones.Length];
+                endStartRotations = new Quaternion[bones.Length];
                 for (int i = 0; i < bones.Length; i++)
                 {
                     basePositions[i] = bones[i].localPosition; baseRotations[i] = bones[i].localRotation;
@@ -90,6 +98,7 @@ namespace ZZZ.SkillRuntime
             reactionClip = fighter.Library.Profile.hitClip;
             // 顿帧暂时停用，命中后连续播放；仅死亡或对局结束保持最终显示。
             frozen = matchEnded || state == CombatState.Dead;
+            ObserveEndAnimation(fighter);
             // 只有技能需要对齐制作时间轴。受击片段不读取 PoseFrame，也不做网络帧调速校准。
             if (state == CombatState.Skill)
                 clock.Observe(SkillFrameUtility.FrameSeconds(fighter.SkillFrame), Time.time);
@@ -114,12 +123,38 @@ namespace ZZZ.SkillRuntime
                 else if (!frozen) clock.Tick(delta, Time.time);
             }
             bool free = state == CombatState.Free;
+            bool stoppedEnd = playingEnd && cancelEnd;
+            if (cancelEnd) playingEnd = false;
+            cancelEnd = false;
+            bool startedEnd = false;
+            if (free && !frozen && pendingEnd?.endClip != null)
+            {
+                StartEndAnimation(pendingEnd);
+                endCast = pendingEndCast;
+                startedEnd = true;
+                delta = 0;
+            }
+            pendingEnd = null;
             if (free)
             {
-                // 恢复移动时保留退出动作的末次姿势参与淡出，不能在后台继续推进它。
-                if (clipPlayable.IsValid()) clipPlayable.SetSpeed(0);
                 locomotion.Step(moving, changed, delta);
-                if (changed) StartBlend(0, hasPose ? .14f : 0);
+                if (playingEnd && !startedEnd)
+                {
+                    double endTime = Math.Max(0, currentClip.length - 0.000001);
+                    if (clipPlayable.GetTime() + delta >= endTime)
+                    {
+                        // 即使片段开启循环，也只播放一次；随后淡出到移动 FSM。
+                        clipPlayable.SetTime(endTime);
+                        playingEnd = false;
+                        stoppedEnd = true;
+                    }
+                }
+                if (!playingEnd)
+                {
+                    // 退出动作的末次姿势参与淡出；无输入后也不会再次启动已结束的收刀。
+                    if (clipPlayable.IsValid()) clipPlayable.SetSpeed(0);
+                    if (changed || stoppedEnd) StartBlend(0, hasPose ? (stoppedEnd ? endBlendSeconds : .14f) : 0);
+                }
             }
             else
             {
@@ -166,6 +201,7 @@ namespace ZZZ.SkillRuntime
             controller.SetSpeed(free ? 1 : 0);
             ApplyPose(basePositions, baseRotations, baseScales);
             graph.Evaluate(delta);
+            if (playingEnd) BlendIntoEndPose(delta);
             // Graph 只输出骨骼动作；世界位置仍由 RoleBase 的显示平滑管理。
             animator.transform.localPosition = basePositions[0];
             animator.transform.localRotation = baseRotations[0];
@@ -183,6 +219,57 @@ namespace ZZZ.SkillRuntime
         {
             blendStart = clipWeight; blendTarget = target;
             blendDuration = Mathf.Max(0, duration); blendElapsed = 0;
+        }
+
+        private void ObserveEndAnimation(CombatFighter fighter)
+        {
+            // 消费自然结束通知，而非把每一次 Skill -> Free 都视作收刀（移动取消同样会进入 Free）。
+            foreach (var notification in fighter.PresentationEvents)
+            {
+                if (!notification.IsEnd || notification.CastSerial == lastEndCast) continue;
+                lastEndCast = notification.CastSerial;
+                pendingEnd = notification.Interrupted ? null : notification.EndedSkill?.animation;
+                pendingEndCast = notification.CastSerial;
+            }
+            bool moveInput = fighter.MoveDirection >= 0 && fighter.MoveDirection < 120;
+            if (state != CombatState.Free || moveInput || frozen)
+            {
+                pendingEnd = null;
+                // 取消标记保留到 Render，追帧期间即使输入又松开，也不能恢复旧收刀。
+                cancelEnd = true;
+            }
+            if (playingEnd && endCast != cast) cancelEnd = true;
+            if (pendingEnd != null && pendingEndCast != cast) pendingEnd = null;
+        }
+
+        private void StartEndAnimation(SkillAnimationTrack animation)
+        {
+            // 保存刚显示的姿势，使用渲染时间混合到新片段；不重启旧攻击 Controller 状态。
+            Array.Copy(hasPose ? posePositions : basePositions, endStartPositions, bones.Length);
+            Array.Copy(hasPose ? poseRotations : baseRotations, endStartRotations, bones.Length);
+            Array.Copy(hasPose ? poseScales : baseScales, endStartScales, bones.Length);
+            BindClip(animation.endClip);
+            clipPlayable.SetDone(false);
+            clipPlayable.SetTime(0);
+            clipPlayable.SetSpeed(1);
+            endBlendSeconds = animation.endBlendSeconds;
+            endBlendElapsed = 0;
+            playingEnd = true;
+            StartBlend(1, 0);
+        }
+
+        private void BlendIntoEndPose(float delta)
+        {
+            endBlendElapsed += delta;
+            float weight = endBlendSeconds <= 0 ? 1 : Mathf.Clamp01(endBlendElapsed / endBlendSeconds);
+            if (weight >= 1) return;
+            for (int i = 0; i < bones.Length; i++)
+            {
+                if (bones[i] == null) continue;
+                bones[i].localPosition = Vector3.Lerp(endStartPositions[i], bones[i].localPosition, weight);
+                bones[i].localRotation = Quaternion.Slerp(endStartRotations[i], bones[i].localRotation, weight);
+                bones[i].localScale = Vector3.Lerp(endStartScales[i], bones[i].localScale, weight);
+            }
         }
 
         private void BindClip(AnimationClip clip)

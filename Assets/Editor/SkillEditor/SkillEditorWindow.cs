@@ -27,8 +27,15 @@ namespace ZZZ.SkillEditor
         private SkillTimelineView timeline;
         private SkillPropertyPanel properties;
         private SkillSceneHandles sceneHandles;
+        private SkillEffectSceneHandles effectHandles;
         private List<SkillIssue> issues = new List<SkillIssue>();
         private bool playing;
+        [SerializeField] private bool previewAudio = true;
+        internal bool PreviewAudio
+        {
+            get => previewAudio;
+            set { previewAudio = value; if (!value) preview?.StopAudio(); }
+        }
         private double lastTime, accumulator;
         private string previewError;
 
@@ -38,6 +45,20 @@ namespace ZZZ.SkillEditor
         internal int CurrentFrame => frame;
         internal SkillFrameSampler Sampler => sampler;
         internal SkillSceneHandles SceneHandles => sceneHandles;
+        internal SkillEffectSceneHandles EffectHandles => effectHandles;
+        internal bool IsPreviewPlaying => playing;
+        internal SkillPresentationCue SelectedEffect
+        {
+            get
+            {
+                if (skill == null || selection.kind != SkillSelectionKind.Presentation || skill.presentation == null
+                    || selection.index < 0 || selection.index >= skill.presentation.Count) return null;
+                var cue = skill.presentation[selection.index];
+                return cue != null && cue.kind == SkillPresentationKind.Vfx ? cue : null;
+            }
+        }
+        internal void SeekSelectedEffect() { if (SelectedEffect != null) Seek(SelectedEffect.frame); }
+        internal void PausePreviewForEditing() => Seek(frame);
         internal SkillHitRegion SelectedRegion => skill != null && selection.kind == SkillSelectionKind.Region
             && skill.hitRegions != null && selection.index >= 0 && selection.index < skill.hitRegions.Count
             ? skill.hitRegions[selection.index] : null;
@@ -78,6 +99,7 @@ namespace ZZZ.SkillEditor
         {
             minSize = new Vector2(820, 280);
             timeline = new SkillTimelineView(); properties = new SkillPropertyPanel(); sceneHandles = new SkillSceneHandles();
+            effectHandles = new SkillEffectSceneHandles();
             EditorApplication.update += TickPreview;
             EditorApplication.playModeStateChanged += OnPlayModeChanged;
             EditorApplication.projectChanged += OnProjectChanged;
@@ -170,6 +192,7 @@ namespace ZZZ.SkillEditor
                     {
                         playing = !playing; accumulator = 0; lastTime = EditorApplication.timeSinceStartup;
                         if (playing && frame >= PreviewEnd) Seek(loop ? loopStart : 0, false);
+                        Sample();
                     }
                 if (GUILayout.Button("|◀", GUILayout.Width(32))) Seek(0);
                 if (GUILayout.Button("◀", GUILayout.Width(30))) Seek(frame - 1);
@@ -198,7 +221,6 @@ namespace ZZZ.SkillEditor
             {
                 if (GUILayout.Button("基本信息")) Select(new SkillEditorSelection(SkillSelectionKind.General));
                 if (GUILayout.Button("命中组")) Select(new SkillEditorSelection(SkillSelectionKind.HitGroups));
-                if (GUILayout.Button("迁移记录")) Select(new SkillEditorSelection(SkillSelectionKind.ImportedEvents));
             }
         }
 
@@ -226,6 +248,7 @@ namespace ZZZ.SkillEditor
             });
             Add("攻击区域/矩形", () => AddRegion(SkillRegionShape.Rectangle));
             Add("攻击区域/圆形", () => AddRegion(SkillRegionShape.Circle));
+            Add("攻击区域/扇形", () => AddRegion(SkillRegionShape.Sector));
             Add("窗口/预输入", () => AddWindow(SkillWindowKind.PreInput));
             Add("窗口/连段执行", () => AddWindow(SkillWindowKind.ComboExecute));
             Add("窗口/移动取消", () => AddWindow(SkillWindowKind.MoveCancel));
@@ -262,7 +285,8 @@ namespace ZZZ.SkillEditor
         {
             Undo.RecordObject(skill, "添加表现事件");
             if (skill.presentation == null) skill.presentation = new List<SkillPresentationCue>();
-            skill.presentation.Add(new SkillPresentationCue { kind = kind, frame = Mathf.Clamp(frame, 0, Math.Max(0, skill.totalFrames - 1)) });
+            int start = Mathf.Clamp(frame, 0, Math.Max(0, skill.totalFrames - 1));
+            skill.presentation.Add(new SkillPresentationCue { kind = kind, frame = start, endFrame = start + 1 });
             Select(new SkillEditorSelection(SkillSelectionKind.Presentation, skill.presentation.Count - 1)); RefreshAfterEdit();
         }
 
@@ -308,7 +332,6 @@ namespace ZZZ.SkillEditor
                         targetFrame = skill.presentation[index]?.frame ?? 0;
                     break;
                 case SkillIssueTarget.HitGroup: kind = SkillSelectionKind.HitGroups; break;
-                case SkillIssueTarget.ImportedEvent: kind = SkillSelectionKind.ImportedEvents; break;
                 default: kind = SkillSelectionKind.General; index = -1; break;
             }
             // 跳转只调整编辑会话：暂停预览、选中配置并滚动视图，不修复数据或开启新的预览。
@@ -320,7 +343,13 @@ namespace ZZZ.SkillEditor
             Focus();
         }
 
-        private void Select(SkillEditorSelection value) { selection = value; RefreshPreviewViews(); }
+        private void Select(SkillEditorSelection value)
+        {
+            selection = value;
+            // 选中特效即固定当前游标，手柄拖动期间绑定骨骼不能继续随播放移动。
+            if (SelectedEffect != null && playing) Seek(frame);
+            RefreshPreviewViews();
+        }
         private void RefreshAfterEdit() { EditorUtility.SetDirty(skill); RefreshData(); }
 
         private void RefreshData(bool forceMotion = false)
@@ -334,7 +363,8 @@ namespace ZZZ.SkillEditor
                 if (HasErrors()) ClosePreview(); else LoadPreview();
             }
             frame = Mathf.Clamp(frame, 0, Mathf.Clamp(skill.totalFrames, 1, SkillFrameUtility.MaxAuthoringFrames));
-            Sample(); Repaint(); PreviewStateChanged?.Invoke();
+            if (HasErrors()) { playing = false; preview?.StopAudio(); }
+            Sample(true); Repaint(); PreviewStateChanged?.Invoke();
         }
 
         private bool HasErrors() => issues.Exists(issue => issue.Severity == SkillIssueSeverity.Error);
@@ -345,14 +375,19 @@ namespace ZZZ.SkillEditor
             if (skill == null) return;
             if (pause) { playing = false; accumulator = 0; }
             frame = Mathf.Clamp(next, 0, Mathf.Clamp(skill.totalFrames, 1, SkillFrameUtility.MaxAuthoringFrames));
-            Sample(); Repaint(); PreviewStateChanged?.Invoke();
+            Sample(true); Repaint(); PreviewStateChanged?.Invoke();
         }
 
-        private void Sample()
+        private void Sample(bool reset = false)
         {
             if (preview == null || skill == null || sampler == null || HasErrors()) return;
-            try { preview.Sample(skill, sampler, frame); }
-            catch (Exception exception) { previewError = exception.Message; playing = false; }
+            try
+            {
+                preview.Sample(skill, sampler, SkillFrameUtility.FrameSeconds(frame) + (playing ? accumulator : 0),
+                    playing && previewAudio, reset);
+                previewError = preview.Error;
+            }
+            catch (Exception exception) { previewError = exception.Message; playing = false; preview.StopAudio(); }
             SceneView.RepaintAll();
         }
 
@@ -404,25 +439,31 @@ namespace ZZZ.SkillEditor
         {
             if (!playing || skill == null) return;
             if (preview == null || StageUtility.GetCurrentStage() != preview || EditorApplication.isPlayingOrWillChangePlaymode || HasErrors())
-            { playing = false; return; }
+            { playing = false; preview?.StopAudio(); return; }
             double now = EditorApplication.timeSinceStartup;
             accumulator += Math.Min(.25, Math.Max(0, now - lastTime)); lastTime = now;
             int steps = (int)(accumulator / SkillFrameUtility.SecondsPerFrame);
-            if (steps == 0) return;
             accumulator -= steps * SkillFrameUtility.SecondsPerFrame;
             int next = frame + steps;
+            bool wrapped = loop && next >= PreviewEnd;
             if (next >= PreviewEnd)
             {
                 if (loop) next = loopStart + (next - loopStart) % Math.Max(1, loopEnd - loopStart);
-                else { next = PreviewEnd; playing = false; }
+                else { next = PreviewEnd; playing = false; accumulator = 0; }
             }
-            Seek(next, false);
+            // 游标仍显示整数逻辑帧，姿势/粒子以编辑器刷新时间连续采样，不能每 33ms 才刷新一次。
+            frame = next;
+            Sample(wrapped); Repaint(); PreviewStateChanged?.Invoke();
         }
 
         private void DrawScene(SceneView view)
         {
             if (preview == null || skill == null || StageUtility.GetCurrentStage() != preview) return;
-            sceneHandles.Draw(skill, frame, preview.LogicPosition, selection, Select, RefreshAfterEdit);
+            sceneHandles.Draw(skill, sampler, frame, preview.LogicPosition, selection, Select, RefreshAfterEdit);
+            var effect = SelectedEffect;
+            if (effect != null && !playing && sampler != null && !HasErrors()
+                && preview.TryGetEffectBinding(skill, sampler, effect, out var matrix, out var rotation))
+                effectHandles.Draw(skill, effect, matrix, rotation, RefreshAfterEdit);
             Repaint();
             PreviewStateChanged?.Invoke();
         }

@@ -18,16 +18,30 @@ public class SFX_PoolManager : MonoSingleton<SFX_PoolManager>
     [SerializeField] private List<SoundItem> soundPools = new List<SoundItem>();
     private Dictionary<SoundStyle, Queue<GameObject>> soundCenter = new Dictionary<SoundStyle, Queue<GameObject>>();
     private Dictionary<string, Dictionary<SoundStyle, Queue<GameObject>>> bigSoundCenter = new Dictionary<string, Dictionary<SoundStyle, Queue<GameObject>>>();
-    protected override void Awake()
+    protected override void Initialize()
     {
-        base.Awake();
+        // 单例基类只初始化被保留的实例；重复对象销毁后不能继续创建音效。
+        base.Initialize();
         InitSoundPool();
     }
     private void InitSoundPool()
     {
-        if (soundPools.Count == 0) { return; }
+        if (soundPools == null || soundPools.Count == 0) { return; }
         for (int i = 0; i < soundPools.Count; i++)
         {
+            var item = soundPools[i];
+            // Unity 的 == null 同时识别空引用和底层对象已销毁的引用，必须在 Instantiate 前检查。
+            if (item == null || item.soundPrefab == null)
+            {
+                Debug.LogWarning($"[SFX_PoolManager] 跳过音效池条目 {i + 1}（{item?.soundStyle} / {item?.soundName}）：音效 Prefab 未绑定或已删除，请重新绑定或移除此条目。", this);
+                continue;
+            }
+            if (item.soundCount <= 0) continue;
+            if (item.ApplyBigCenter && string.IsNullOrWhiteSpace(item.soundName))
+            {
+                Debug.LogWarning($"[SFX_PoolManager] 跳过音效池条目 {i + 1}：分类音效名称不能为空。", this);
+                continue;
+            }
             if (soundPools[i].ApplyBigCenter)
             {
                 for (int j = 0; j < soundPools[i].soundCount;j++)
@@ -82,11 +96,11 @@ public class SFX_PoolManager : MonoSingleton<SFX_PoolManager>
 
     public void TryGetSoundPool(SoundStyle soundStyle, string soundName, Vector3 position)
     {
-        if (bigSoundCenter.ContainsKey(soundName))
+        if (!string.IsNullOrEmpty(soundName) && bigSoundCenter.ContainsKey(soundName))
         {
             if (bigSoundCenter[soundName].TryGetValue(soundStyle, out var Q))
             {
-                GameObject go = Q.Dequeue();
+                if (!TryTakeAlive(Q, out var go)) return;
                 go.transform.position = position;
                 go.gameObject.SetActive(true);
                 Q.Enqueue(go);
@@ -109,7 +123,7 @@ public class SFX_PoolManager : MonoSingleton<SFX_PoolManager>
         if (soundCenter.TryGetValue(soundStye, out var sound))
         {
            // Debug.Log(soundStye + "播放");
-            GameObject go = sound.Dequeue();
+            if (!TryTakeAlive(sound, out var go)) return;
             go.transform.position = position;
             go.gameObject.SetActive(true);
             soundCenter[soundStye].Enqueue(go);
@@ -119,7 +133,17 @@ public class SFX_PoolManager : MonoSingleton<SFX_PoolManager>
            // Debug.Log(soundStye + "不存在");
         }
     }
-   
+    // 实例可能随场景对象被移除；丢弃失效项，空池直接跳过播放，不再访问已销毁对象。
+    private static bool TryTakeAlive(Queue<GameObject> pool, out GameObject instance)
+    {
+        while (pool.Count > 0)
+        {
+            instance = pool.Dequeue();
+            if (instance != null) return true;
+        }
+        instance = null;
+        return false;
+    }
 
 
 }

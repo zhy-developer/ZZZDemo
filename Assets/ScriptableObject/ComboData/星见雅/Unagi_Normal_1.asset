@@ -12,7 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f13413444ffc8b243bed7dc2a8fc7155, type: 3}
   m_Name: Unagi_Normal_1
   m_EditorClassIdentifier: 
-  _authoredSkill: {fileID: 0}
   characterName: 1
   _attackStyle: 0
   _comboName: Unagi_Normal_1

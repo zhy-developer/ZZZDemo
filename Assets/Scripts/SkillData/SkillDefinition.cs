@@ -29,10 +29,5 @@ namespace ZZZ.SkillAuthoring
         public List<SkillHitRegion> hitRegions = new List<SkillHitRegion>();
         public List<SkillWindow> windows = new List<SkillWindow>();
         public List<SkillPresentationCue> presentation = new List<SkillPresentationCue>();
-
-        [Header("迁移记录（不执行旧动画事件）")]
-        public ComboData legacySource;
-        public List<SkillImportedEvent> importedEvents = new List<SkillImportedEvent>();
-        [TextArea(3, 12)] public string importNotes;
     }
 }

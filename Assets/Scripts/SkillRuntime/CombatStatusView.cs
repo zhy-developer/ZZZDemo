@@ -1,4 +1,5 @@
 using UnityEngine;
+using ZZZ.SkillAuthoring;
 
 namespace ZZZ.SkillRuntime
 {
@@ -58,14 +59,17 @@ namespace ZZZ.SkillRuntime
                 DrawCircle(fighter.Position, fighter.Library.Profile.hurtRadius);
                 if (fighter.Skill == null || fighter.Skill.Data.hitRegions == null) continue;
                 Gizmos.color = fighter.FrozenThisFrame ? Color.gray : new Color(1f, .5f, .1f);
-                foreach (var region in fighter.Skill.Data.hitRegions)
+                for (int i = 0; i < fighter.Skill.Data.hitRegions.Count; i++)
                 {
-                    if (!region.IsActive(fighter.SkillFrame)) continue;
-                    Vector2Int center = fighter.Position + CombatMath.Rotate(region.center, fighter.Facing);
+                    var region = fighter.Skill.Data.hitRegions[i];
+                    if (!SkillHitTiming.IsHitFrame(region, fighter.SkillFrame)) continue;
+                    if (!fighter.RegionAnchors.TryGet(fighter, i, out var origin, out int facing)) continue;
+                    Vector2Int center = origin + CombatMath.Rotate(region.center, facing);
                     if (region.shape == SkillAuthoring.SkillRegionShape.Circle) DrawCircle(center, region.radius);
+                    else if (region.shape == SkillRegionShape.Sector) DrawSector(region, center, facing);
                     else
                     {
-                        CombatCollision.RectangleCorners(region, center, fighter.Facing, out var a, out var b, out var c, out var d);
+                        CombatCollision.RectangleCorners(region, center, facing, out var a, out var b, out var c, out var d);
                         Gizmos.DrawLine(Display(a), Display(b)); Gizmos.DrawLine(Display(b), Display(c));
                         Gizmos.DrawLine(Display(c), Display(d)); Gizmos.DrawLine(Display(d), Display(a));
                     }
@@ -74,6 +78,26 @@ namespace ZZZ.SkillRuntime
             Gizmos.color = previous;
         }
         private static Vector3 Display(Vector2Int point) => new Vector3(point.x / 10000f, .03f, point.y / 10000f);
+        private static void DrawSector(SkillHitRegion region, Vector2Int center, int facing)
+        {
+            if (region.sectorAngleDegrees == 360) { DrawCircle(center, region.radius); return; }
+            int span = Mathf.Clamp(region.sectorAngleDegrees, 1, 360) * 2;
+            Vector3 origin = Display(center);
+            Vector3 Point(int offset)
+            {
+                var direction = CombatSectorGeometry.ArcDirection(region, facing, offset);
+                return origin + new Vector3(direction.x, 0, direction.y).normalized * (region.radius / (float)SkillFrameUtility.PositionPrecision);
+            }
+            Vector3 previous = Point(0);
+            Gizmos.DrawLine(origin, previous);
+            for (int offset = 10; offset < span; offset += 10)
+            {
+                Vector3 next = Point(offset);
+                Gizmos.DrawLine(previous, next); previous = next;
+            }
+            Vector3 last = Point(span);
+            Gizmos.DrawLine(previous, last); Gizmos.DrawLine(last, origin);
+        }
         private static void DrawCircle(Vector2Int center, int radius)
         {
             for (int angle = 0; angle < 360; angle += 10)

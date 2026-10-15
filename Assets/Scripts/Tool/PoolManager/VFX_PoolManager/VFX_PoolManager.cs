@@ -14,9 +14,10 @@ public class VFX_PoolManager : MonoSingleton<VFX_PoolManager>
     private Dictionary<CharacterNameList, Dictionary<string, Queue<GameObject>>>effectPool =new Dictionary<CharacterNameList, Dictionary<string, Queue<GameObject>>>();
 
 
-    protected override void Awake()
+    protected override void Initialize()
     {
-        base.Awake();
+        // 基类只为被保留的单例调用 Initialize；重复实例销毁后不能继续建池或访问 transform。
+        base.Initialize();
         InitEffectPools();
     }
     private void InitEffectPools()

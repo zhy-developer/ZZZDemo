@@ -4,7 +4,7 @@ using ZZZ.SkillAuthoring;
 
 namespace ZZZ.SkillRuntime
 {
-    /// <summary>XZ 整数几何。旋转矩形按整数顶点生成；圆与边/角点均判定，边界接触算命中。</summary>
+    /// <summary>XZ 整数几何入口，支持矩形、圆形和扇形；边界接触算命中。</summary>
     public static class CombatCollision
     {
         public static bool Overlaps(SkillHitRegion region, Vector2Int attacker, int facing, Vector2Int target, int radius)
@@ -16,6 +16,9 @@ namespace ZZZ.SkillRuntime
                 BigInteger sum = (long)radius + region.radius;
                 return Dot(delta, delta) <= sum * sum;
             }
+            if (region.shape == SkillRegionShape.Sector)
+                return CombatSectorGeometry.Overlaps(region, target - center, facing, radius);
+            if (region.shape != SkillRegionShape.Rectangle) return false;
             RectangleCorners(region, center, facing, out var a, out var b, out var c, out var d);
             bool positive = false, negative = false;
             CheckSide(a, b, target, ref positive, ref negative);

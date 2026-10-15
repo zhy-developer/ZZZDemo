@@ -22,6 +22,8 @@ public class RoleBase : MonoBehaviour {
 	public ZZZ.Player NetworkPlayer => player;
 	public ZZZ.SkillRuntime.CombatFighter Combat { get; private set; }
 	private ZZZ.SkillRuntime.CombatAnimationView combatView;
+	private ZZZ.SkillRuntime.CombatPresentationView combatEffects;
+	private ZZZ.SkillRuntime.CombatHitFeedbackView combatHitFeedback;
 	private StateBarUI[] combatHealthBars;
 	private int combatDisplayedHealth = -1;
 	private bool combatPoseInitialized;
@@ -40,6 +42,8 @@ public class RoleBase : MonoBehaviour {
 		objShape.closeLine = true;
 		#endif
 		combatView = new ZZZ.SkillRuntime.CombatAnimationView(player);
+		combatEffects = new ZZZ.SkillRuntime.CombatPresentationView(player.characterAnimator.transform);
+		combatHitFeedback = new ZZZ.SkillRuntime.CombatHitFeedbackView(transform);
 		SyncFrameCombat();
 	}
 
@@ -65,6 +69,8 @@ public class RoleBase : MonoBehaviour {
 		}
 		// 战斗坐标保存在 Combat/Shape；Transform 是显示结果，不回写逻辑。
 		combatView.SyncState(Combat, matchEnded);
+		combatEffects.SyncState(Combat, matchEnded);
+		combatHitFeedback.SyncState(Combat, matchEnded);
 		// 生命变化是逻辑通知；红条缓动由 StateBarUI.Update 自行按渲染帧推进。
 		if (combatDisplayedHealth != Combat.Health)
 		{
@@ -78,6 +84,8 @@ public class RoleBase : MonoBehaviour {
 
 	public void ReleaseFrameCombat()
 	{
+		combatHitFeedback?.Dispose(); combatHitFeedback = null;
+		combatEffects?.Dispose(); combatEffects = null;
 		combatView?.Dispose(); combatView = null; Combat = null;
 		combatPoseInitialized = false;
 		combatPresentationFrozen = false;
@@ -88,11 +96,18 @@ public class RoleBase : MonoBehaviour {
 	{
 		if (Combat == null || combatView == null || combatRenderFailed) return;
 		// 动画播放、移动参数和混合过渡按渲染帧推进；网络帧仅提供状态通知。
-		try { combatView.Render(Time.deltaTime); }
+		try
+		{
+			combatView.Render(Time.deltaTime);
+			combatEffects?.Render(Time.deltaTime);
+			combatHitFeedback?.Render(Time.deltaTime);
+		}
 		catch (System.Exception exception)
 		{
 			// 表现错误只报告一次，不重试刷屏，也不能反向中断已经确认的战斗逻辑。
 			combatRenderFailed = true;
+			combatHitFeedback?.Dispose();
+			combatEffects?.Dispose();
 			Debug.LogError("角色动画显示失败，请检查动画配置：" + exception, this);
 		}
 	}

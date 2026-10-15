@@ -38,6 +38,8 @@ namespace ZZZ.SkillRuntime
         {
             Frame++;
             LastHitCount = 0;
+            // 即使对局已经结束，也不让最后一击的通知残留给下一帧重复消费。
+            foreach (var fighter in fighters) fighter.HitFeedbackEvents.Clear();
             if (Finished) return; // 网络仍消费和确认输入；已结束的对局不再产生战斗行为。
             hits.Clear();
             foreach (var fighter in fighters) BeginFrame(fighter);
@@ -47,6 +49,9 @@ namespace ZZZ.SkillRuntime
             // 所有输入收集后只处理一次切段，连段优先于本帧移动取消。
             foreach (var fighter in fighters) CombatSkillInput.AdvanceCombo(fighter);
             foreach (var fighter in fighters) Move(fighter);
+            foreach (var fighter in fighters) fighter.RegionAnchors.Capture(fighter);
+            // 移动取消/切段已经确定，只有仍生效技能的当前帧能发出表现事件。
+            foreach (var fighter in fighters) CollectPresentation(fighter);
             foreach (var attacker in fighters) CollectHits(attacker);
             ResolveHits();
             if (fighters.Exists(f => f.Health == 0))
@@ -62,6 +67,7 @@ namespace ZZZ.SkillRuntime
 
         private static void BeginFrame(CombatFighter fighter)
         {
+            fighter.PresentationEvents.Clear();
             fighter.PendingMotion = Vector2Int.zero;
             fighter.CompletingSkillThisFrame = false;
             fighter.StartedSkillThisFrame = false;
@@ -88,7 +94,7 @@ namespace ZZZ.SkillRuntime
                 if (fighter.SkillFrame >= fighter.Skill.Data.totalFrames)
                 {
                     fighter.CompletingSkillThisFrame = true;
-                    fighter.StopSkill();
+                    fighter.StopSkill(false);
                 }
             }
         }
@@ -124,18 +130,34 @@ namespace ZZZ.SkillRuntime
         private void CollectHits(CombatFighter attacker)
         {
             if (attacker.BlockedThisFrame || attacker.State != CombatState.Skill || attacker.Skill.Data.hitRegions == null) return;
-            foreach (var region in attacker.Skill.Data.hitRegions)
+            for (int i = 0; i < attacker.Skill.Data.hitRegions.Count; i++)
             {
-                if (!region.IsActive(attacker.SkillFrame)) continue;
+                var region = attacker.Skill.Data.hitRegions[i];
+                if (!SkillAuthoring.SkillHitTiming.TryGetHitFrame(region, attacker.SkillFrame, out int hitFrame)) continue;
+                if (!attacker.RegionAnchors.TryGet(attacker, i, out var origin, out int facing)) continue;
                 foreach (var defender in fighters)
                 {
                     if (defender == attacker || defender.Health == 0) continue;
-                    long key = ((long)region.hitGroupId << 32) | (uint)defender.BattleId;
+                    var key = new CombatHitKey(region.hitGroupId, defender.BattleId, hitFrame);
                     if (attacker.HitTargets.Contains(key)) continue;
-                    if (!CombatCollision.Overlaps(region, attacker.Position, attacker.Facing, defender.Position, defender.Library.Profile.hurtRadius)) continue;
+                    if (!CombatCollision.Overlaps(region, origin, facing, defender.Position, defender.Library.Profile.hurtRadius)) continue;
                     attacker.HitTargets.Add(key);
                     hits.Add(new PendingHit(attacker, defender, attacker.Skill.Group(region.hitGroupId)));
                 }
+            }
+        }
+
+        private static void CollectPresentation(CombatFighter fighter)
+        {
+            if (fighter.BlockedThisFrame || fighter.State != CombatState.Skill || fighter.Skill.Data.presentation == null) return;
+            // 每次释放的每个帧只经过一次，F0 也在这里触发；网络重传不会重复执行逻辑帧。
+            foreach (var cue in fighter.Skill.Data.presentation)
+            {
+                if (cue != null && cue.frame == fighter.SkillFrame)
+                    fighter.PresentationEvents.Add(new CombatPresentationEvent(fighter.CastSerial, cue));
+                // 只通知生命周期边界，粒子仍由表现层逐渲染帧播放，不按逻辑帧采样姿态。
+                if (SkillAuthoring.SkillEffectTiming.UsesFrameRange(cue) && cue.endFrame == fighter.SkillFrame)
+                    fighter.PresentationEvents.Add(new CombatPresentationEvent(fighter.CastSerial, cue, effectEnded: true));
             }
         }
 
@@ -146,6 +168,11 @@ namespace ZZZ.SkillRuntime
             foreach (var hit in hits)
             {
                 hit.Defender.Health = Math.Max(0, hit.Defender.Health - hit.Group.damage);
+                // 已成立的命中逐条通知，沿用 CollectHits 的“释放 + 命中组 + 目标 + 批次”去重。
+                // 此时双方的技能尚未被 StopSkill 清空；即使同帧互击或致死，双方反馈都保留。
+                hit.Defender.HitFeedbackEvents.Add(new CombatHitFeedbackEvent(Frame,
+                    hit.Attacker.BattleId, hit.Defender.BattleId, hit.Attacker.CastSerial, hit.Group.id,
+                    hit.Defender.Position, hit.Attacker.Facing, hit.Group.feedback));
                 // 暂不读取命中组的 hitStopFrames；命中不再给双方施加暂停。
             }
             foreach (var fighter in fighters)
@@ -176,9 +203,10 @@ namespace ZZZ.SkillRuntime
                 Add(fighter.Moving ? 1 : 0); Add(fighter.FrozenThisFrame ? 1 : 0); Add(fighter.BlockedThisFrame ? 1 : 0);
                 Add(fighter.Skill != null ? fighter.Skill.Data.skillId.Length : 0);
                 if (fighter.Skill != null) foreach (char c in fighter.Skill.Data.skillId) Add(c);
-                var keys = new List<long>(fighter.HitTargets); keys.Sort();
+                fighter.RegionAnchors.AppendState(Add);
+                var keys = new List<CombatHitKey>(fighter.HitTargets); keys.Sort();
                 Add(keys.Count);
-                foreach (long key in keys) { Add((int)(key >> 32)); Add((int)key); }
+                foreach (var key in keys) { Add(key.GroupId); Add(key.TargetId); Add(key.HitFrame); }
             }
             return hash;
         }

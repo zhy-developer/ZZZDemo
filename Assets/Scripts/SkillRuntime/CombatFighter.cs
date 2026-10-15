@@ -31,17 +31,24 @@ namespace ZZZ.SkillRuntime
         internal Vector2Int PendingMotion;
         internal bool CompletingSkillThisFrame;
         internal bool StartedSkillThisFrame;
-        // 每次释放重置；同组多个区域对同一目标只产生一次候选命中。
-        internal readonly HashSet<long> HitTargets = new HashSet<long>();
+        internal readonly CombatRegionAnchors RegionAnchors = new CombatRegionAnchors();
+        // 每次释放重置；同组多个区域对同一目标的同一批次只产生一次候选命中。
+        internal readonly HashSet<CombatHitKey> HitTargets = new HashSet<CombatHitKey>();
+        // 每逻辑帧清空；场景适配层在该帧结束时复制到表现队列，不参与战斗状态摘要。
+        internal readonly List<CombatPresentationEvent> PresentationEvents = new List<CombatPresentationEvent>();
+        // 受击方持有已结算的反馈；与技能事件分离，避免受击打断或同帧互击取消命中反馈。
+        internal readonly List<CombatHitFeedbackEvent> HitFeedbackEvents = new List<CombatHitFeedbackEvent>();
 
         public CombatFighter(int battleId, CombatSkillLibrary library, Vector2Int position, int facing)
         {
             BattleId = battleId; Library = library; Position = position; Facing = facing;
             Health = library.Profile.maxHealth;
         }
-        internal void StopSkill()
+        internal void StopSkill(bool interrupted = true)
         {
+            if (Skill != null) PresentationEvents.Add(new CombatPresentationEvent(CastSerial, null, interrupted, Skill.Data));
             Skill = null; SkillFrame = 0; HitTargets.Clear();
+            RegionAnchors.Clear();
             SkillCommand = 0; HasBufferedCombo = false; BufferedComboFacing = 121;
             if (State == CombatState.Skill) { State = CombatState.Free; PoseFrame = 0; }
         }

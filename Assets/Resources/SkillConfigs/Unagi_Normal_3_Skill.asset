@@ -1,0 +1,110 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a2f7c2060aec413c84a0bb4936636df8, type: 3}
+  m_Name: Unagi_Normal_3_Skill
+  m_EditorClassIdentifier: 
+  schemaVersion: 1
+  skillId: Unagi_Normal_3
+  displayName: Unagi_Normal_3
+  character: 1
+  category: 0
+  totalFrames: 34
+  previewPrefab: {fileID: 2028143046966284670, guid: 6892d51bcc445594c938f7bc93efc744, type: 3}
+  animatorPath: "\u661F\u89C1\u96C5"
+  animation:
+    clip: {fileID: -1079517053937398311, guid: 3d9757a43f4c1d14ebf43cbec50dcda5, type: 3}
+    startFrame: 0
+    sourceStartSeconds: 0
+    sourceEndSeconds: 0
+    speed: 1
+    blendInSeconds: 0.111
+    endClip: {fileID: 3978027250542001007, guid: 3d9757a43f4c1d14ebf43cbec50dcda5, type: 3}
+    endBlendSeconds: 0.14
+  motion:
+    startFrame: 0
+    settings:
+      json: {fileID: 4900000, guid: 48b6b296f8b48b84db8d588593ddd726, type: 3}
+      endFrameExclusive: 0
+      distancePermille: 1000
+  hitGroups:
+  - id: 1
+    damage: 20
+    hitStopFrames: 3
+    hitStunFrames: 8
+    hitAnimationNames:
+    - Hit_shake
+    parryAnimationNames:
+    - Hit_1
+    - Hit_2
+    cameraShake: 0
+    feedback:
+      effectPrefab: {fileID: 568771266447219377, guid: a6f4211bdb6532848b8dbd78cb724e0c, type: 3}
+      localOffset: {x: 0, y: 1, z: 0}
+      localEulerAngles: {x: 0, y: 0, z: 0}
+      localScale: {x: 1, y: 1, z: 1}
+      maxLifetimeSeconds: 3
+      audioClip: {fileID: 8300000, guid: 5c145766ae34d904cafab42e31d895c1, type: 3}
+      volume: 1
+  hitRegions:
+  - label: "\u4F24\u5BB3\u70B9 1\uFF08\u5F85\u6446\u653E\uFF09"
+    enabled: 1
+    needsReview: 0
+    startFrame: 6
+    endFrame: 12
+    hitGroupId: 1
+    hitMode: 0
+    hitFrames: 
+    hitIntervalFrames: 3
+    shape: 2
+    center: {x: 353, y: -582}
+    size: {x: 8052, y: 13160}
+    radius: 16097
+    sectorAngleDegrees: 133
+    yawDegrees: 0
+  windows:
+  - kind: 0
+    startFrame: 10
+    endFrame: 17
+    nextSkillId: 
+  - kind: 1
+    startFrame: 21
+    endFrame: 34
+    nextSkillId: Unagi_Normal_4
+  - kind: 2
+    startFrame: 21
+    endFrame: 34
+    nextSkillId: 
+  presentation:
+  - kind: 0
+    frame: 6
+    effectPrefab: {fileID: 4280303251785601634, guid: 4650564957e69704eaab576b687102e0, type: 3}
+    audioClip: {fileID: 0}
+    bindingPath: 
+    localOffset: {x: -0.048282802, y: 0.70098865, z: 0.32165885}
+    localEulerAngles: {x: 344.45407, y: 172.82077, z: 200.25085}
+    localScale: {x: 0.859973, y: 0.859973, z: 0.859973}
+    followBinding: 1
+    maxLifetimeSeconds: 10
+    volume: 1
+    stopOnInterrupt: 1
+  - kind: 1
+    frame: 6
+    effectPrefab: {fileID: 0}
+    audioClip: {fileID: 8300000, guid: 0cf15143e4e241044b7fa9ee1ebc384c, type: 3}
+    bindingPath: 
+    localOffset: {x: 0, y: 0, z: 0}
+    localEulerAngles: {x: 0, y: 0, z: 0}
+    localScale: {x: 1, y: 1, z: 1}
+    followBinding: 1
+    maxLifetimeSeconds: 10
+    volume: 1
+    stopOnInterrupt: 1

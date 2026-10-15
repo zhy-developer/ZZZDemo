@@ -2,12 +2,13 @@ using System;
 using UnityEditor;
 using UnityEngine;
 using ZZZ.SkillAuthoring;
+using ZZZ.SkillRuntime;
 
 namespace ZZZ.SkillEditor
 {
     internal enum SkillRegionTool { Move, Rotate, Resize }
 
-    /// <summary>Scene 绘制、XZ 手柄与重叠提示。浮点重叠只用于编辑预览，不作为联机伤害判定。</summary>
+    /// <summary>Scene 绘制、XZ 手柄与重叠提示。扇形复用整数几何，其余预览使用浮点；均不执行伤害。</summary>
     internal sealed class SkillSceneHandles
     {
         public Vector3 TargetPosition = new Vector3(0, 0, 2);
@@ -16,7 +17,7 @@ namespace ZZZ.SkillEditor
         public SkillRegionTool Tool;
         public string OverlapLabel { get; private set; }
 
-        public void Draw(SkillDefinition skill, int frame, Vector3 logicPosition, SkillEditorSelection selection,
+        public void Draw(SkillDefinition skill, SkillFrameSampler sampler, int frame, Vector3 logicPosition, SkillEditorSelection selection,
             Action<SkillEditorSelection> select, Action changed)
         {
             Color previous = Handles.color;
@@ -39,23 +40,37 @@ namespace ZZZ.SkillEditor
                 for (int i = 0; i < skill.hitRegions.Count; i++)
                 {
                     var region = skill.hitRegions[i]; if (region == null) continue;
+                    Vector3 regionOrigin = PreviewOrigin(skill, sampler, region, logicPosition);
+                    Vector3 regionGround = regionOrigin + Vector3.up * DisplayHeight;
                     bool selected = selection.kind == SkillSelectionKind.Region && selection.index == i;
-                    bool active = frame < skill.totalFrames && region.IsActive(frame);
-                    if (active) { activeCount++; if (Overlaps(region, logicPosition)) overlaps++; }
+                    bool active = frame < skill.totalFrames && SkillHitTiming.IsHitFrame(region, frame);
+                    if (active) { activeCount++; if (Overlaps(region, regionOrigin)) overlaps++; }
                     if (!active && !selected) continue;
-                    DrawRegion(region, ground, active, selected);
+                    DrawRegion(region, regionGround, active, selected);
                     if (!selected)
                     {
-                        Vector3 center = Center(region, ground);
+                        Vector3 center = Center(region, regionGround);
                         Handles.color = new Color(1f, .6f, .15f);
                         if (Handles.Button(center, Quaternion.identity, .055f, .08f, Handles.DotHandleCap))
                             select(new SkillEditorSelection(SkillSelectionKind.Region, i));
                     }
-                    else EditRegion(skill, region, ground, changed);
+                    else EditRegion(skill, region, regionGround, changed);
                 }
                 OverlapLabel = overlaps > 0 ? $"{overlaps} 个生效区域覆盖目标（不扣血）" : $"{activeCount} 个生效区域 / 未覆盖目标";
             }
             finally { Handles.color = previous; }
+        }
+
+        // Scene 使用独立技能、释放原点为零、朝向 +Z。固定区域直接采样锚定帧，
+        // 不靠播放历史保存快照，保证跳帧、倒拖、循环和改配置后的结果一致。
+        private static Vector3 PreviewOrigin(SkillDefinition skill, SkillFrameSampler sampler,
+            SkillHitRegion region, Vector3 currentPosition)
+        {
+            if (region.anchorMode == SkillRegionAnchorMode.FollowCharacter) return currentPosition;
+            int anchorFrame = region.anchorMode == SkillRegionAnchorMode.ActivationPosition ? region.startFrame : 0;
+            Vector2Int position = sampler?.SampleLocalPosition(skill, anchorFrame) ?? Vector2Int.zero;
+            float precision = SkillFrameUtility.PositionPrecision;
+            return new Vector3(position.x / precision, 0, position.y / precision);
         }
 
         private static Vector3 Center(SkillHitRegion region, Vector3 origin)
@@ -70,6 +85,24 @@ namespace ZZZ.SkillEditor
             Vector3 center = Center(region, origin);
             float precision = SkillFrameUtility.PositionPrecision;
             if (region.shape == SkillRegionShape.Circle) Handles.DrawWireDisc(center, Vector3.up, Mathf.Max(.0001f, region.radius / precision));
+            else if (region.shape == SkillRegionShape.Sector)
+            {
+                if (region.sectorAngleDegrees == 360)
+                    Handles.DrawWireDisc(center, Vector3.up, Mathf.Max(.0001f, region.radius / precision));
+                else
+                {
+                    int angle = Mathf.Clamp(region.sectorAngleDegrees, 1, 360);
+                    int steps = Mathf.CeilToInt(angle / 5f);
+                    var outline = new Vector3[steps + 3];
+                    outline[0] = center; outline[outline.Length - 1] = center;
+                    for (int i = 0; i <= steps; i++)
+                    {
+                        var direction = CombatSectorGeometry.ArcDirection(region, 90, Math.Min(i * 10, angle * 2));
+                        outline[i + 1] = center + new Vector3(direction.x, 0, direction.y).normalized * Mathf.Max(.0001f, region.radius / precision);
+                    }
+                    Handles.DrawAAPolyLine(selected ? 3 : 2, outline);
+                }
+            }
             else
             {
                 Quaternion rotation = Quaternion.Euler(0, region.yawDegrees, 0);
@@ -88,7 +121,7 @@ namespace ZZZ.SkillEditor
             float precision = SkillFrameUtility.PositionPrecision;
             EditorGUI.BeginChangeCheck();
             Vector2Int nextCenter = region.center, nextSize = region.size;
-            int nextRadius = region.radius, nextYaw = region.yawDegrees;
+            int nextRadius = region.radius, nextYaw = region.yawDegrees, nextAngle = region.sectorAngleDegrees;
             switch (Tool)
             {
                 case SkillRegionTool.Move:
@@ -96,14 +129,38 @@ namespace ZZZ.SkillEditor
                     nextCenter = SkillPropertyPanel.Quantize(new Vector2(next.x - origin.x, next.z - origin.z));
                     break;
                 case SkillRegionTool.Rotate:
-                    if (region.shape == SkillRegionShape.Rectangle)
+                    if (region.shape == SkillRegionShape.Rectangle || region.shape == SkillRegionShape.Sector)
                     {
                         Quaternion yaw = Handles.Disc(rotation, center, Vector3.up, HandleUtility.GetHandleSize(center) * .65f, false, 1f);
                         nextYaw = Mathf.RoundToInt(Mathf.DeltaAngle(0, yaw.eulerAngles.y));
                     }
                     break;
                 case SkillRegionTool.Resize:
-                    if (region.shape == SkillRegionShape.Circle)
+                    if (region.shape == SkillRegionShape.Sector)
+                    {
+                        Vector3 forward = rotation * Vector3.forward;
+                        float handleSize = HandleUtility.GetHandleSize(center) * .08f;
+                        Vector3 edge = Handles.Slider(center + forward * region.radius / precision, forward,
+                            handleSize, Handles.CubeHandleCap, 0);
+                        nextRadius = Mathf.Max(1, Mathf.RoundToInt(Vector3.Dot(edge - center, forward) * precision));
+                        Handles.Label(edge + Vector3.up * handleSize, "半径");
+
+                        // 张角手柄放在右侧边之外，与半径手柄区分；沿 XZ 平面拖动，仅回写完整张角。
+                        Vector3 boundary = rotation * Quaternion.Euler(0, Mathf.Clamp(region.sectorAngleDegrees, 1, 360) * .5f, 0) * Vector3.forward;
+                        Vector3 anglePoint = center + boundary * (Mathf.Max(0, region.radius / precision) + handleSize * 3);
+                        EditorGUI.BeginChangeCheck();
+                        Vector3 nextAnglePoint = Handles.Slider2D(anglePoint, Vector3.up, Vector3.right, Vector3.forward,
+                            handleSize, Handles.DotHandleCap, Vector2.zero);
+                        if (EditorGUI.EndChangeCheck())
+                        {
+                            Vector3 local = Quaternion.Inverse(rotation) * (nextAnglePoint - center);
+                            if (local.sqrMagnitude > .000001f)
+                                nextAngle = Mathf.Clamp(Mathf.RoundToInt(Mathf.Abs(Mathf.Atan2(local.x, local.z) * Mathf.Rad2Deg) * 2), 1, 360);
+                        }
+                        Handles.DrawDottedLine(center, anglePoint, 4);
+                        Handles.Label(anglePoint + Vector3.up * handleSize, "张角 " + region.sectorAngleDegrees + "°");
+                    }
+                    else if (region.shape == SkillRegionShape.Circle)
                     {
                         Vector3 edge = Handles.Slider(center + Vector3.right * region.radius / precision, Vector3.right,
                             HandleUtility.GetHandleSize(center) * .08f, Handles.CubeHandleCap, 0);
@@ -123,6 +180,7 @@ namespace ZZZ.SkillEditor
             if (!EditorGUI.EndChangeCheck()) return;
             Undo.RecordObject(skill, "调整技能攻击区域");
             region.center = nextCenter; region.size = nextSize; region.radius = nextRadius; region.yawDegrees = nextYaw;
+            region.sectorAngleDegrees = nextAngle;
             EditorUtility.SetDirty(skill); changed();
         }
 
@@ -155,6 +213,14 @@ namespace ZZZ.SkillEditor
 
         private bool Overlaps(SkillHitRegion region, Vector3 origin)
         {
+            if (region.shape == SkillRegionShape.Sector)
+            {
+                // 扇形预览复用战斗整数几何，包含受击圆擦到侧边/弧端点的情况。
+                var attacker = SkillPropertyPanel.Quantize(new Vector2(origin.x, origin.z));
+                var target = SkillPropertyPanel.Quantize(new Vector2(TargetPosition.x, TargetPosition.z));
+                return CombatCollision.Overlaps(region, attacker, 90, target,
+                    Mathf.Max(0, Mathf.RoundToInt(TargetRadius * SkillFrameUtility.PositionPrecision)));
+            }
             Vector3 delta = TargetPosition - Center(region, origin);
             delta.y = 0;
             float precision = SkillFrameUtility.PositionPrecision;

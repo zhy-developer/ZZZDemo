@@ -5,7 +5,7 @@ using UnityEngine;
 namespace ZZZ.SkillAuthoring
 {
     public enum SkillIssueSeverity { Warning, Error }
-    public enum SkillIssueTarget { General, Animation, Motion, HitGroup, HitRegion, Window, Presentation, ImportedEvent }
+    public enum SkillIssueTarget { General, Animation, Motion, HitGroup, HitRegion, Window, Presentation }
 
     public readonly struct SkillIssue
     {
@@ -45,6 +45,9 @@ namespace ZZZ.SkillAuthoring
                 if (animation.startFrame < 0 || animation.startFrame >= skill.totalFrames) error("动画开始帧越界。");
                 if (!Finite(animation.speed) || animation.speed <= 0) error("动画速度必须是有效正数。");
                 if (!Finite(animation.blendInSeconds) || animation.blendInSeconds < 0) error("动画淡入时间必须是有效非负数。");
+                if (!Finite(animation.endBlendSeconds) || animation.endBlendSeconds < 0) error("收刀过渡时间必须是有效非负数。");
+                if (animation.endClip != null && (animation.endClip.legacy || animation.endClip.length <= 0))
+                    error("结束收刀动画需要有效的非 Legacy 片段。");
                 if (!Finite(animation.sourceStartSeconds) || !Finite(animation.sourceEndSeconds)
                     || animation.sourceStartSeconds < 0 || animation.sourceEndSeconds < 0
                     || animation.sourceStartSeconds >= SkillFrameSampler.AnimationEndSeconds(animation)
@@ -92,9 +95,13 @@ namespace ZZZ.SkillAuthoring
                 if (group.id <= 0 || !ids.Add(group.id)) error("命中组 ID 必须为不重复的正数。");
                 if (group.damage < 0 || group.hitStopFrames < 0 || group.hitStunFrames < -1) error($"命中组 {group.id} 数值无效。");
                 if (group.hitStunFrames == -1) warning($"命中组 {group.id} 的硬直待配置；-1 不是实际硬直时长。");
+                ValidateHitFeedback(group.feedback,
+                    message => error($"命中组 {group.id}：{message}"),
+                    message => warning($"命中组 {group.id}：{message}"));
             }
 
             target = SkillIssueTarget.HitRegion;
+            var groupRepeatModes = new Dictionary<int, bool>();
             if (skill.hitRegions != null) for (index = 0; index < skill.hitRegions.Count; index++)
             {
                 var region = skill.hitRegions[index];
@@ -102,7 +109,19 @@ namespace ZZZ.SkillAuthoring
                 if (!RangeValid(region.startFrame, region.endFrame, skill.totalFrames)) error(region.label + "：帧区间无效。");
                 if (!ids.Contains(region.hitGroupId)) error(region.label + "：命中组不存在。");
                 if (region.size.x <= 0 || region.size.y <= 0 || region.radius <= 0) error(region.label + "：尺寸必须大于零。");
+                if (!Enum.IsDefined(typeof(SkillRegionShape), region.shape)) error(region.label + "：未知攻击区域形状。");
+                if (!Enum.IsDefined(typeof(SkillRegionAnchorMode), region.anchorMode)) error(region.label + "：未知区域定位方式。");
+                if (region.shape == SkillRegionShape.Sector && (region.sectorAngleDegrees < 1 || region.sectorAngleDegrees > 360))
+                    error(region.label + "：扇形完整张角必须在 1～360 度之间。");
                 if (region.needsReview) warning(region.label + "：攻击区域尚未人工确认。");
+                ValidateHitTiming(region, error);
+                if (region.enabled && Enum.IsDefined(typeof(SkillHitMode), region.hitMode))
+                {
+                    bool repeat = region.hitMode != SkillHitMode.Once;
+                    if (groupRepeatModes.TryGetValue(region.hitGroupId, out bool previousRepeat) && previousRepeat != repeat)
+                        error(region.label + "：同一命中组不能混用区间内一次和多段模式，请使用不同命中组。两种多段模式可共用命中组，同帧只结算一次。");
+                    else groupRepeatModes[region.hitGroupId] = repeat;
+                }
             }
 
 
@@ -136,20 +155,89 @@ namespace ZZZ.SkillAuthoring
                 var cue = skill.presentation[index];
                 if (cue == null || cue.frame < 0 || cue.frame >= skill.totalFrames) { error("存在越界的表现事件。"); continue; }
                 if (cue.kind == SkillPresentationKind.Vfx ? cue.effectPrefab == null : cue.audioClip == null)
-                    warning("表现事件尚未绑定资源：" + cue.legacyKey);
+                    warning($"表现事件 {index + 1}（{cue.kind}，第 {cue.frame} 帧）尚未绑定资源。");
+                if (!Enum.IsDefined(typeof(SkillPresentationKind), cue.kind)) error("未知的表现事件类型。");
+                if (!Finite(cue.volume) || cue.volume < 0 || cue.volume > 1) error("表现事件音量必须在 0～1 之间。");
+                if (!Finite(cue.localOffset) || !Finite(cue.localEulerAngles)) error("表现事件偏移和旋转必须为有效数值。");
+                if (cue.kind == SkillPresentationKind.Vfx)
+                {
+                    if (!Enum.IsDefined(typeof(SkillEffectLifetimeMode), cue.lifetimeMode)) error("未知的特效存活方式。");
+                    if (SkillEffectTiming.UsesFrameRange(cue) && !RangeValid(cue.frame, cue.endFrame, skill.totalFrames))
+                        error("特效帧区间无效：结束帧必须大于开始帧，且不超过技能总帧数。");
+                    if (!Finite(cue.playbackSpeed) || cue.playbackSpeed < .01f || cue.playbackSpeed > 10f)
+                        error("特效播放速度倍率必须在 0.01～10 之间。");
+                    if (!Finite(cue.localScale) || cue.localScale.x < .01f || cue.localScale.y < .01f || cue.localScale.z < .01f)
+                        error("特效缩放 XYZ 必须为有效数值，且各轴至少为 0.01。");
+                    if (!SkillEffectTiming.UsesFrameRange(cue)
+                        && (!Finite(cue.maxLifetimeSeconds) || cue.maxLifetimeSeconds < .01f || cue.maxLifetimeSeconds > 60))
+                        error("特效最长存活时间必须在 0.01～60 秒之间。");
+                    if (cue.effectPrefab != null)
+                    {
+                        string reason = EffectPrefabIssue(cue.effectPrefab);
+                        if (reason != null) warning(reason + "（此特效将跳过播放）");
+                    }
+                }
+                if (skill.previewPrefab != null)
+                {
+                    var root = string.IsNullOrEmpty(skill.animatorPath) ? skill.previewPrefab.transform : skill.previewPrefab.transform.Find(skill.animatorPath);
+                    if (root != null && !string.IsNullOrEmpty(cue.bindingPath) && root.Find(cue.bindingPath) == null)
+                        warning("表现事件绑定节点不存在：" + cue.bindingPath);
+                }
             }
 
-            target = SkillIssueTarget.ImportedEvent;
-            if (skill.importedEvents != null) for (index = 0; index < skill.importedEvents.Count; index++)
-            {
-                var evt = skill.importedEvents[index];
-                if (evt != null && (evt.outsideClip || evt.suggestedFrame >= skill.totalFrames))
-                    warning("旧动画事件越界，仅保留迁移记录：" + evt.functionName);
-            }
             return issues;
         }
 
+        private static void ValidateHitTiming(SkillHitRegion region, Action<string> error)
+        {
+            if (!Enum.IsDefined(typeof(SkillHitMode), region.hitMode)) { error(region.label + "：未知命中方式。"); return; }
+            if (region.hitMode == SkillHitMode.Interval && region.hitIntervalFrames < 1)
+                error(region.label + "：命中间隔必须至少为 1 帧。");
+            if (region.hitMode != SkillHitMode.Frames) return;
+            if (region.hitFrames == null || region.hitFrames.Length == 0)
+            { error(region.label + "：至少配置一个命中帧。"); return; }
+            if (region.hitFrames.Length > SkillFrameUtility.MaxAuthoringFrames)
+                error(region.label + "：命中帧数量不能超过 10000。");
+            var frames = new HashSet<int>();
+            foreach (int frame in region.hitFrames)
+            {
+                if (frame < region.startFrame || frame >= region.endFrame)
+                    error($"{region.label}：命中帧 {frame} 必须位于 [{region.startFrame},{region.endFrame}) 内。");
+                if (!frames.Add(frame)) error($"{region.label}：命中帧 {frame} 重复。");
+            }
+        }
+
+        private static void ValidateHitFeedback(SkillHitFeedback feedback, Action<string> error, Action<string> warning)
+        {
+            // 反馈可完全关闭；只验证已启用资源使用的参数，旧资产无需补齐资源才能进入战斗。
+            if (feedback == null) return;
+            if (feedback.effectPrefab != null)
+            {
+                if (!Finite(feedback.localOffset) || !Finite(feedback.localEulerAngles)) error("命中特效偏移和旋转必须为有效数值。");
+                if (!Finite(feedback.localScale) || feedback.localScale.x < .01f || feedback.localScale.y < .01f || feedback.localScale.z < .01f)
+                    error("命中特效缩放各轴必须至少为 0.01。");
+                if (!Finite(feedback.maxLifetimeSeconds) || feedback.maxLifetimeSeconds < .01f || feedback.maxLifetimeSeconds > 60)
+                    error("命中特效最长存活时间必须在 0.01～60 秒之间。");
+                string reason = EffectPrefabIssue(feedback.effectPrefab);
+                if (reason != null) warning("命中特效：" + reason + "（此特效将跳过播放，命中音效仍可播放）");
+            }
+            if (feedback.audioClip != null && (!Finite(feedback.volume) || feedback.volume < 0 || feedback.volume > 1))
+                error("命中音量必须在 0～1 之间。");
+        }
+
         private static bool Finite(float value) => !float.IsNaN(value) && !float.IsInfinity(value);
+        private static bool Finite(Vector3 value) => Finite(value.x) && Finite(value.y) && Finite(value.z);
+        public static string EffectPrefabIssue(GameObject prefab)
+        {
+            if (prefab == null) return "未绑定特效 Prefab。";
+            if (prefab.GetComponentInChildren<ParticleSystem>(true) == null) return "当前特效需要至少一个 ParticleSystem。";
+            // 只接受纯表现组件，避免预览或战斗特效激活脚本、碰撞体、音源等隐式行为。
+            foreach (var component in prefab.GetComponentsInChildren<Component>(true))
+                if (component == null || !(component is Transform || component is ParticleSystem
+                    || component is ParticleSystemRenderer || component is MeshRenderer || component is MeshFilter))
+                    return "特效包含暂不支持的组件：" + (component == null ? "Missing Script" : component.GetType().Name);
+            return null;
+        }
         private static bool RangeValid(int start, int end, int total) => start >= 0 && end > start && end <= total;
     }
 }
