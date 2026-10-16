@@ -59,6 +59,7 @@ namespace ZZZ.SkillEditor
             scroll = EditorGUILayout.BeginScrollView(scroll);
             EditorGUILayout.LabelField("Scene 预览", EditorStyles.boldLabel);
             EditorGUILayout.LabelField("当前游标", $"{owner.CurrentFrame} 帧 / {owner.CurrentFrame * SkillFrameUtility.IntervalMs} ms");
+            SkillWindowPreview.DrawPanel(skill, owner.CurrentFrame);
             using (new EditorGUILayout.HorizontalScope())
             {
                 using (new EditorGUI.DisabledScope(!owner.CanPreview))

@@ -32,11 +32,17 @@ namespace ZZZ
             int moving = input == Vector2.zero ? 0 : 1;
             if (player.UsesFrameCombat)
             {
-                // 第二轮仅发送按钮意图和朝向。双方在同一服务器帧重新判断准入，禁止由本地 Animator 选择连招段。
+                // 同一次采集闪避优先。只在入队前选择；已发送的可靠输入不能删除或重排。
+                // move=121 表示无方向后撤，不能使用自动朝敌人的 facing 代替。
+                if (actions.Dash.WasPressedThisFrame())
+                {
+                    BattleData.Instance.UpdateRightOperation(RightOpType.rop4, move, 0);
+                    return;
+                }
+                // 双方在同一服务器帧判断准入，禁止由本地 Animator 选择连招段。
                 if (actions.L_AtK.WasPressedThisFrame()) BattleData.Instance.UpdateRightOperation(RightOpType.rop1, facing, 0);
                 if (actions.Skill.WasPressedThisFrame()) BattleData.Instance.UpdateRightOperation(RightOpType.rop2, facing, 0);
                 if (actions.FinishSkill.WasPressedThisFrame()) BattleData.Instance.UpdateRightOperation(RightOpType.rop3, facing, 0);
-                if (actions.Dash.WasPressedThisFrame()) BattleData.Instance.UpdateRightOperation(RightOpType.rop4, facing, 0);
                 return;
             }
             if (actions.Walk.WasPressedThisFrame()) Queue(RightOpType.rop5, facing, moving);

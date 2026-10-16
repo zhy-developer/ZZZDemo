@@ -91,7 +91,13 @@ namespace ZZZ.SkillAuthoring
         // 单次模式整次释放只结算一次；多段模式同组同目标在同一命中帧只结算一次。
     }
 
-    public enum SkillWindowKind { PreInput, ComboExecute, MoveCancel }
+    // 显式保留旧枚举值，新增窗口不能改变已保存资产的含义。
+    public enum SkillWindowKind
+    {
+        PreInput = 0, ComboExecute = 1, MoveCancel = 2,
+        [InspectorName("闪避取消 DodgeCancel")] DodgeCancel = 3,
+        [InspectorName("无敌 Invulnerable")] Invulnerable = 4
+    }
 
     [Serializable]
     public sealed class SkillWindow

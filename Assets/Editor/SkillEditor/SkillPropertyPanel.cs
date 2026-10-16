@@ -39,7 +39,7 @@ namespace ZZZ.SkillEditor
                     break;
                 case SkillSelectionKind.Window:
                     DrawElement(Element(serialized, "windows", selection.index), "窗口");
-                    EditorGUILayout.HelpBox("PreInput 缓存一次同一攻击键；ComboExecute 消费缓存或响应当帧按键。在 ComboExecute 的“下一段技能”下拉框选择已注册目标。连段优先于同帧移动取消；受击、取消和技能结束清空缓存。", MessageType.Info);
+                    DrawWindowHelp(Element(serialized, "windows", selection.index));
                     break;
                 case SkillSelectionKind.Presentation:
                     DrawPresentation(serialized, Element(serialized, "presentation", selection.index));
@@ -68,6 +68,26 @@ namespace ZZZ.SkillEditor
             }
             EditorGUILayout.EndScrollView();
             return serialized.ApplyModifiedProperties();
+        }
+
+        private static void DrawWindowHelp(SerializedProperty window)
+        {
+            if (window == null) return;
+            var kind = (SkillWindowKind)window.FindPropertyRelative("kind").intValue;
+            string message;
+            switch (kind)
+            {
+                case SkillWindowKind.DodgeCancel:
+                    message = "在 [开始帧, 结束帧) 内允许闪避打断当前技能；仍需满足冷却结束、非受击、非闪避中。失败输入不缓存。成功闪避优先于连段和移动取消，并清空旧连段缓存。";
+                    break;
+                case SkillWindowKind.Invulnerable:
+                    message = "在 [开始帧, 结束帧) 内免受攻击区域的伤害、受击打断和命中反馈，不消耗攻击方命中记录。例如 [0,6) 仅第 0～5 帧无敌。不会延长技能或暂停动画；Scene 预览显示当前是否生效。";
+                    break;
+                default:
+                    message = "PreInput 缓存一次同一攻击键；ComboExecute 消费缓存或响应当帧按键。在下一段技能下拉框选择已注册目标。成功闪避 > 连段 > 移动取消；受击、取消和技能结束清空缓存。闪避中不接连段，可自行配置 MoveCancel 缩短恢复阶段。";
+                    break;
+            }
+            EditorGUILayout.HelpBox(message, MessageType.Info);
         }
 
         private static void DrawAnimatorPath(SerializedObject serialized)

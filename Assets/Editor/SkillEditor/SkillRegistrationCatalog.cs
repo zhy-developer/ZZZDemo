@@ -44,7 +44,16 @@ namespace ZZZ.SkillEditor
                 if (binding?.skill != null) result.Add(binding.skill);
             if (profile.additionalSkills != null) foreach (var skill in profile.additionalSkills)
                 if (skill != null) result.Add(skill);
+            if (profile.dodgeBackSkill != null) result.Add(profile.dodgeBackSkill);
             return result;
+        }
+
+        private static bool IsDodge(SkillCombatProfile profile, SkillDefinition skill)
+        {
+            if (skill == profile.dodgeBackSkill) return true;
+            if (profile.commands != null) foreach (var binding in profile.commands)
+                if (binding != null && (int)binding.command == 4 && binding.skill == skill) return true;
+            return false;
         }
 
         public static List<SkillDefinition> UniqueSkills(SkillCombatProfile profile, out bool hasInvalidIds)
@@ -61,6 +70,8 @@ namespace ZZZ.SkillEditor
             foreach (string id in duplicates) byId.Remove(id);
             hasInvalidIds |= duplicates.Count > 0;
             var result = new List<SkillDefinition>(byId.Values);
+            // 下拉框用于连段目标；闪避必须走自己的准入和冷却，不能通过连段直接释放。
+            result.RemoveAll(skill => IsDodge(profile, skill));
             result.Sort((a, b) => StringComparer.Ordinal.Compare(a.skillId, b.skillId));
             return result;
         }

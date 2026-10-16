@@ -17,6 +17,11 @@ namespace ZZZ.SkillAuthoring
         public List<SkillCommandBinding> commands = new List<SkillCommandBinding>();
         [Tooltip("连段后续技能放在这里；按键入口技能已自动收录，无需重复添加。nextSkillId 在本角色技能库内查找。")]
         public List<SkillDefinition> additionalSkills = new List<SkillDefinition>();
+        [Header("闪避（前闪绑定在 Commands / Rop 4）")]
+        [Tooltip("无方向输入时使用的后撤技能，自动注册到技能库。根位移应沿角色局部 -Z；保留释放时朝向。与 Rop 4 前闪成对配置，不启用闪避时两者都留空。")]
+        public SkillDefinition dodgeBackSkill;
+        [Min(0), Tooltip("前闪与后撤共用的逻辑帧冷却；成功释放时开始，受击和技能结束不重置。24 帧 = 792ms。")]
+        public int dodgeCooldownFrames = 24;
         // 保留旧资产序列化数据，当前待机/移动由预制体 Animator Controller 提供。
         [HideInInspector] public AnimationClip idleClip;
         [HideInInspector] public AnimationClip moveClip;

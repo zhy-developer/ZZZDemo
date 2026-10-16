@@ -9,6 +9,8 @@ namespace ZZZ.SkillRuntime
     public sealed class CombatSkillLibrary : IDisposable
     {
         public SkillCombatProfile Profile { get; private set; }
+        public CombatSkill DodgeFront { get; private set; }
+        public CombatSkill DodgeBack { get; private set; }
         private readonly Dictionary<int, CombatSkill> commands = new Dictionary<int, CombatSkill>();
         private readonly List<CombatSkill> skills = new List<CombatSkill>();
         private readonly Dictionary<string, CombatSkill> byId = new Dictionary<string, CombatSkill>(StringComparer.Ordinal);
@@ -23,6 +25,8 @@ namespace ZZZ.SkillRuntime
                 if (Profile.maxHealth < 1 || Profile.maxHealth > 1000000000 || Profile.hurtRadius < 1
                     || !CombatMath.InRange(Profile.hurtRadius) || Profile.movePerFrame < 0 || !CombatMath.InRange(Profile.movePerFrame))
                     throw new ArgumentException("生命、受击圆或每帧移动距离超出支持范围。");
+                if (Profile.dodgeCooldownFrames < 0 || Profile.dodgeCooldownFrames > 10000)
+                    throw new ArgumentException("闪避冷却必须在 0～10000 帧之间。");
                 // 待机和移动来自角色原 Animator Controller；只校验仍由时间轴采样的受击片段。
                 ValidateClip(Profile.hitClip, "受击");
                 var byAsset = new Dictionary<SkillDefinition, CombatSkill>();
@@ -49,12 +53,26 @@ namespace ZZZ.SkillRuntime
                 }
                 if (Profile.additionalSkills != null)
                     foreach (var asset in Profile.additionalSkills) Register(asset);
+                commands.TryGetValue(CombatDodge.Command, out var front);
+                DodgeFront = front;
+                DodgeBack = Profile.dodgeBackSkill != null ? Register(Profile.dodgeBackSkill) : null;
+                if ((DodgeFront == null) != (DodgeBack == null))
+                    throw new ArgumentException("请成对配置闪避：Commands / Rop 4 绑定前闪，Dodge Back Skill 绑定后撤；未启用时两者都留空。");
+                if (DodgeFront != null && DodgeFront == DodgeBack)
+                    throw new ArgumentException("前闪与后撤需要两个独立技能资产，分别配置向前和向后的根位移。");
+                foreach (var binding in commands)
+                    if (binding.Key != CombatDodge.Command && IsDodge(binding.Value))
+                        throw new ArgumentException("闪避资产只能通过 Rop 4 入口释放，不能重复绑定到其他指令以绕过冷却。");
                 // 收录完成后再解析跨技能引用，支持循环连段，并在开局直接指出拼错/漏配的 ID。
                 foreach (var skill in skills)
                     if (skill.Data.windows != null) foreach (var window in skill.Data.windows)
-                        if (window.kind == SkillWindowKind.ComboExecute && !string.IsNullOrWhiteSpace(window.nextSkillId)
-                            && !byId.ContainsKey(window.nextSkillId))
-                            throw new ArgumentException(skill.Data.skillId + "：连段目标未加入角色技能列表：" + window.nextSkillId);
+                        if (window.kind == SkillWindowKind.ComboExecute && !string.IsNullOrWhiteSpace(window.nextSkillId))
+                        {
+                            if (!byId.TryGetValue(window.nextSkillId, out var target))
+                                throw new ArgumentException(skill.Data.skillId + "：连段目标未加入角色技能列表：" + window.nextSkillId);
+                            if (IsDodge(target))
+                                throw new ArgumentException(skill.Data.skillId + "：连段不能直接跳到闪避技能；请配置 DodgeCancel 窗口并使用闪避键。");
+                        }
             }
             catch { Dispose(); throw; }
         }
@@ -64,6 +82,7 @@ namespace ZZZ.SkillRuntime
             if (clip == null || clip.legacy) throw new ArgumentException(label + "动画必须绑定非 Legacy 片段。");
         }
         public bool TryGet(int command, out CombatSkill skill) => commands.TryGetValue(command, out skill);
+        public bool IsDodge(CombatSkill skill) => skill != null && (skill == DodgeFront || skill == DodgeBack);
         public bool TryGet(string skillId, out CombatSkill skill)
         {
             skill = null;
@@ -73,6 +92,7 @@ namespace ZZZ.SkillRuntime
         {
             foreach (var skill in skills) skill.Dispose();
             skills.Clear(); commands.Clear(); byId.Clear();
+            DodgeFront = null; DodgeBack = null;
             if (Profile != null) UnityEngine.Object.Destroy(Profile);
             Profile = null;
         }
@@ -127,12 +147,7 @@ namespace ZZZ.SkillRuntime
             => HasWindow(SkillWindowKind.MoveCancel, frame);
 
         public bool HasWindow(SkillWindowKind kind, int frame)
-        {
-            if (Data.windows == null) return false;
-            foreach (var window in Data.windows)
-                if (window != null && window.kind == kind && frame >= window.startFrame && frame < window.endFrame) return true;
-            return false;
-        }
+            => SkillWindowTiming.IsActive(Data, kind, frame);
 
         public string ComboTarget(int frame)
         {

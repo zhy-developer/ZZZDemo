@@ -7,7 +7,8 @@ namespace ZZZ.SkillRuntime
     {
         public static void Accept(CombatFighter fighter, CombatCommand command)
         {
-            if (fighter.BlockedThisFrame || command.Action == 0) return;
+            if (fighter.BlockedThisFrame || fighter.StartedSkillThisFrame || fighter.IsDodging
+                || command.Action == 0 || command.Action == CombatDodge.Command) return;
             if (fighter.State == CombatState.Free)
             {
                 if (fighter.Library.TryGet(command.Action, out var skill))
@@ -26,7 +27,7 @@ namespace ZZZ.SkillRuntime
 
         public static void AdvanceCombo(CombatFighter fighter)
         {
-            if (fighter.BlockedThisFrame || fighter.State != CombatState.Skill
+            if (fighter.BlockedThisFrame || fighter.IsDodging || fighter.State != CombatState.Skill
                 || fighter.StartedSkillThisFrame || !fighter.HasBufferedCombo) return;
             if (!fighter.Library.TryGet(fighter.Skill.ComboTarget(fighter.SkillFrame), out var next)) return;
             int command = fighter.SkillCommand;
@@ -35,7 +36,7 @@ namespace ZZZ.SkillRuntime
             Start(fighter, next, command, facing);
         }
 
-        private static void Start(CombatFighter fighter, CombatSkill skill, int command, int facing)
+        internal static void Start(CombatFighter fighter, CombatSkill skill, int command, int facing)
         {
             fighter.StopSkill(); // 所有退出路径共用清理，缓存和命中记录不能串到下一段。
             fighter.Skill = skill; fighter.SkillFrame = 0; fighter.SkillCommand = command;

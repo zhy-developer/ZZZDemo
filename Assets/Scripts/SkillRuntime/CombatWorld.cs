@@ -43,10 +43,14 @@ namespace ZZZ.SkillRuntime
             if (Finished) return; // 网络仍消费和确认输入；已结束的对局不再产生战斗行为。
             hits.Clear();
             foreach (var fighter in fighters) BeginFrame(fighter);
+            // 先处理所有闪避，再收普通攻击/连段输入。F0 无敌在本帧 CollectHits 之前已经生效。
+            foreach (var fighter in fighters)
+                foreach (var command in commands)
+                    if (command.BattleId == fighter.BattleId) CombatDodge.Accept(fighter, command);
             foreach (var fighter in fighters)
                 foreach (var command in commands)
                     if (command.BattleId == fighter.BattleId) ApplyCommand(fighter, command);
-            // 所有输入收集后只处理一次切段，连段优先于本帧移动取消。
+            // 优先级：成功闪避 > 连段 > 移动取消。失败的闪避不吞掉原有连段缓存。
             foreach (var fighter in fighters) CombatSkillInput.AdvanceCombo(fighter);
             foreach (var fighter in fighters) Move(fighter);
             foreach (var fighter in fighters) fighter.RegionAnchors.Capture(fighter);
@@ -71,6 +75,8 @@ namespace ZZZ.SkillRuntime
             fighter.PendingMotion = Vector2Int.zero;
             fighter.CompletingSkillThisFrame = false;
             fighter.StartedSkillThisFrame = false;
+            // 独立于技能进度和受击硬直；F 帧成功设置 24，F+24 帧可再次释放。
+            if (fighter.DodgeCooldownRemaining > 0) fighter.DodgeCooldownRemaining--;
             // 顿帧暂时全局停用。保留字段供后续恢复，清除历史计数，不能再阻塞技能或位移。
             fighter.HitStopRemaining = 0;
             fighter.FrozenThisFrame = false;
@@ -137,7 +143,8 @@ namespace ZZZ.SkillRuntime
                 if (!attacker.RegionAnchors.TryGet(attacker, i, out var origin, out int facing)) continue;
                 foreach (var defender in fighters)
                 {
-                    if (defender == attacker || defender.Health == 0) continue;
+                    if (defender == attacker || defender.Health == 0 || defender.IsInvulnerable) continue;
+                    // 无敌先于去重记录：躲过攻击不消耗命中机会；指定帧/间隔模式仍不会延后补打。
                     var key = new CombatHitKey(region.hitGroupId, defender.BattleId, hitFrame);
                     if (attacker.HitTargets.Contains(key)) continue;
                     if (!CombatCollision.Overlaps(region, origin, facing, defender.Position, defender.Library.Profile.hurtRadius)) continue;
@@ -199,6 +206,7 @@ namespace ZZZ.SkillRuntime
                 Add(fighter.BattleId); Add(fighter.Position.x); Add(fighter.Position.y); Add(fighter.Facing); Add(fighter.Health);
                 Add((int)fighter.State); Add(fighter.SkillFrame); Add(fighter.CastSerial); Add(fighter.HitStopRemaining);
                 Add(fighter.SkillCommand); Add(fighter.HasBufferedCombo ? 1 : 0); Add(fighter.BufferedComboFacing);
+                Add(fighter.DodgeCooldownRemaining);
                 Add(fighter.HitStunRemaining); Add(fighter.PoseFrame); Add(fighter.ReactionSerial); Add(fighter.MoveDirection);
                 Add(fighter.Moving ? 1 : 0); Add(fighter.FrozenThisFrame ? 1 : 0); Add(fighter.BlockedThisFrame ? 1 : 0);
                 Add(fighter.Skill != null ? fighter.Skill.Data.skillId.Length : 0);

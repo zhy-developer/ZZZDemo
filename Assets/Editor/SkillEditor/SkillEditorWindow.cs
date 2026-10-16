@@ -252,6 +252,8 @@ namespace ZZZ.SkillEditor
             Add("窗口/预输入", () => AddWindow(SkillWindowKind.PreInput));
             Add("窗口/连段执行", () => AddWindow(SkillWindowKind.ComboExecute));
             Add("窗口/移动取消", () => AddWindow(SkillWindowKind.MoveCancel));
+            Add("窗口/闪避取消 DodgeCancel", () => AddWindow(SkillWindowKind.DodgeCancel));
+            Add("窗口/无敌 Invulnerable", () => AddWindow(SkillWindowKind.Invulnerable));
             Add("表现事件/特效", () => AddPresentation(SkillPresentationKind.Vfx));
             Add("表现事件/武器音效", () => AddPresentation(SkillPresentationKind.WeaponAudio));
             Add("表现事件/角色语音", () => AddPresentation(SkillPresentationKind.VoiceAudio));
@@ -460,6 +462,7 @@ namespace ZZZ.SkillEditor
         {
             if (preview == null || skill == null || StageUtility.GetCurrentStage() != preview) return;
             sceneHandles.Draw(skill, sampler, frame, preview.LogicPosition, selection, Select, RefreshAfterEdit);
+            SkillWindowPreview.DrawScene(skill, frame, preview.LogicPosition, sceneHandles.DisplayHeight);
             var effect = SelectedEffect;
             if (effect != null && !playing && sampler != null && !HasErrors()
                 && preview.TryGetEffectBinding(skill, sampler, effect, out var matrix, out var rotation))

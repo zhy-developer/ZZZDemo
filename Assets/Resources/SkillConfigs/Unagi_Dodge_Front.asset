@@ -1,0 +1,63 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a2f7c2060aec413c84a0bb4936636df8, type: 3}
+  m_Name: Unagi_Dodge_Front
+  m_EditorClassIdentifier: 
+  schemaVersion: 1
+  skillId: Unagi_Dodge_Front
+  displayName: Unagi_Dodge_Front
+  character: 1
+  category: 2
+  totalFrames: 23
+  previewPrefab: {fileID: 2028143046966284670, guid: 6892d51bcc445594c938f7bc93efc744, type: 3}
+  animatorPath: "\u661F\u89C1\u96C5"
+  animation:
+    clip: {fileID: 8499197216477740432, guid: 2e97bb40dd1ff8c4295dfc3b074e0ece, type: 3}
+    startFrame: 0
+    sourceStartSeconds: 0
+    sourceEndSeconds: 0
+    speed: 1
+    blendInSeconds: 0.111
+    endClip: {fileID: 0}
+    endBlendSeconds: 0.14
+  motion:
+    startFrame: 0
+    settings:
+      json: {fileID: 4900000, guid: 1c8fd3a81aac212488cd71b96bfdcbca, type: 3}
+      endFrameExclusive: 0
+      distancePermille: 1000
+  hitGroups:
+  - id: 1
+    damage: 20
+    hitStopFrames: 3
+    hitStunFrames: 8
+    hitAnimationNames:
+    - Hit_shake
+    parryAnimationNames:
+    - Hit_1
+    - Hit_2
+    cameraShake: 0
+    feedback:
+      effectPrefab: {fileID: 568771266447219377, guid: a6f4211bdb6532848b8dbd78cb724e0c, type: 3}
+      localOffset: {x: 0, y: 1, z: 0}
+      localEulerAngles: {x: 0, y: 0, z: 0}
+      localScale: {x: 1, y: 1, z: 1}
+      maxLifetimeSeconds: 3
+      audioClip: {fileID: 8300000, guid: 5c145766ae34d904cafab42e31d895c1, type: 3}
+      volume: 1
+  hitRegions: []
+  windows:
+  - kind: 4
+    startFrame: 1
+    endFrame: 17
+    nextSkillId: 
+  presentation: []

@@ -22,12 +22,16 @@ MonoBehaviour:
     skill: {fileID: 11400000, guid: 73cffe2122a3f7d488b46e7f4f4d4a8d, type: 2}
   - command: 3
     skill: {fileID: 11400000, guid: ffd5e0cf55d458a40b963390d073577b, type: 2}
+  - command: 4
+    skill: {fileID: 11400000, guid: 54c299cfa9d16944e9c927904d4e7886, type: 2}
   additionalSkills:
   - {fileID: 11400000, guid: fa4ecd0ddb97ea64584833d0c4b485e8, type: 2}
   - {fileID: 11400000, guid: a79f2884a3200f74b9d079e34abca13f, type: 2}
   - {fileID: 11400000, guid: bf737328f90bcb34c9b913b8275b10b8, type: 2}
   - {fileID: 11400000, guid: 3fdda5f5e0b604d48a848c44cc2c04f8, type: 2}
   - {fileID: 11400000, guid: 418cf58be43fb884c902f096a1fc8d82, type: 2}
+  dodgeBackSkill: {fileID: 11400000, guid: 60419527ed6c89a4d8baa77d4a26a1f7, type: 2}
+  dodgeCooldownFrames: 24
   idleClip: {fileID: -3101187217175272289, guid: 2e97bb40dd1ff8c4295dfc3b074e0ece, type: 3}
   moveClip: {fileID: -229413099510903425, guid: 2e97bb40dd1ff8c4295dfc3b074e0ece, type: 3}
   hitClip: {fileID: -3769112847589529204, guid: 80107a816f028fc41bee25cd760bd336, type: 3}

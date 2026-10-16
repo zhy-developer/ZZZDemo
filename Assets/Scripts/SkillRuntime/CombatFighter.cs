@@ -20,6 +20,10 @@ namespace ZZZ.SkillRuntime
         public int SkillCommand { get; internal set; }
         public bool HasBufferedCombo { get; internal set; }
         public int BufferedComboFacing { get; internal set; } = 121;
+        public int DodgeCooldownRemaining { get; internal set; }
+        public bool IsDodging => State == CombatState.Skill && Library.IsDodge(Skill);
+        public bool IsInvulnerable => State == CombatState.Skill
+            && Skill.HasWindow(SkillAuthoring.SkillWindowKind.Invulnerable, SkillFrame);
         public int HitStopRemaining { get; internal set; }
         public int HitStunRemaining { get; internal set; }
         public int ReactionSerial { get; internal set; }
