@@ -207,7 +207,7 @@ namespace ZZZ.SkillAuthoring
             }
         }
 
-        private static void ValidateHitFeedback(SkillHitFeedback feedback, Action<string> error, Action<string> warning)
+        public static void ValidateHitFeedback(SkillHitFeedback feedback, Action<string> error, Action<string> warning)
         {
             // 反馈可完全关闭；只验证已启用资源使用的参数，旧资产无需补齐资源才能进入战斗。
             if (feedback == null) return;

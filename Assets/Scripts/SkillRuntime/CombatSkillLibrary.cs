@@ -11,6 +11,8 @@ namespace ZZZ.SkillRuntime
         public SkillCombatProfile Profile { get; private set; }
         public CombatSkill DodgeFront { get; private set; }
         public CombatSkill DodgeBack { get; private set; }
+        public CombatSkill Parry { get; private set; }
+        public CombatSkill ParrySuccess { get; private set; }
         private readonly Dictionary<int, CombatSkill> commands = new Dictionary<int, CombatSkill>();
         private readonly List<CombatSkill> skills = new List<CombatSkill>();
         private readonly Dictionary<string, CombatSkill> byId = new Dictionary<string, CombatSkill>(StringComparer.Ordinal);
@@ -27,6 +29,14 @@ namespace ZZZ.SkillRuntime
                     throw new ArgumentException("生命、受击圆或每帧移动距离超出支持范围。");
                 if (Profile.dodgeCooldownFrames < 0 || Profile.dodgeCooldownFrames > 10000)
                     throw new ArgumentException("闪避冷却必须在 0～10000 帧之间。");
+                if (Profile.skillChargeFrames < 1 || Profile.skillChargeFrames > 10000)
+                    throw new ArgumentException("E 蓄力时间必须在 1～10000 帧之间。");
+                if (Profile.parryBrokenStunFrames < 0 || Profile.parryBrokenStunFrames > 10000)
+                    throw new ArgumentException("被振硬直必须在 0～10000 帧之间。");
+                if (Profile.parryBrokenClip != null) ValidateClip(Profile.parryBrokenClip, "被振");
+                SkillValidation.ValidateHitFeedback(Profile.parryFeedback,
+                    message => throw new ArgumentException("振刀反馈：" + message),
+                    message => Debug.LogWarning("振刀反馈：" + message, source));
                 // 待机和移动来自角色原 Animator Controller；只校验仍由时间轴采样的受击片段。
                 ValidateClip(Profile.hitClip, "受击");
                 var byAsset = new Dictionary<SkillDefinition, CombatSkill>();
@@ -53,6 +63,18 @@ namespace ZZZ.SkillRuntime
                 }
                 if (Profile.additionalSkills != null)
                     foreach (var asset in Profile.additionalSkills) Register(asset);
+                if (commands.ContainsKey(CombatCharge.Command)) ValidateClip(Profile.skillChargeClip, "E 蓄力");
+                commands.TryGetValue(CombatParry.Command, out var parry);
+                Parry = parry;
+                ParrySuccess = Profile.parrySuccessSkill != null ? Register(Profile.parrySuccessSkill) : null;
+                if (ParrySuccess != null && Parry == null)
+                    throw new ArgumentException("配置振刀成功技能前，请先在 Commands / Rop 5 绑定空格招架技能。");
+                if (Parry != null)
+                {
+                    if (Parry == ParrySuccess) throw new ArgumentException("招架与振刀成功需要独立技能资产。");
+                    ValidateDefensiveSkill(Parry, true);
+                    if (ParrySuccess != null) ValidateDefensiveSkill(ParrySuccess, false);
+                }
                 commands.TryGetValue(CombatDodge.Command, out var front);
                 DodgeFront = front;
                 DodgeBack = Profile.dodgeBackSkill != null ? Register(Profile.dodgeBackSkill) : null;
@@ -61,8 +83,15 @@ namespace ZZZ.SkillRuntime
                 if (DodgeFront != null && DodgeFront == DodgeBack)
                     throw new ArgumentException("前闪与后撤需要两个独立技能资产，分别配置向前和向后的根位移。");
                 foreach (var binding in commands)
+                {
                     if (binding.Key != CombatDodge.Command && IsDodge(binding.Value))
                         throw new ArgumentException("闪避资产只能通过 Rop 4 入口释放，不能重复绑定到其他指令以绕过冷却。");
+                    if (IsParry(binding.Value) && (binding.Key != CombatParry.Command || binding.Value != Parry))
+                        throw new ArgumentException("招架只允许绑定 Rop 5；振刀成功技能只允许通过成功事件进入。");
+                    if (binding.Key != CombatCharge.Command && commands.TryGetValue(CombatCharge.Command, out var charged)
+                        && binding.Value == charged)
+                        throw new ArgumentException("E 释放技能不能重复绑定到其他指令以绕过蓄力。");
+                }
                 // 收录完成后再解析跨技能引用，支持循环连段，并在开局直接指出拼错/漏配的 ID。
                 foreach (var skill in skills)
                     if (skill.Data.windows != null) foreach (var window in skill.Data.windows)
@@ -72,6 +101,8 @@ namespace ZZZ.SkillRuntime
                                 throw new ArgumentException(skill.Data.skillId + "：连段目标未加入角色技能列表：" + window.nextSkillId);
                             if (IsDodge(target))
                                 throw new ArgumentException(skill.Data.skillId + "：连段不能直接跳到闪避技能；请配置 DodgeCancel 窗口并使用闪避键。");
+                            if (IsParry(target) || (commands.TryGetValue(CombatCharge.Command, out var charged) && target == charged))
+                                throw new ArgumentException(skill.Data.skillId + "：连段不能绕过 E 蓄力或直接进入招架/振刀成功技能。");
                         }
             }
             catch { Dispose(); throw; }
@@ -79,10 +110,26 @@ namespace ZZZ.SkillRuntime
 
         private static void ValidateClip(AnimationClip clip, string label)
         {
-            if (clip == null || clip.legacy) throw new ArgumentException(label + "动画必须绑定非 Legacy 片段。");
+            if (clip == null || clip.legacy || clip.length <= 0) throw new ArgumentException(label + "动画必须绑定有效的非 Legacy 片段。");
+        }
+        private static void ValidateDefensiveSkill(CombatSkill skill, bool needsWindow)
+        {
+            if (skill.Data.hitRegions != null) foreach (var region in skill.Data.hitRegions)
+                if (region.enabled) throw new ArgumentException(skill.Data.skillId + "：第一版招架/成功动作不允许启用攻击区域。");
+            bool hasWindow = false;
+            if (skill.Data.windows != null) foreach (var window in skill.Data.windows)
+            {
+                hasWindow |= window.kind == SkillWindowKind.Parry;
+                if (window.kind == SkillWindowKind.ComboExecute || window.kind == SkillWindowKind.PreInput)
+                    throw new ArgumentException(skill.Data.skillId + "：招架/成功动作不使用连段窗口，请删除 PreInput/ComboExecute。");
+                if (!needsWindow && window.kind == SkillWindowKind.Parry)
+                    throw new ArgumentException(skill.Data.skillId + "：振刀成功动作不能再次开启招架窗口。");
+            }
+            if (needsWindow && !hasWindow) throw new ArgumentException(skill.Data.skillId + "：招架技能需要配置 Parry 窗口。");
         }
         public bool TryGet(int command, out CombatSkill skill) => commands.TryGetValue(command, out skill);
         public bool IsDodge(CombatSkill skill) => skill != null && (skill == DodgeFront || skill == DodgeBack);
+        public bool IsParry(CombatSkill skill) => skill != null && (skill == Parry || skill == ParrySuccess);
         public bool TryGet(string skillId, out CombatSkill skill)
         {
             skill = null;
@@ -93,6 +140,7 @@ namespace ZZZ.SkillRuntime
             foreach (var skill in skills) skill.Dispose();
             skills.Clear(); commands.Clear(); byId.Clear();
             DodgeFront = null; DodgeBack = null;
+            Parry = null; ParrySuccess = null;
             if (Profile != null) UnityEngine.Object.Destroy(Profile);
             Profile = null;
         }

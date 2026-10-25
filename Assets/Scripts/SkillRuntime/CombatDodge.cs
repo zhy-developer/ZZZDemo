@@ -11,7 +11,7 @@ namespace ZZZ.SkillRuntime
         {
             if (command.Action != Command || fighter.BlockedThisFrame || fighter.StartedSkillThisFrame
                 || fighter.IsDodging || fighter.DodgeCooldownRemaining > 0) return;
-            if (fighter.State != CombatState.Free && (fighter.State != CombatState.Skill
+            if (fighter.State != CombatState.Free && fighter.State != CombatState.Charging && (fighter.State != CombatState.Skill
                 || !fighter.Skill.HasWindow(SkillWindowKind.DodgeCancel, fighter.SkillFrame))) return;
 
             // 方向来自按键采集时的网络载荷，不读取晚到的移动输入或本地相机。

@@ -16,7 +16,9 @@ namespace ZZZ.SkillRuntime
         private AnimationClipPlayable clipPlayable;
 
         private CombatLocomotionView locomotion;
-        private AnimationClip currentClip, reactionClip;
+        private AnimationClip currentClip, reactionClip, chargeClip;
+        private bool loopCharge;
+        private double chargeRenderSeconds;
         private SkillDefinition skill;
         private readonly CombatPresentationClock clock = new CombatPresentationClock();
         private readonly Transform[] bones;
@@ -95,7 +97,11 @@ namespace ZZZ.SkillRuntime
             state = fighter.State; cast = fighter.CastSerial; reaction = fighter.ReactionSerial;
             moving = fighter.Moving;
             skill = fighter.Skill?.Data;
-            reactionClip = fighter.Library.Profile.hitClip;
+            var profile = fighter.Library.Profile;
+            reactionClip = fighter.ReactionKind == CombatReactionKind.ParryBroken && profile.parryBrokenClip != null
+                ? profile.parryBrokenClip : profile.hitClip;
+            chargeClip = profile.skillChargeClip;
+            loopCharge = profile.loopSkillCharge;
             // 顿帧暂时停用，命中后连续播放；仅死亡或对局结束保持最终显示。
             frozen = matchEnded || state == CombatState.Dead;
             ObserveEndAnimation(fighter);
@@ -159,12 +165,23 @@ namespace ZZZ.SkillRuntime
             else
             {
                 bool isSkill = state == CombatState.Skill;
-                BindClip(isSkill ? skill.animation.clip : reactionClip);
+                bool isCharge = state == CombatState.Charging;
+                BindClip(isSkill ? skill.animation.clip : isCharge ? chargeClip : reactionClip);
                 if (isSkill)
                 {
                     clipPlayable.SetSpeed(0);
                     clipPlayable.SetDone(false);
                     clipPlayable.SetTime(SkillFrameSampler.SampleAnimationAtTime(skill, clock.Seconds));
+                }
+                else if (isCharge)
+                {
+                    // 只累计渲染 delta，不读取 ChargeFrame 校准姿势；蓄力计时由逻辑层独立管理。
+                    chargeRenderSeconds = changed ? 0 : chargeRenderSeconds + delta;
+                    double length = currentClip.length;
+                    double time = loopCharge ? chargeRenderSeconds % length : Math.Min(chargeRenderSeconds, length - .000001);
+                    clipPlayable.SetDone(false);
+                    clipPlayable.SetSpeed(0);
+                    clipPlayable.SetTime(Math.Max(0, time));
                 }
                 else
                 {

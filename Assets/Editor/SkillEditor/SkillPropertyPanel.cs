@@ -45,6 +45,7 @@ namespace ZZZ.SkillEditor
                     DrawPresentation(serialized, Element(serialized, "presentation", selection.index));
                     break;
                 case SkillSelectionKind.HitGroups:
+                    EditorGUILayout.HelpBox("勾选命中组的“可被振刀”后，实际接触处于 Parry 窗口的角色才会被振刀。黄光由特效轨单独配置，不决定振刀时机。", MessageType.Info);
                     if (selection.index >= 0)
                     {
                         DrawElement(Element(serialized, "hitGroups", selection.index), $"命中组条目 {selection.index + 1}");
@@ -83,8 +84,14 @@ namespace ZZZ.SkillEditor
                 case SkillWindowKind.Invulnerable:
                     message = "在 [开始帧, 结束帧) 内免受攻击区域的伤害、受击打断和命中反馈，不消耗攻击方命中记录。例如 [0,6) 仅第 0～5 帧无敌。不会延长技能或暂停动画；Scene 预览显示当前是否生效。";
                     break;
+                case SkillWindowKind.Parry:
+                    message = "在空格招架技能中配置。只有可振刀攻击实际碰到自身受击圆，且当前帧属于此区间时才成功；黄光只是预警，不参与判定。一次释放只触发一次成功反馈，无敌优先于招架。";
+                    break;
+                case SkillWindowKind.ParryCancel:
+                    message = "在攻击技能中配置：区间内允许空格打断当前技能进入招架。失败输入不缓存；闪避优先于招架，招架优先于连段。受击硬直中不能招架。";
+                    break;
                 default:
-                    message = "PreInput 缓存一次同一攻击键；ComboExecute 消费缓存或响应当帧按键。在下一段技能下拉框选择已注册目标。成功闪避 > 连段 > 移动取消；受击、取消和技能结束清空缓存。闪避中不接连段，可自行配置 MoveCancel 缩短恢复阶段。";
+                    message = "PreInput 缓存一次同一攻击键；ComboExecute 消费缓存或响应当帧按键。闪避 > 招架 > E 蓄力/释放 > 连段 > 移动取消；受击、取消和技能结束清空缓存。闪避/招架中不接连段，可配置 MoveCancel 缩短恢复阶段。";
                     break;
             }
             EditorGUILayout.HelpBox(message, MessageType.Info);

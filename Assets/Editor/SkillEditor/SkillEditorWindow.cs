@@ -254,6 +254,8 @@ namespace ZZZ.SkillEditor
             Add("窗口/移动取消", () => AddWindow(SkillWindowKind.MoveCancel));
             Add("窗口/闪避取消 DodgeCancel", () => AddWindow(SkillWindowKind.DodgeCancel));
             Add("窗口/无敌 Invulnerable", () => AddWindow(SkillWindowKind.Invulnerable));
+            Add("窗口/招架 Parry", () => AddWindow(SkillWindowKind.Parry));
+            Add("窗口/招架取消 ParryCancel", () => AddWindow(SkillWindowKind.ParryCancel));
             Add("表现事件/特效", () => AddPresentation(SkillPresentationKind.Vfx));
             Add("表现事件/武器音效", () => AddPresentation(SkillPresentationKind.WeaponAudio));
             Add("表现事件/角色语音", () => AddPresentation(SkillPresentationKind.VoiceAudio));

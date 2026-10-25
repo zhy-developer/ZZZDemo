@@ -45,14 +45,16 @@ namespace ZZZ.SkillEditor
             if (profile.additionalSkills != null) foreach (var skill in profile.additionalSkills)
                 if (skill != null) result.Add(skill);
             if (profile.dodgeBackSkill != null) result.Add(profile.dodgeBackSkill);
+            if (profile.parrySuccessSkill != null) result.Add(profile.parrySuccessSkill);
             return result;
         }
 
-        private static bool IsDodge(SkillCombatProfile profile, SkillDefinition skill)
+        private static bool RequiresSpecialEntry(SkillCombatProfile profile, SkillDefinition skill)
         {
-            if (skill == profile.dodgeBackSkill) return true;
+            if (skill == profile.dodgeBackSkill || skill == profile.parrySuccessSkill) return true;
             if (profile.commands != null) foreach (var binding in profile.commands)
-                if (binding != null && (int)binding.command == 4 && binding.skill == skill) return true;
+                if (binding != null && ((int)binding.command == 2 || (int)binding.command == 4 || (int)binding.command == 5)
+                    && binding.skill == skill) return true;
             return false;
         }
 
@@ -70,8 +72,8 @@ namespace ZZZ.SkillEditor
             foreach (string id in duplicates) byId.Remove(id);
             hasInvalidIds |= duplicates.Count > 0;
             var result = new List<SkillDefinition>(byId.Values);
-            // 下拉框用于连段目标；闪避必须走自己的准入和冷却，不能通过连段直接释放。
-            result.RemoveAll(skill => IsDodge(profile, skill));
+            // 蓄力、闪避、招架和成功动作有各自准入，不能通过连段绕过。
+            result.RemoveAll(skill => RequiresSpecialEntry(profile, skill));
             result.Sort((a, b) => StringComparer.Ordinal.Compare(a.skillId, b.skillId));
             return result;
         }

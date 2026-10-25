@@ -7,8 +7,9 @@ namespace ZZZ.SkillRuntime
     {
         public static void Accept(CombatFighter fighter, CombatCommand command)
         {
-            if (fighter.BlockedThisFrame || fighter.StartedSkillThisFrame || fighter.IsDodging
-                || command.Action == 0 || command.Action == CombatDodge.Command) return;
+            if (fighter.BlockedThisFrame || fighter.StartedSkillThisFrame || fighter.IsDodging || fighter.IsParrying
+                || command.Action == 0 || command.Action == CombatDodge.Command
+                || command.Action == CombatCharge.Command || command.Action == CombatParry.Command) return;
             if (fighter.State == CombatState.Free)
             {
                 if (fighter.Library.TryGet(command.Action, out var skill))
@@ -27,7 +28,7 @@ namespace ZZZ.SkillRuntime
 
         public static void AdvanceCombo(CombatFighter fighter)
         {
-            if (fighter.BlockedThisFrame || fighter.IsDodging || fighter.State != CombatState.Skill
+            if (fighter.BlockedThisFrame || fighter.IsDodging || fighter.IsParrying || fighter.State != CombatState.Skill
                 || fighter.StartedSkillThisFrame || !fighter.HasBufferedCombo) return;
             if (!fighter.Library.TryGet(fighter.Skill.ComboTarget(fighter.SkillFrame), out var next)) return;
             int command = fighter.SkillCommand;

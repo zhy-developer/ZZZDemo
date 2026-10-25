@@ -32,6 +32,20 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 418cf58be43fb884c902f096a1fc8d82, type: 2}
   dodgeBackSkill: {fileID: 11400000, guid: 60419527ed6c89a4d8baa77d4a26a1f7, type: 2}
   dodgeCooldownFrames: 24
+  skillChargeFrames: 12
+  skillChargeClip: {fileID: 2865645358833672043, guid: 3d9757a43f4c1d14ebf43cbec50dcda5, type: 3}
+  loopSkillCharge: 0
+  parrySuccessSkill: {fileID: 11400000, guid: dd01c8d367538fb4f9666894a287f3ea, type: 2}
+  parryBrokenClip: {fileID: -3769112847589529204, guid: 80107a816f028fc41bee25cd760bd336, type: 3}
+  parryBrokenStunFrames: 18
+  parryFeedback:
+    effectPrefab: {fileID: 0}
+    localOffset: {x: 0, y: 1, z: 0}
+    localEulerAngles: {x: 0, y: 0, z: 0}
+    localScale: {x: 1, y: 1, z: 1}
+    maxLifetimeSeconds: 3
+    audioClip: {fileID: 0}
+    volume: 1
   idleClip: {fileID: -3101187217175272289, guid: 2e97bb40dd1ff8c4295dfc3b074e0ece, type: 3}
   moveClip: {fileID: -229413099510903425, guid: 2e97bb40dd1ff8c4295dfc3b074e0ece, type: 3}
   hitClip: {fileID: -3769112847589529204, guid: 80107a816f028fc41bee25cd760bd336, type: 3}

@@ -22,6 +22,22 @@ namespace ZZZ.SkillAuthoring
         public SkillDefinition dodgeBackSkill;
         [Min(0), Tooltip("前闪与后撤共用的逻辑帧冷却；成功释放时开始，受击和技能结束不重置。24 帧 = 792ms。")]
         public int dodgeCooldownFrames = 24;
+        [Header("E 蓄力（释放技能绑定在 Commands / Rop 2）")]
+        [Min(1), Tooltip("按下 E 开始蓄力，达到此逻辑帧数自动释放；提前松开取消。12 帧约 396ms。")]
+        public int skillChargeFrames = 12;
+        [Tooltip("配置了 Rop 2 时必填。蓄力动画只提供表现，不产生根位移或动画事件。")]
+        public AnimationClip skillChargeClip;
+        [Tooltip("勾选时循环整个蓄力片段；否则播完保持末姿势。逻辑蓄力时间独立于动画长度。")]
+        public bool loopSkillCharge;
+        [Header("空格招架（招架技能绑定在 Commands / Rop 5）")]
+        [Tooltip("可选，成功后切入此技能资产；不填则继续招架动作，关闭本次剩余招架机会。不可含伤害区域。")]
+        public SkillDefinition parrySuccessSkill;
+        [Tooltip("可选，被振刀时播放；留空使用普通受击片段。动画长度不决定硬直。")]
+        public AnimationClip parryBrokenClip;
+        [Min(0), Tooltip("本角色攻击被振刀后承受的硬直，默认 18 帧约 594ms。")]
+        public int parryBrokenStunFrames = 18;
+        [Tooltip("本角色成功招架时的特效和 2D 音效。生成在自身根节点，沿自身朝向，触发后自然播完。")]
+        public SkillHitFeedback parryFeedback = new SkillHitFeedback();
         // 保留旧资产序列化数据，当前待机/移动由预制体 Animator Controller 提供。
         [HideInInspector] public AnimationClip idleClip;
         [HideInInspector] public AnimationClip moveClip;
@@ -32,7 +48,7 @@ namespace ZZZ.SkillAuthoring
     [Serializable]
     public sealed class SkillCommandBinding
     {
-        [Tooltip("rop1 普攻；rop2 技能；rop3 大招；rop4 闪避；rop6 重击。未绑定的输入不执行旧战斗。")]
+        [Tooltip("rop1 普攻；rop2 E 蓄力完成后的技能；rop3 大招；rop4 前闪；rop5 空格招架；rop6 重击。")]
         public RightOpType command = RightOpType.rop1;
         public SkillDefinition skill;
     }

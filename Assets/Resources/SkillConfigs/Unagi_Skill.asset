@@ -38,6 +38,7 @@ MonoBehaviour:
   hitGroups:
   - id: 1
     damage: 20
+    canBeParried: 1
     hitStopFrames: 3
     hitStunFrames: 8
     hitAnimationNames:

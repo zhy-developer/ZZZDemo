@@ -55,7 +55,7 @@ namespace ZZZ.SkillRuntime
                     // 即使受击/顿帧时拒绝动作，也必须确认该序号，否则重传会在恢复后补放旧输入。
                     BattleData.Instance.UpdateRightOperationID(operation.battleID, operation.operationID, operation.rightOperation);
                 }
-                commands.Add(new CombatCommand(operation.battleID, operation.move, action, operation.operationValue1));
+                commands.Add(new CombatCommand(operation.battleID, operation.move, action, operation.operationValue1, operation.operationValue2));
             }
             bool wasFinished = World.Finished;
             World.Step(commands);

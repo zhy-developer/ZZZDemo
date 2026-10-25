@@ -116,7 +116,7 @@ namespace ZZZ.SkillRuntime
             {
                 try
                 {
-                    item.AudioObject = new GameObject("命中音效_" + feedback.audioClip.name) { hideFlags = HideFlags.HideAndDontSave };
+                    item.AudioObject = new GameObject((notification.IsParry ? "振刀音效_" : "命中音效_") + feedback.audioClip.name) { hideFlags = HideFlags.HideAndDontSave };
                     SceneManager.MoveGameObjectToScene(item.AudioObject, targetRoot.gameObject.scene);
                     item.AudioObject.transform.position = position;
                     item.Audio = item.AudioObject.AddComponent<AudioSource>();

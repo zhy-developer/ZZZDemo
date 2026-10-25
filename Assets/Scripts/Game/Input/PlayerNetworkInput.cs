@@ -1,5 +1,6 @@
 using GameProtocol;
 using UnityEngine;
+using ZZZ.SkillRuntime;
 
 namespace ZZZ
 {
@@ -11,6 +12,7 @@ namespace ZZZ
         private readonly PlayerActionBuffer capturedActions = new PlayerActionBuffer();
         private int nextInputId;
         private int blockedInputId;
+        private bool frameSkillPressSent;
         public PlayerNetworkInput(Player player) { this.player = player; }
 
         public void Capture()
@@ -32,6 +34,12 @@ namespace ZZZ
             int moving = input == Vector2.zero ? 0 : 1;
             if (player.UsesFrameCombat)
             {
+                // 松开必须可靠送达，即使同一采集帧还按了闪避/招架。失焦导致按住状态清除时也发送松开。
+                if (frameSkillPressSent && !actions.Skill.IsPressed())
+                {
+                    BattleData.Instance.UpdateRightOperation(RightOpType.rop2, 121, CombatCharge.Release);
+                    frameSkillPressSent = false;
+                }
                 // 同一次采集闪避优先。只在入队前选择；已发送的可靠输入不能删除或重排。
                 // move=121 表示无方向后撤，不能使用自动朝敌人的 facing 代替。
                 if (actions.Dash.WasPressedThisFrame())
@@ -39,9 +47,26 @@ namespace ZZZ
                     BattleData.Instance.UpdateRightOperation(RightOpType.rop4, move, 0);
                     return;
                 }
+                // 空格沿用现有 SwitchCharacter 输入绑定，仅在 1v1 帧战斗中解释为招架。
+                if (actions.SwitchCharacter.WasPressedThisFrame())
+                {
+                    BattleData.Instance.UpdateRightOperation(RightOpType.rop5, facing, 0);
+                    return;
+                }
+                if (actions.Skill.WasPressedThisFrame() && !frameSkillPressSent)
+                {
+                    BattleData.Instance.UpdateRightOperation(RightOpType.rop2, facing, CombatCharge.Press);
+                    frameSkillPressSent = true;
+                    // 极短点击可以在同一渲染帧包含按下和松开，不能遗留永久按住状态。
+                    if (!actions.Skill.IsPressed())
+                    {
+                        BattleData.Instance.UpdateRightOperation(RightOpType.rop2, 121, CombatCharge.Release);
+                        frameSkillPressSent = false;
+                    }
+                    return;
+                }
                 // 双方在同一服务器帧判断准入，禁止由本地 Animator 选择连招段。
                 if (actions.L_AtK.WasPressedThisFrame()) BattleData.Instance.UpdateRightOperation(RightOpType.rop1, facing, 0);
-                if (actions.Skill.WasPressedThisFrame()) BattleData.Instance.UpdateRightOperation(RightOpType.rop2, facing, 0);
                 if (actions.FinishSkill.WasPressedThisFrame()) BattleData.Instance.UpdateRightOperation(RightOpType.rop3, facing, 0);
                 return;
             }
@@ -107,6 +132,10 @@ namespace ZZZ
 
         public void Clear()
         {
+            // 角色被禁用后不会再 Capture，也要闭合已发送的按住状态；仍沿用可靠队列顺序。
+            if (frameSkillPressSent && player.IsLocalPlayer && player.UsesFrameCombat)
+                BattleData.Instance.UpdateRightOperation(RightOpType.rop2, 121, CombatCharge.Release);
+            frameSkillPressSent = false;
             if (capturedActions.Count > 0) player.TraceCombo("CLEAR_INPUT", $"queued={capturedActions.Count}");
             capturedActions.Clear();
         }

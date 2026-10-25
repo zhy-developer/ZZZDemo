@@ -14,7 +14,7 @@ public class CharacterInputSystem : MonoSingleton<CharacterInputSystem>
     private void OnEnable()
     {
         inputActions?.Player.Enable();
-        inputActions?.Player.SwitchCharacter.Disable();
+        // Space 的既有绑定名为 SwitchCharacter；1v1 帧战斗将其用作招架，不能再禁用。
     }
     private void OnDisable()
     {

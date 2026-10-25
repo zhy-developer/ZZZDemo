@@ -3,7 +3,8 @@ using UnityEngine;
 
 namespace ZZZ.SkillRuntime
 {
-    public enum CombatState { Free, Skill, HitStun, Dead }
+    public enum CombatState { Free = 0, Skill = 1, HitStun = 2, Dead = 3, Charging = 4 }
+    public enum CombatReactionKind { Hit, ParryBroken }
 
     /// <summary>单个角色的独立逻辑状态。只有 CombatWorld 修改；不读取 Animator、Transform 或本地输入。</summary>
     public sealed class CombatFighter
@@ -21,6 +22,14 @@ namespace ZZZ.SkillRuntime
         public bool HasBufferedCombo { get; internal set; }
         public int BufferedComboFacing { get; internal set; } = 121;
         public int DodgeCooldownRemaining { get; internal set; }
+        public int ChargeFrame { get; internal set; }
+        // 按住标记只由同步的 E 按下/松开事件改变；打断不能伪造松开，否则长按可能自动补放。
+        public bool SkillButtonHeld { get; internal set; }
+        public bool ParryConsumed { get; internal set; }
+        public CombatReactionKind ReactionKind { get; internal set; }
+        public bool IsParrying => State == CombatState.Skill && Library.IsParry(Skill);
+        public bool CanParry => State == CombatState.Skill && Skill == Library.Parry
+            && !ParryConsumed && Skill.HasWindow(SkillAuthoring.SkillWindowKind.Parry, SkillFrame);
         public bool IsDodging => State == CombatState.Skill && Library.IsDodge(Skill);
         public bool IsInvulnerable => State == CombatState.Skill
             && Skill.HasWindow(SkillAuthoring.SkillWindowKind.Invulnerable, SkillFrame);
@@ -54,14 +63,15 @@ namespace ZZZ.SkillRuntime
             Skill = null; SkillFrame = 0; HitTargets.Clear();
             RegionAnchors.Clear();
             SkillCommand = 0; HasBufferedCombo = false; BufferedComboFacing = 121;
-            if (State == CombatState.Skill) { State = CombatState.Free; PoseFrame = 0; }
+            ChargeFrame = 0; ParryConsumed = false;
+            if (State == CombatState.Skill || State == CombatState.Charging) { State = CombatState.Free; PoseFrame = 0; }
         }
     }
 
     public readonly struct CombatCommand
     {
-        public readonly int BattleId, MoveDirection, Action, Facing;
-        public CombatCommand(int battleId, int moveDirection, int action, int facing)
-        { BattleId = battleId; MoveDirection = moveDirection; Action = action; Facing = facing; }
+        public readonly int BattleId, MoveDirection, Action, Facing, Payload;
+        public CombatCommand(int battleId, int moveDirection, int action, int facing, int payload = 0)
+        { BattleId = battleId; MoveDirection = moveDirection; Action = action; Facing = facing; Payload = payload; }
     }
 }

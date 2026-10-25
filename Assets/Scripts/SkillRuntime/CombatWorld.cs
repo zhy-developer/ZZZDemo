@@ -9,20 +9,13 @@ namespace ZZZ.SkillRuntime
     {
         private readonly List<CombatFighter> fighters;
         public IReadOnlyList<CombatFighter> Fighters => fighters;
-        private readonly List<PendingHit> hits = new List<PendingHit>();
+        private readonly CombatHitResolver hitResolver = new CombatHitResolver();
         private readonly int minX, maxX, minZ, maxZ;
         public int Frame { get; private set; }
         public bool Finished { get; private set; }
         public int WinnerId { get; private set; } // 0 为双方同时归零。
-        public int LastHitCount { get; private set; }
-
-        private readonly struct PendingHit
-        {
-            public readonly CombatFighter Attacker, Defender;
-            public readonly SkillAuthoring.SkillHitGroup Group;
-            public PendingHit(CombatFighter attacker, CombatFighter defender, SkillAuthoring.SkillHitGroup group)
-            { Attacker = attacker; Defender = defender; Group = group; }
-        }
+        public int LastHitCount => hitResolver.HitCount;
+        public int LastParryCount => hitResolver.ParryCount;
 
         public CombatWorld(List<CombatFighter> actors, int minX, int maxX, int minZ, int maxZ)
         {
@@ -37,27 +30,33 @@ namespace ZZZ.SkillRuntime
         public void Step(IReadOnlyList<CombatCommand> commands)
         {
             Frame++;
-            LastHitCount = 0;
+            hitResolver.Clear();
             // 即使对局已经结束，也不让最后一击的通知残留给下一帧重复消费。
             foreach (var fighter in fighters) fighter.HitFeedbackEvents.Clear();
             if (Finished) return; // 网络仍消费和确认输入；已结束的对局不再产生战斗行为。
-            hits.Clear();
             foreach (var fighter in fighters) BeginFrame(fighter);
-            // 先处理所有闪避，再收普通攻击/连段输入。F0 无敌在本帧 CollectHits 之前已经生效。
+            // 先处理闪避/招架，再收 E 边沿与普通攻击。F0 窗口在本帧接触收集之前已经生效。
             foreach (var fighter in fighters)
                 foreach (var command in commands)
                     if (command.BattleId == fighter.BattleId) CombatDodge.Accept(fighter, command);
             foreach (var fighter in fighters)
                 foreach (var command in commands)
+                    if (command.BattleId == fighter.BattleId) CombatParry.Accept(fighter, command);
+            foreach (var fighter in fighters)
+                foreach (var command in commands)
+                    if (command.BattleId == fighter.BattleId) CombatCharge.Accept(fighter, command);
+            foreach (var fighter in fighters) CombatCharge.Advance(fighter);
+            foreach (var fighter in fighters)
+                foreach (var command in commands)
                     if (command.BattleId == fighter.BattleId) ApplyCommand(fighter, command);
-            // 优先级：成功闪避 > 连段 > 移动取消。失败的闪避不吞掉原有连段缓存。
+            // 优先级：成功闪避 > 招架 > E 蓄力/释放 > 连段 > 移动取消。失败的闪避不吞掉原有连段缓存。
             foreach (var fighter in fighters) CombatSkillInput.AdvanceCombo(fighter);
             foreach (var fighter in fighters) Move(fighter);
             foreach (var fighter in fighters) fighter.RegionAnchors.Capture(fighter);
             // 移动取消/切段已经确定，只有仍生效技能的当前帧能发出表现事件。
-            foreach (var fighter in fighters) CollectPresentation(fighter);
-            foreach (var attacker in fighters) CollectHits(attacker);
-            ResolveHits();
+            foreach (var fighter in fighters) CombatSkillEvents.Collect(fighter);
+            foreach (var attacker in fighters) hitResolver.Collect(attacker, fighters);
+            hitResolver.Resolve(fighters, Frame);
             if (fighters.Exists(f => f.Health == 0))
             {
                 Finished = true;
@@ -114,6 +113,13 @@ namespace ZZZ.SkillRuntime
         private void Move(CombatFighter fighter)
         {
             if (fighter.BlockedThisFrame) return;
+            // 原地蓄力、锁定朝向。可以闪避或招架退出，普通移动不隐式取消蓄力。
+            if (fighter.State == CombatState.Charging)
+            {
+                fighter.Position = new Vector2Int(CombatMath.Clamp(fighter.Position.x + fighter.PendingMotion.x, minX, maxX),
+                    CombatMath.Clamp(fighter.Position.y + fighter.PendingMotion.y, minZ, maxZ));
+                return;
+            }
             bool inputMoving = fighter.MoveDirection < 120;
             if (fighter.State == CombatState.Skill && !fighter.StartedSkillThisFrame
                 && inputMoving && fighter.Skill.CanMoveCancel(fighter.SkillFrame))
@@ -133,68 +139,6 @@ namespace ZZZ.SkillRuntime
             fighter.Position = new Vector2Int(CombatMath.Clamp(next.x, minX, maxX), CombatMath.Clamp(next.y, minZ, maxZ));
         }
 
-        private void CollectHits(CombatFighter attacker)
-        {
-            if (attacker.BlockedThisFrame || attacker.State != CombatState.Skill || attacker.Skill.Data.hitRegions == null) return;
-            for (int i = 0; i < attacker.Skill.Data.hitRegions.Count; i++)
-            {
-                var region = attacker.Skill.Data.hitRegions[i];
-                if (!SkillAuthoring.SkillHitTiming.TryGetHitFrame(region, attacker.SkillFrame, out int hitFrame)) continue;
-                if (!attacker.RegionAnchors.TryGet(attacker, i, out var origin, out int facing)) continue;
-                foreach (var defender in fighters)
-                {
-                    if (defender == attacker || defender.Health == 0 || defender.IsInvulnerable) continue;
-                    // 无敌先于去重记录：躲过攻击不消耗命中机会；指定帧/间隔模式仍不会延后补打。
-                    var key = new CombatHitKey(region.hitGroupId, defender.BattleId, hitFrame);
-                    if (attacker.HitTargets.Contains(key)) continue;
-                    if (!CombatCollision.Overlaps(region, origin, facing, defender.Position, defender.Library.Profile.hurtRadius)) continue;
-                    attacker.HitTargets.Add(key);
-                    hits.Add(new PendingHit(attacker, defender, attacker.Skill.Group(region.hitGroupId)));
-                }
-            }
-        }
-
-        private static void CollectPresentation(CombatFighter fighter)
-        {
-            if (fighter.BlockedThisFrame || fighter.State != CombatState.Skill || fighter.Skill.Data.presentation == null) return;
-            // 每次释放的每个帧只经过一次，F0 也在这里触发；网络重传不会重复执行逻辑帧。
-            foreach (var cue in fighter.Skill.Data.presentation)
-            {
-                if (cue != null && cue.frame == fighter.SkillFrame)
-                    fighter.PresentationEvents.Add(new CombatPresentationEvent(fighter.CastSerial, cue));
-                // 只通知生命周期边界，粒子仍由表现层逐渲染帧播放，不按逻辑帧采样姿态。
-                if (SkillAuthoring.SkillEffectTiming.UsesFrameRange(cue) && cue.endFrame == fighter.SkillFrame)
-                    fighter.PresentationEvents.Add(new CombatPresentationEvent(fighter.CastSerial, cue, effectEnded: true));
-            }
-        }
-
-        private void ResolveHits()
-        {
-            LastHitCount = hits.Count;
-            // 命中列表已经封存：这里不能再检查攻击者是否被打断/死亡，否则先结算的一方会吞掉同帧对攻。
-            foreach (var hit in hits)
-            {
-                hit.Defender.Health = Math.Max(0, hit.Defender.Health - hit.Group.damage);
-                // 已成立的命中逐条通知，沿用 CollectHits 的“释放 + 命中组 + 目标 + 批次”去重。
-                // 此时双方的技能尚未被 StopSkill 清空；即使同帧互击或致死，双方反馈都保留。
-                hit.Defender.HitFeedbackEvents.Add(new CombatHitFeedbackEvent(Frame,
-                    hit.Attacker.BattleId, hit.Defender.BattleId, hit.Attacker.CastSerial, hit.Group.id,
-                    hit.Defender.Position, hit.Attacker.Facing, hit.Group.feedback));
-                // 暂不读取命中组的 hitStopFrames；命中不再给双方施加暂停。
-            }
-            foreach (var fighter in fighters)
-            {
-                bool received = false;
-                int stun = 0;
-                foreach (var hit in hits) if (hit.Defender == fighter) { received = true; stun = Math.Max(stun, hit.Group.hitStunFrames); }
-                if (!received) continue;
-                fighter.StopSkill(); // 立即取消剩余攻击区域及位移，命中组记录属于这次释放，不跨技能保留。
-                fighter.State = fighter.Health == 0 ? CombatState.Dead : CombatState.HitStun;
-                fighter.HitStunRemaining = Math.Max(fighter.HitStunRemaining, stun);
-                fighter.PoseFrame = 0; fighter.Moving = false; fighter.ReactionSerial++;
-            }
-        }
-
         /// <summary>人工双端对照用；仅摘要当前逻辑状态，不宣称是配置版本握手或防作弊校验。</summary>
         public uint StateHash()
         {
@@ -207,6 +151,8 @@ namespace ZZZ.SkillRuntime
                 Add((int)fighter.State); Add(fighter.SkillFrame); Add(fighter.CastSerial); Add(fighter.HitStopRemaining);
                 Add(fighter.SkillCommand); Add(fighter.HasBufferedCombo ? 1 : 0); Add(fighter.BufferedComboFacing);
                 Add(fighter.DodgeCooldownRemaining);
+                Add(fighter.ChargeFrame); Add(fighter.SkillButtonHeld ? 1 : 0);
+                Add(fighter.ParryConsumed ? 1 : 0); Add((int)fighter.ReactionKind);
                 Add(fighter.HitStunRemaining); Add(fighter.PoseFrame); Add(fighter.ReactionSerial); Add(fighter.MoveDirection);
                 Add(fighter.Moving ? 1 : 0); Add(fighter.FrozenThisFrame ? 1 : 0); Add(fighter.BlockedThisFrame ? 1 : 0);
                 Add(fighter.Skill != null ? fighter.Skill.Data.skillId.Length : 0);

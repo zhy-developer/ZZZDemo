@@ -91,9 +91,9 @@ namespace ZZZ.SkillEditor
             {
                 warning = invalidIds || missing;
                 message = invalidIds ? "注册列表存在空 ID 或重复 ID，已排除这些选项。请先修正对应技能的 skillId。"
-                    : missing ? "当前 ID 未唯一注册或属于闪避技能，不能作为连段目标。原值已保留，请重新选择。"
+                    : missing ? "当前 ID 未唯一注册，或是蓄力/闪避/招架专用技能，不能作为连段目标。原值已保留。"
                     : owners.Count > 1 ? "此技能被多个配置共用。下拉项来自所选来源；修改后，请确保目标也在其他使用此技能的配置中注册。"
-                    : "从角色配置获取已注册技能，排除闪避资产。单选保存 skillId；选择“无”取消连段。闪避请使用 DodgeCancel 窗口。";
+                    : "已注册列表排除蓄力、闪避和招架专用资产。选择“无”取消连段；闪避/招架取消请使用各自窗口。";
             }
             row.height = HelpHeight;
             EditorGUI.HelpBox(row, message, warning ? MessageType.Warning : MessageType.Info);

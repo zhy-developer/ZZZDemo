@@ -79,6 +79,8 @@ namespace ZZZ.SkillAuthoring
     {
         [Min(1)] public int id = 1;
         [Min(0)] public int damage = 20;
+        [InspectorName("可被振刀"), Tooltip("仅在攻击实际接触且目标 Parry 窗口有效时触发振刀。与黄光特效无关；旧资产默认不可振。")]
+        public bool canBeParried;
         [Min(0), Tooltip("顿帧暂时全局停用，此值仅保留配置，不产生暂停。")]
         public int hitStopFrames = 3;
         [Tooltip("-1 = 待人工配置。硬直不包含顿帧，不跟随受击动画长度。")]
@@ -96,7 +98,9 @@ namespace ZZZ.SkillAuthoring
     {
         PreInput = 0, ComboExecute = 1, MoveCancel = 2,
         [InspectorName("闪避取消 DodgeCancel")] DodgeCancel = 3,
-        [InspectorName("无敌 Invulnerable")] Invulnerable = 4
+        [InspectorName("无敌 Invulnerable")] Invulnerable = 4,
+        [InspectorName("招架 Parry")] Parry = 5,
+        [InspectorName("招架取消 ParryCancel")] ParryCancel = 6
     }
 
     [Serializable]
