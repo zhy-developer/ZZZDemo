@@ -115,7 +115,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c6351166713d8954dada6f2c73a94c51, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  RedBloodBar: {fileID: 2567298391309974167}
+  RedBloodBar: {fileID: 0}
   GreenBloodBar: {fileID: 6927522910354764732}
   RedBloodFill: {fileID: 0}
   GreenBloodFill: {fileID: 0}
@@ -238,17 +238,6 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: e245e231432afe3478a6ef712b35f548, type: 3}
---- !u!114 &2567298391309974167 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 2672890468873024983, guid: e245e231432afe3478a6ef712b35f548, type: 3}
-  m_PrefabInstance: {fileID: 484387582805954368}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &6927522910354764732 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 7393611594809294076, guid: e245e231432afe3478a6ef712b35f548, type: 3}

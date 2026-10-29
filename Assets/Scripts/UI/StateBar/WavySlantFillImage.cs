@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 
 [RequireComponent(typeof(Image))]
+[DisallowMultipleComponent]
 public class WavySlantFillImage : MonoBehaviour
 {
     private static readonly int FillAmountId = Shader.PropertyToID("_FillAmount");
@@ -21,6 +22,8 @@ public class WavySlantFillImage : MonoBehaviour
 
     private Image image;
     private Material runtimeMaterial;
+    private bool initialized;
+    private bool useStandardFill;
 
     public float FillAmount => fillAmount;
 
@@ -70,6 +73,7 @@ public class WavySlantFillImage : MonoBehaviour
 
     public void SetFill(float value)
     {
+        Initialize();
         fillAmount = Mathf.Clamp01(value);
         ApplyProperties();
     }
@@ -90,6 +94,7 @@ public class WavySlantFillImage : MonoBehaviour
 
     private void Initialize()
     {
+        if (initialized) return;
         if (image == null)
         {
             image = GetComponent<Image>();
@@ -105,22 +110,26 @@ public class WavySlantFillImage : MonoBehaviour
             fillAmount = image.fillAmount;
         }
 
+        Shader shader = Shader.Find("UI/Wavy Slant Fill");
+        if (shader == null || !shader.isSupported)
+        {
+            // Shader.Find 的字符串引用不保证 Shader 被打进 Player。
+            // 即使特效缺失，也让普通 Image 的血量填充继续工作。
+            useStandardFill = true;
+            image.material = null;
+            image.type = Image.Type.Filled;
+            image.fillMethod = Image.FillMethod.Horizontal;
+            image.fillOrigin = (int)Image.OriginHorizontal.Left;
+            image.fillAmount = fillAmount;
+            initialized = true;
+            Debug.LogWarning("UI/Wavy Slant Fill 未打包或不受支持，已使用普通水平血条。请将该 Shader 加入 Graphics / Always Included Shaders 后重新打包。", this);
+            return;
+        }
+
         if (forceSimpleImageType)
         {
             image.type = Image.Type.Simple;
             image.fillAmount = 1f;
-        }
-
-        if (runtimeMaterial != null)
-        {
-            return;
-        }
-
-        Shader shader = Shader.Find("UI/Wavy Slant Fill");
-        if (shader == null)
-        {
-            Debug.LogError("Cannot find shader: UI/Wavy Slant Fill", this);
-            return;
         }
 
         runtimeMaterial = new Material(shader)
@@ -128,10 +137,16 @@ public class WavySlantFillImage : MonoBehaviour
             name = $"{name} Wavy Slant Fill (Instance)"
         };
         image.material = runtimeMaterial;
+        initialized = true;
     }
 
     private void ApplyProperties()
     {
+        if (useStandardFill && image != null)
+        {
+            image.fillAmount = fillAmount;
+            return;
+        }
         if (runtimeMaterial == null)
         {
             return;

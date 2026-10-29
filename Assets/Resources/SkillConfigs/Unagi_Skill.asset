@@ -191,3 +191,18 @@ MonoBehaviour:
     maxLifetimeSeconds: 10
     volume: 1
     stopOnInterrupt: 1
+  - kind: 0
+    frame: 2
+    lifetimeMode: 0
+    endFrame: 4
+    playbackSpeed: 2.5
+    effectPrefab: {fileID: 1000, guid: b376328c0b8d50a385f380aa568fb534, type: 3}
+    audioClip: {fileID: 0}
+    bindingPath: Bip001/Bn_Weapon
+    localOffset: {x: 0.57350624, y: 0.4919836, z: -0.25791553}
+    localEulerAngles: {x: 0, y: 0, z: 0}
+    localScale: {x: 0.6729628, y: 0.6729628, z: 0.6729628}
+    followBinding: 1
+    maxLifetimeSeconds: 10
+    volume: 1
+    stopOnInterrupt: 1

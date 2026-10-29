@@ -11,6 +11,7 @@ public class RoleManager : MonoBehaviour
 
     public bool initFinish;
     public Player LocalPlayer { get; private set; }
+    public RoleBase LocalRole { get; private set; }
     private GameObject pre_roleBase;
     private GameObject pre_roleUI;
 
@@ -24,6 +25,7 @@ public class RoleManager : MonoBehaviour
     public void InitData(Transform _roleParent)
     {
         initFinish = false;
+        LocalRole = null;
         roleParent = _roleParent;
 
         dic_role = new Dictionary<int, RoleBase>();
@@ -33,6 +35,8 @@ public class RoleManager : MonoBehaviour
 
         pre_roleBase = Resources.Load<GameObject>("BattleScene/Role/RoleBase");
         pre_roleUI = Resources.Load<GameObject>("BattleScene/Role/RoleUI");
+        if (pre_roleUI == null)
+            Debug.LogWarning("未找到 BattleScene/Role/RoleUI，非本地玩家将不显示头顶血条。", this);
 
         StartCoroutine(CreatRole());
     }
@@ -47,9 +51,12 @@ public class RoleManager : MonoBehaviour
         {
             yield return new WaitForEndOfFrame();
             BattleUserInfo _info = list_battleUser[i];
+            bool isLocalPlayer = _info.battleID == BattleData.Instance.battleID;
 
             GameObject _base = Instantiate(pre_roleBase, roleParent);// 角色父物体
-            GameObject _ui = Instantiate(pre_roleUI, _base.transform);
+            // 头顶血条是各客户端自己的表现对象，本地角色不创建。
+            GameObject _ui = !isLocalPlayer && pre_roleUI != null
+                ? Instantiate(pre_roleUI, _base.transform) : null;
 
             //string _modleStr = string.Format("BattleScene/Role/RoleModel{0}",_info.roleID);
             string _modleStr = "BattleScene/Role/Character";
@@ -59,7 +66,6 @@ public class RoleManager : MonoBehaviour
             }
             GameObject _modle = Instantiate(pre_roleModle[_modleStr]);  // 角色模型
 
-            bool isLocalPlayer = _info.battleID == BattleData.Instance.battleID;
             var player = _modle.GetComponentInChildren<Player>(true);
             if (player != null)
                 player.InitializeNetworkRole(_info.battleID, isLocalPlayer);
@@ -77,6 +83,9 @@ public class RoleManager : MonoBehaviour
             if (isLocalPlayer && player != null)
             {
                 LocalPlayer = player;
+                LocalRole = _roleCon;
+                var uiManager = FindObjectOfType<UIManager>();
+                if (uiManager != null) uiManager.BindLocalRole(_roleCon);
                 BindLocalCamera(player);
             }
         }
@@ -134,6 +143,7 @@ public class RoleManager : MonoBehaviour
     {
         combat?.Dispose(); combat = null;
         LocalPlayer = null;
+        LocalRole = null;
         if (BattleManager.roleManage == this) BattleManager.roleManage = null;
     }
 

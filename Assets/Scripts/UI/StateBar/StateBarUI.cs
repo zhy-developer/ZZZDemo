@@ -35,6 +35,13 @@ public class StateBarUI : MonoBehaviour,IUI
     {
         //GetUIImage();
     }
+    public bool DisplaysHealthUnder(Transform root)
+    {
+        return root != null && RedBloodBar != null && GreenBloodBar != null
+            && RedBloodBar != GreenBloodBar
+            && RedBloodBar.transform.IsChildOf(root)
+            && GreenBloodBar.transform.IsChildOf(root);
+    }
     private void Awake()
     {
         GetUIImage();
@@ -43,14 +50,15 @@ public class StateBarUI : MonoBehaviour,IUI
             Debug.LogError("RedBloodBar or GreenBloodBar is not initialized.");
         }
         BindFillComponents();
+        ValidateFillComponents(RedBloodBar);
+        if (GreenBloodBar != RedBloodBar) ValidateFillComponents(GreenBloodBar);
         rectTransform = GetComponent<RectTransform>();
         canvasGroup = GetComponent<CanvasGroup>();
         if (canvasGroup == null)
         {
             canvasGroup = gameObject.AddComponent<CanvasGroup>();
         }
-        RefreshCamera();
-        PrepareWorldSpaceCanvas();
+        // 只有显式调用 ShowAt 的头顶血条才准备世界 Canvas，普通 HUD 保留原布局。
     }
 
     private void GetUIImage()
@@ -71,11 +79,19 @@ public class StateBarUI : MonoBehaviour,IUI
     }
     public void UpdateBlood(float percentage)
     {
+        UpdateBlood(percentage, false);
+    }
+    public void UpdateBlood(float percentage, bool immediate)
+    {
+        // 支持场景面板尚未激活（Awake 尚未执行）时接收初始血量。
+        BindFillComponents();
         SetFillAmount(GreenBloodFill, GreenBloodBar, percentage);
+        if (immediate) SetFillAmount(RedBloodFill, RedBloodBar, percentage);
     }
     public void ShowAt(Vector3 worldPos)
     {
         RefreshCamera();
+        if (worldCanvas == null) PrepareWorldSpaceCanvas();
         if (cam == null || cachedCamera == null)
         {
             return;
@@ -139,8 +155,10 @@ public class StateBarUI : MonoBehaviour,IUI
 
     private void BindFillComponents()
     {
-        if (GreenBloodBar != null && GreenBloodFill == null)
+        if (GreenBloodBar != null && (GreenBloodFill == null || GreenBloodFill.gameObject != GreenBloodBar.gameObject))
         {
+            if (GreenBloodFill != null)
+                Debug.LogWarning("Green Blood Fill 与 Green Blood Bar 不属于同一对象，已按绿色 Image 重新绑定。", this);
             GreenBloodFill = GreenBloodBar.GetComponent<WavySlantFillImage>();
             if (GreenBloodFill == null)
             {
@@ -148,14 +166,22 @@ public class StateBarUI : MonoBehaviour,IUI
             }
         }
 
-        if (RedBloodBar != null && RedBloodFill == null)
+        if (RedBloodBar != null && (RedBloodFill == null || RedBloodFill.gameObject != RedBloodBar.gameObject))
         {
+            if (RedBloodFill != null)
+                Debug.LogWarning("Red Blood Fill 与 Red Blood Bar 不属于同一对象，已按红色 Image 重新绑定。", this);
             RedBloodFill = RedBloodBar.GetComponent<WavySlantFillImage>();
             if (RedBloodFill == null)
             {
                 RedBloodFill = RedBloodBar.gameObject.AddComponent<WavySlantFillImage>();
             }
         }
+    }
+
+    private void ValidateFillComponents(Image bar)
+    {
+        if (bar != null && bar.GetComponents<WavySlantFillImage>().Length > 1)
+            Debug.LogError($"{bar.name} 重复挂载了 WavySlantFillImage，会争用同一 Image 的材质。请在预制体中仅保留一个填充组件。", bar);
     }
 
     private float GetFillAmount(WavySlantFillImage fillImage, Image fallbackImage)

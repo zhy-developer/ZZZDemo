@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7f1544957c1b42fc9c03c109ea34d8d1, type: 3}
   m_Name: Unagi_CombatProfile
   m_EditorClassIdentifier: 
-  maxHealth: 100
+  maxHealth: 500
   hurtRadius: 4000
   movePerFrame: 3000
   commands:
@@ -24,6 +24,8 @@ MonoBehaviour:
     skill: {fileID: 11400000, guid: ffd5e0cf55d458a40b963390d073577b, type: 2}
   - command: 4
     skill: {fileID: 11400000, guid: 54c299cfa9d16944e9c927904d4e7886, type: 2}
+  - command: 5
+    skill: {fileID: 11400000, guid: ddba9d1c80ad6d44a8bfa39a29ae7871, type: 2}
   additionalSkills:
   - {fileID: 11400000, guid: fa4ecd0ddb97ea64584833d0c4b485e8, type: 2}
   - {fileID: 11400000, guid: a79f2884a3200f74b9d079e34abca13f, type: 2}
@@ -35,16 +37,16 @@ MonoBehaviour:
   skillChargeFrames: 12
   skillChargeClip: {fileID: 2865645358833672043, guid: 3d9757a43f4c1d14ebf43cbec50dcda5, type: 3}
   loopSkillCharge: 0
-  parrySuccessSkill: {fileID: 11400000, guid: dd01c8d367538fb4f9666894a287f3ea, type: 2}
+  parrySuccessSkill: {fileID: 11400000, guid: 12b69feea248ff640bd68e31add53cfd, type: 2}
   parryBrokenClip: {fileID: -3769112847589529204, guid: 80107a816f028fc41bee25cd760bd336, type: 3}
   parryBrokenStunFrames: 18
   parryFeedback:
-    effectPrefab: {fileID: 0}
+    effectPrefab: {fileID: 1000, guid: 6a3410a35f3b557b89a7fa72442a0baf, type: 3}
     localOffset: {x: 0, y: 1, z: 0}
     localEulerAngles: {x: 0, y: 0, z: 0}
     localScale: {x: 1, y: 1, z: 1}
     maxLifetimeSeconds: 3
-    audioClip: {fileID: 0}
+    audioClip: {fileID: 8300000, guid: ee250926edc47f9438e8d0f70691453b, type: 3}
     volume: 1
   idleClip: {fileID: -3101187217175272289, guid: 2e97bb40dd1ff8c4295dfc3b074e0ece, type: 3}
   moveClip: {fileID: -229413099510903425, guid: 2e97bb40dd1ff8c4295dfc3b074e0ece, type: 3}

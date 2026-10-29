@@ -10,6 +10,12 @@ public class RoleBase : MonoBehaviour {
 
 	public int moveSpeed;
 
+	[Header("头顶血条")]
+	[SerializeField, Tooltip("可选：角色预制体内的头顶挂点；留空时使用角色根节点加下方偏移")]
+	private Transform healthBarAnchor;
+	[SerializeField, Tooltip("未指定挂点时，相对角色根节点的世界坐标偏移")]
+	private Vector3 healthBarOffset = new Vector3(0f, 2.2f, 0f);
+
 	[SerializeField, Min(0.01f), Tooltip("位置平滑时间（秒），越小跟随越快")]
 	private float positionSmoothTime = 0.08f;
 	private Vector3 currentMoveVelocity;
@@ -24,11 +30,25 @@ public class RoleBase : MonoBehaviour {
 	private ZZZ.SkillRuntime.CombatAnimationView combatView;
 	private ZZZ.SkillRuntime.CombatPresentationView combatEffects;
 	private ZZZ.SkillRuntime.CombatHitFeedbackView combatHitFeedback;
-	private StateBarUI[] combatHealthBars;
+	private readonly List<StateBarUI> combatHealthBars = new List<StateBarUI>();
 	private int combatDisplayedHealth = -1;
 	private bool combatPoseInitialized;
 	private bool combatPresentationFrozen;
 	private bool combatRenderFailed;
+
+	// 调用方负责选择 UI；本类只把该角色的血量推送给已注册视图。
+	public void RegisterHealthBar(StateBarUI bar)
+	{
+		if (bar == null || combatHealthBars.Contains(bar)) return;
+		combatHealthBars.Add(bar);
+		if (Combat != null)
+			bar.UpdateBlood((float)Combat.Health / Combat.Library.Profile.maxHealth, true);
+	}
+
+	public void UnregisterHealthBar(StateBarUI bar)
+	{
+		combatHealthBars.Remove(bar);
+	}
 
 	public void BindFrameCombat(ZZZ.SkillRuntime.CombatFighter fighter)
 	{
@@ -74,9 +94,10 @@ public class RoleBase : MonoBehaviour {
 		// 生命变化是逻辑通知；红条缓动由 StateBarUI.Update 自行按渲染帧推进。
 		if (combatDisplayedHealth != Combat.Health)
 		{
+			bool initialHealth = combatDisplayedHealth < 0;
 			combatDisplayedHealth = Combat.Health;
-			if (combatHealthBars != null) foreach (var bar in combatHealthBars)
-				if (bar != null) bar.UpdateBlood((float)Combat.Health / Combat.Library.Profile.maxHealth);
+			foreach (var bar in combatHealthBars)
+				if (bar != null) bar.UpdateBlood((float)Combat.Health / Combat.Library.Profile.maxHealth, initialHealth);
 		}
 		player.currentComboState = Combat.State.ToString();
 		player.currentMovementState = Combat.State == ZZZ.SkillRuntime.CombatState.Free && Combat.Moving ? "Moving" : "Stopped";
@@ -129,7 +150,10 @@ public class RoleBase : MonoBehaviour {
 	[HideInInspector]
 	public ShapeBase objShape; // 角色的shapeBase
 	public void InitData(GameObject _ui,GameObject _modle,int _roleID,GameVector2 _logicPos){
-		combatHealthBars = _ui.GetComponentsInChildren<StateBarUI>(true);
+		combatHealthBars.Clear();
+		if (_ui != null) combatHealthBars.AddRange(_ui.GetComponentsInChildren<StateBarUI>(true));
+		if (_ui != null && combatHealthBars.Count == 0)
+			Debug.LogWarning("RoleUI 缺少 StateBarUI，请在血条 Canvas 根节点添加并绑定红/绿血条。", _ui);
 		objShape = GetComponent<ShapeBase> ();
 		logicSpeed = GameVector2.zero;
 		modleParent = transform.Find ("Modle");
@@ -151,6 +175,15 @@ public class RoleBase : MonoBehaviour {
 		renderDir = Quaternion.LookRotation (new Vector3(1f,0f,0f));
 		modleParent.rotation = renderDir;
 		currentRotationVelocity = 0f;
+
+		foreach (var bar in combatHealthBars)
+		{
+			// 挂在 UI 上，随角色一起销毁；跟随显示 Transform，不读取离散逻辑坐标。
+			var follow = bar.GetComponent<BloodPos>();
+			if (follow == null) follow = bar.gameObject.AddComponent<BloodPos>();
+			follow.Bind(bar, healthBarAnchor != null ? healthBarAnchor : transform,
+				healthBarAnchor != null ? Vector3.zero : healthBarOffset);
+		}
 
 	}
 
